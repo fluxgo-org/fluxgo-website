@@ -6,7 +6,7 @@ import { currentEndpoint, disablePush, enablePush, isIos, pushState } from '../_
 import { Button, Dialog, Icon, useToast } from './ui';
 
 const CATEGORIES = [
-  { key: 'support', title: 'Support messages', text: 'A new ticket, or a member reply. Ticket owners get their own tickets. Tickets without an owner go to every admin.' },
+  { key: 'support', title: 'Support messages', text: 'A new ticket, or a member reply. Every admin gets these, also when a ticket has an owner.' },
   { key: 'safety', title: 'Safety reports', text: 'A review with a safety issue, for example rash driving.' },
   { key: 'bookings', title: 'Stuck booking requests', text: 'A request that waits more than 30 min for the driver.' },
   { key: 'adminActions', title: 'Admin actions', text: 'Another admin suspends a member or cancels a ride.' },
