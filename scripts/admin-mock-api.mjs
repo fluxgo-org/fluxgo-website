@@ -50,8 +50,21 @@ const members = Array.from({ length: 64 }, (_, index) => {
     vehicleCount: 0, tripCount: 0,
     authProvider: 'MSG91', onboardingIntent: rand() > 0.6 ? 'PUBLISH_RIDE' : 'TAKE_RIDE', gender: pick(['MALE', 'FEMALE']), dob: `199${int(0, 9)}-0${int(1, 9)}-1${int(0, 9)}`,
     vehicles: [],
+    isInternal: index === 2 || index === 5,
+    onboardingStep: index % 9 === 4 ? pick(['SOURCE', 'PROFILE', 'WORK_EMAIL', 'EMERGENCY_CONTACT', 'VEHICLE']) : 'COMPLETE',
   };
 });
+members.forEach((member) => { member.onboardingCompleted = member.onboardingStep === 'COMPLETE'; });
+const internalIds = () => new Set(members.filter((member) => member.isInternal).map((member) => member.id));
+/** Apply the internal scope: exclude (default), include, or only. */
+function scoped(list, params, involved) {
+  const scope = params.get('internal') || 'exclude';
+  if (scope === 'include') return list;
+  const ids = internalIds();
+  return list.filter((item) => (scope === 'only') === involved(item, ids));
+}
+const tripInternal = (trip, ids) => ids.has(trip.driverUserId);
+const bookingInternal = (booking, ids) => ids.has(booking.bookedByUserId) || ids.has(booking.driverUserId);
 const drivers = members.filter((member) => member.onboardingIntent === 'PUBLISH_RIDE' && member.status === 'ACTIVE');
 drivers.forEach((driver) => {
   const [make, model] = pick(VEHICLES);
@@ -163,7 +176,7 @@ function lastMessage(ticket) { return ticket.messages[ticket.messages.length - 1
 function supportRow(ticket) {
   const last = lastMessage(ticket);
   const { messages, notes, requesterMobile, closedAt, ...row } = ticket;
-  return { ...row, lastMessageAt: last.createdAt, awaitingReply: ticket.status === 'OPEN' && last.senderRole === 'REQUESTER' };
+  return { ...row, lastMessageAt: last.createdAt, awaitingReply: ticket.status === 'OPEN' && last.senderRole === 'REQUESTER', isInternal: internalIds().has(ticket.requesterUserId) };
 }
 function memberRow(member) {
   const { vehicles, authProvider, onboardingIntent, gender, dob, ...row } = member;
@@ -171,7 +184,7 @@ function memberRow(member) {
 }
 function tripRow(trip) {
   const { vehicleId, vehicle, cancellationReason, completedAt, originLabel, destinationLabel, originCity, destinationCity, ...row } = trip;
-  return row;
+  return { ...row, isInternal: internalIds().has(trip.driverUserId) };
 }
 
 function compare(sort, order) {
@@ -225,6 +238,10 @@ function route(method, path, params, body, authed, admin) {
 
   if (path === '/v1/admin/dashboard/summary') {
     const count = (list, field, value) => list.filter((item) => item[field] === value).length;
+    const members = scoped(membersAll, params, (member, ids) => ids.has(member.id));
+    const trips = scoped(tripsAll, params, tripInternal);
+    const bookings = scoped(bookingsAll, params, bookingInternal);
+    const tickets = scoped(ticketsAll, params, (ticket, ids) => ids.has(ticket.requesterUserId));
     return [200, {
       members: { active: count(members, 'status', 'ACTIVE'), suspended: count(members, 'status', 'SUSPENDED'), deleted: count(members, 'status', 'DELETED'), total: members.length },
       trips: { draft: 0, published: count(trips, 'status', 'PUBLISHED'), inProgress: count(trips, 'status', 'IN_PROGRESS'), completed: count(trips, 'status', 'COMPLETED'), cancelled: count(trips, 'status', 'CANCELLED'), total: trips.length },
@@ -252,6 +269,9 @@ function route(method, path, params, body, authed, admin) {
     } }];
   }
   if (path === '/v1/admin/dashboard/attention') {
+    const trips = scoped(tripsAll, params, tripInternal);
+    const bookings = scoped(bookingsAll, params, bookingInternal);
+    const tickets = scoped(ticketsAll, params, (ticket, ids) => ids.has(ticket.requesterUserId));
     const waiting = tickets.filter((ticket) => supportRow(ticket).awaitingReply).sort((a, b) => lastMessage(a).createdAt.localeCompare(lastMessage(b).createdAt));
     const soon = trips.filter((trip) => trip.status === 'PUBLISHED' && Date.parse(trip.departureAt) >= now && Date.parse(trip.departureAt) < now + minutes(120)).sort((a, b) => a.departureAt.localeCompare(b.departureAt));
     const live = trips.filter((trip) => trip.status === 'IN_PROGRESS');
@@ -269,13 +289,29 @@ function route(method, path, params, body, authed, admin) {
     }];
   }
   if (path === '/v1/admin/members') {
-    let list = members.filter((member) => text(params.get('query'), member.name, member.mobile, member.personalEmail, member.id));
-    if (params.get('status')) list = list.filter((member) => member.status === params.get('status'));
+    let list = scoped(members, params, (member, ids) => ids.has(member.id)).filter((member) => text(params.get('query'), member.name, member.mobile, member.personalEmail, member.id));
+    if (params.get('status') === 'NOT_DELETED') list = list.filter((member) => member.status !== 'DELETED');
+    else if (params.get('status')) list = list.filter((member) => member.status === params.get('status'));
+    if (params.get('onboardingStep')) list = list.filter((member) => member.onboardingStep === params.get('onboardingStep'));
+    if (params.get('onboardingCompleted')) list = list.filter((member) => member.onboardingCompleted === (params.get('onboardingCompleted') === 'true'));
     if (params.get('workEmailStatus')) list = list.filter((member) => (params.get('workEmailStatus') === 'NONE' ? !member.workEmailStatus : member.workEmailStatus === params.get('workEmailStatus')));
     if (params.get('hasVehicle')) list = list.filter((member) => (member.vehicleCount > 0) === (params.get('hasVehicle') === 'true'));
     if (params.get('intent')) list = list.filter((member) => member.onboardingIntent === params.get('intent'));
     list = list.filter((member) => within(member.createdAt, params.get('createdFrom'), params.get('createdTo')));
     return [200, page(list.map(memberRow), params, 'createdAt')];
+  }
+  match = path.match(/^\/v1\/admin\/members\/([^/]+)\/internal$/);
+  if (match && method === 'PATCH') {
+    const member = members.find((item) => item.id === match[1]);
+    if (!member) return [404, { error: { code: 'NOT_FOUND', message: 'Member not found' } }];
+    if (typeof body.isInternal !== 'boolean') return [400, { error: { code: 'INVALID_REQUEST', message: 'isInternal must be a boolean value' } }];
+    if (member.isInternal !== body.isInternal) {
+      member.isInternal = body.isInternal;
+      member.updatedAt = new Date().toISOString();
+      addAudit(admin, body.isInternal ? 'MEMBER_MARKED_INTERNAL' : 'MEMBER_MARKED_EXTERNAL', 'user', member.id, Date.now() - now, { reason: body.reason });
+      audit.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+    }
+    return [200, { member: memberRow(member) }];
   }
   match = path.match(/^\/v1\/admin\/members\/([^/]+)\/status$/);
   if (match && method === 'PATCH') {
@@ -322,7 +358,7 @@ function route(method, path, params, body, authed, admin) {
     } }];
   }
   if (path === '/v1/admin/trips') {
-    let list = trips.filter((trip) => text(params.get('query'), trip.publicId, trip.originCity, trip.destinationCity, trip.driverName, trip.origin, trip.destination));
+    let list = scoped(trips, params, tripInternal).filter((trip) => text(params.get('query'), trip.publicId, trip.originCity, trip.destinationCity, trip.driverName, trip.origin, trip.destination));
     if (params.get('status')) list = list.filter((trip) => trip.status === params.get('status'));
     if (params.get('driverUserId')) list = list.filter((trip) => trip.driverUserId === params.get('driverUserId'));
     if (params.get('bookingMode')) list = list.filter((trip) => trip.bookingMode === params.get('bookingMode'));
@@ -339,12 +375,13 @@ function route(method, path, params, body, authed, admin) {
     return [200, { trip: { ...trip, bookings: bookings.filter((booking) => booking.tripId === trip.id).map((booking) => ({ id: booking.id, publicId: booking.publicId, bookedByUserId: booking.bookedByUserId, bookedByName: booking.bookedByName, passengerCount: booking.passengerCount, status: booking.status, totalPrice: booking.totalPrice, createdAt: booking.createdAt })) } }];
   }
   if (path === '/v1/admin/bookings') {
-    let list = bookings.filter((booking) => text(params.get('query'), booking.publicId, booking.tripPublicId, booking.bookedByName));
+    let list = scoped(bookings, params, bookingInternal).filter((booking) => text(params.get('query'), booking.publicId, booking.tripPublicId, booking.bookedByName));
     if (params.get('status')) list = list.filter((booking) => booking.status === params.get('status'));
     if (params.get('memberId')) list = list.filter((booking) => booking.bookedByUserId === params.get('memberId'));
     if (params.get('tripId')) list = list.filter((booking) => booking.tripId === params.get('tripId'));
     list = list.filter((booking) => within(booking.createdAt, params.get('createdFrom'), params.get('createdTo')) && within(booking.tripDepartureAt, params.get('departureFrom'), params.get('departureTo')));
-    const rows = list.map(({ pickup, drop, passengers, events, ...row }) => row);
+    const ids = internalIds();
+    const rows = list.map(({ pickup, drop, passengers, events, ...row }) => ({ ...row, isInternal: bookingInternal(row, ids) }));
     return [200, page(params.get('sort') === 'departureAt' ? rows.map((row) => ({ ...row, departureAt: row.tripDepartureAt })) : rows, params, 'createdAt')];
   }
   match = path.match(/^\/v1\/admin\/bookings\/([^/]+)$/);
@@ -353,7 +390,7 @@ function route(method, path, params, body, authed, admin) {
     return booking ? [200, { booking }] : [404, { error: { code: 'NOT_FOUND', message: 'Booking not found' } }];
   }
   if (path === '/v1/admin/support/tickets') {
-    let list = tickets.filter((ticket) => text(params.get('query'), ticket.publicId, ticket.subject, ticket.requesterName, ticket.requesterMobile));
+    let list = scoped(tickets, params, (ticket, ids) => ids.has(ticket.requesterUserId)).filter((ticket) => text(params.get('query'), ticket.publicId, ticket.subject, ticket.requesterName, ticket.requesterMobile));
     if (params.get('status')) list = list.filter((ticket) => ticket.status === params.get('status'));
     if (params.get('awaitingReply') === 'true') list = list.filter((ticket) => supportRow(ticket).awaitingReply);
     if (params.get('assignedAdminUserId')) list = list.filter((ticket) => ticket.assignedAdminUserId === params.get('assignedAdminUserId'));
@@ -395,7 +432,9 @@ function route(method, path, params, body, authed, admin) {
     return [200, { ticket: detail() }];
   }
   if (path === '/v1/admin/reviews') {
-    let list = reviews;
+    const reviewInternal = (review, ids) => ids.has(review.reviewerUserId) || ids.has(review.revieweeUserId);
+    const ids = internalIds();
+    let list = scoped(reviews, params, reviewInternal).map((review) => ({ ...review, isInternal: reviewInternal(review, ids) }));
     if (params.get('issues') === 'ANY') list = list.filter((review) => review.issueCodes.length);
     if (params.get('issues') === 'SAFETY') list = list.filter((review) => review.hasSafetyIssue);
     if (params.get('issueCode')) list = list.filter((review) => review.issueCodes.includes(params.get('issueCode')));
@@ -410,8 +449,9 @@ function route(method, path, params, body, authed, admin) {
       id: vehicle.id, memberId: member.id, memberName: member.name, registrationNumber: vehicle.registrationNumber, make: vehicle.make, model: vehicle.model, color: vehicle.color,
       vehicleType: vehicle.vehicleType, fuelType: vehicle.fuelType, seatsTotal: vehicle.seatsTotal, status: vehicle.status, verificationStatus: vehicle.verificationStatus,
       isCommercial: vehicle.isCommercial, provider: vehicle.verificationProvider, isManual: vehicle.verificationProvider === 'manual', rcStatus: vehicle.rcStatus,
-      checkedAt: vehicle.checkedAt, rideCount: trips.filter((trip) => trip.vehicleId === vehicle.id).length, createdAt: member.createdAt,
+      checkedAt: vehicle.checkedAt, rideCount: trips.filter((trip) => trip.vehicleId === vehicle.id).length, createdAt: member.createdAt, isInternal: member.isInternal,
     })));
+    list = scoped(list, params, (row, ids) => ids.has(row.memberId));
     list = list.filter((row) => text(params.get('query'), row.registrationNumber, row.make, row.model, row.memberName));
     if (params.get('source')) list = list.filter((row) => (params.get('source') === 'manual') === row.isManual);
     if (params.get('verificationStatus')) list = list.filter((row) => row.verificationStatus === params.get('verificationStatus'));
@@ -471,4 +511,9 @@ createServer((request, response) => {
 }).listen(PORT, () => {
   console.log(`Fluxgo admin mock API on http://localhost:${PORT}`);
   console.log(`Sign in with ${LOGIN.email} / ${LOGIN.password}`);
-});
+});// The dashboard routes shadow these names with scoped lists.
+const membersAll = members;
+const tripsAll = trips;
+const bookingsAll = bookings;
+const ticketsAll = tickets;
+

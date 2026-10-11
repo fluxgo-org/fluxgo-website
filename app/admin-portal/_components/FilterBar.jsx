@@ -11,6 +11,8 @@ import { Button, Icon, IconButton } from './ui';
  * - dateRange: { key, label, fromKey, toKey } (values are local yyyy-mm-dd days)
  * - text: { key, label, placeholder }
  * - entity: { key, label, labelKey } (set from links, shown as a chip only)
+ * - toggle: { key, label, value, chipLabel, chipLabels } (a checkbox that sets key to value)
+ *   A sticky toggle keeps its plain value when presets or "Clear all" change the other filters.
  */
 export function FilterBar({ config, filters, onChange, searchPlaceholder, searchRef, resultCount }) {
   const [open, setOpen] = useState(false);
@@ -32,7 +34,7 @@ export function FilterBar({ config, filters, onChange, searchPlaceholder, search
   const advancedCount = advanced.filter((field) => fieldActive(field, filters)).length;
   const presets = config.presets || [];
   const presetActive = (preset) => Object.entries(resolvePreset(preset.filters)).every(([key, value]) => String(filters[key] ?? '') === String(value ?? ''))
-    && fields.every((field) => fieldKeys(field).every((key) => key in preset.filters || !filters[key]));
+    && fields.every((field) => keepsValue(field, filters) || fieldKeys(field).every((key) => key in preset.filters || !filters[key]));
 
   return (
     <div className="ax-filters">
@@ -58,7 +60,7 @@ export function FilterBar({ config, filters, onChange, searchPlaceholder, search
           {presets.map((preset) => {
             const active = presetActive(preset);
             return <button key={preset.label} type="button" className={`ax-preset${active ? ' is-active' : ''}`} aria-pressed={active}
-              onClick={() => onChange(active ? clearedFilters(fields) : { ...clearedFilters(fields), ...resolvePreset(preset.filters) }, { replace: true })}>{preset.label}</button>;
+              onClick={() => onChange(active ? clearedFilters(fields, filters, preset.filters) : { ...clearedFilters(fields, filters), ...resolvePreset(preset.filters) }, { replace: true })}>{preset.label}</button>;
           })}
         </div>
       ) : null}
@@ -66,7 +68,7 @@ export function FilterBar({ config, filters, onChange, searchPlaceholder, search
         <div className="ax-filter-panel">
           {advanced.map((field) => <FilterControl key={field.key} field={field} filters={filters} onChange={onChange} />)}
           <div className="ax-filter-panel-foot">
-            <Button size="sm" variant="ghost" onClick={() => onChange(clearedFilters(fields), { replace: true })} disabled={!chips.length}>Clear all</Button>
+            <Button size="sm" variant="ghost" onClick={() => onChange(clearedFilters(fields, filters), { replace: true })} disabled={!chips.length}>Clear all</Button>
             <Button size="sm" onClick={() => setOpen(false)}>Done</Button>
           </div>
         </div>
@@ -79,7 +81,7 @@ export function FilterBar({ config, filters, onChange, searchPlaceholder, search
               <button type="button" onClick={() => onChange(chip.clear)} aria-label={`Remove ${chip.label} filter`}><Icon name="close" size={12} /></button>
             </span>
           ))}
-          {chips.length > 1 ? <button type="button" className="ax-chip-clear" onClick={() => onChange(clearedFilters(fields), { replace: true })}>Clear all</button> : null}
+          {chips.length > 1 ? <button type="button" className="ax-chip-clear" onClick={() => onChange(clearedFilters(fields, filters), { replace: true })}>Clear all</button> : null}
         </div>
       ) : null}
     </div>
@@ -88,6 +90,14 @@ export function FilterBar({ config, filters, onChange, searchPlaceholder, search
 
 function FilterControl({ field, filters, onChange, inline = false }) {
   const id = `filter-${field.key}`;
+  if (field.type === 'toggle') {
+    return (
+      <label className="ax-check ax-filter-toggle" htmlFor={id}>
+        <input id={id} type="checkbox" checked={Boolean(filters[field.key])} onChange={(event) => onChange({ [field.key]: event.target.checked ? field.value : undefined })} />
+        <span>{field.label}</span>
+      </label>
+    );
+  }
   if (field.type === 'select' || field.type === 'boolean') {
     const options = field.type === 'boolean'
       ? [{ value: 'true', label: field.yes || 'Yes' }, { value: 'false', label: field.no || 'No' }]
@@ -149,9 +159,17 @@ function fieldActive(field, filters) {
   return fieldKeys(field).some((key) => filters[key]);
 }
 
-function clearedFilters(fields) {
+/** A sticky toggle keeps its plain value. Other values, such as a preset's, are cleared. */
+function keepsValue(field, filters) {
+  return field.type === 'toggle' && field.sticky && filters[field.key] === field.value;
+}
+
+function clearedFilters(fields, filters = {}, presetValues = {}) {
   const next = { query: undefined };
-  fields.forEach((field) => fieldKeys(field).forEach((key) => { next[key] = undefined; }));
+  fields.forEach((field) => {
+    if (keepsValue(field, filters) && !(field.key in presetValues)) return;
+    fieldKeys(field).forEach((key) => { next[key] = undefined; });
+  });
   return next;
 }
 
@@ -177,6 +195,10 @@ function activeChips(fields, filters) {
     let text = value;
     if (field.type === 'select') text = field.options.find((option) => option.value === value)?.label || statusLabel(value);
     if (field.type === 'boolean') text = value === 'true' ? (field.yes || 'Yes') : (field.no || 'No');
+    if (field.type === 'toggle') {
+      chips.push({ id: field.key, label: field.chipLabel || field.label, value: field.chipLabels?.[value] || 'On', clear: { [field.key]: undefined } });
+      return;
+    }
     if (field.type === 'entity') text = (field.labelKey && filters[field.labelKey]) || `${String(value).slice(0, 8)}…`;
     chips.push({ id: field.key, label: field.label, value: text, clear: Object.fromEntries(fieldKeys(field).map((key) => [key, undefined])) });
   });

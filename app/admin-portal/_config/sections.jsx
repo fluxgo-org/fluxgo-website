@@ -12,6 +12,8 @@ import {
   issueLabel,
   ISSUE_LABELS,
   localDay,
+  onboardingProgress,
+  ONBOARDING_STEPS,
   relativeTime,
   RESOURCE_LABELS,
   SAFETY_ISSUES,
@@ -91,6 +93,31 @@ function dateParams(filters, fromKey, toKey, apiFrom, apiTo) {
   return { [apiFrom]: dayStartIso(filters[fromKey]), [apiTo]: dayEndIso(filters[toKey]) };
 }
 
+/**
+ * Lists hide rows that involve internal (Fluxgo team or test) members by default.
+ * The toggle stays on when presets change. The members table can also show internal members only.
+ */
+const internalToggle = { type: 'toggle', key: 'internal', label: 'Show internal', value: 'include', primary: true, sticky: true, chipLabel: 'Internal', chipLabels: { include: 'Shown', only: 'Only internal' } };
+
+/** A small tag next to a member name when the row involves an internal member. */
+export function InternalTag({ show }) {
+  return show ? <span className="ax-internal-tag" title="Fluxgo team or test account">Internal</span> : null;
+}
+
+function OnboardingCell({ row }) {
+  if (row.status === 'DELETED') return <span className="ax-muted">—</span>;
+  const progress = onboardingProgress(row.onboardingStep);
+  if (!progress) return <span className="ax-muted">—</span>;
+  if (progress.completed) return <Badge tone="success">Completed</Badge>;
+  return <span className="ax-onboarding" title={`${progress.doneCount} of 6 steps done`}><span>Done: {progress.done}</span><small>Next: {progress.next}</small></span>;
+}
+
+function onboardingCsv(row) {
+  const progress = onboardingProgress(row.onboardingStep);
+  if (!progress) return '';
+  return progress.completed ? 'Completed' : `Done: ${progress.done}; Next: ${progress.next}`;
+}
+
 const today = () => localDay(0);
 const weekAgo = () => localDay(-6);
 
@@ -104,7 +131,13 @@ export const RECORD_SECTIONS = {
     searchPlaceholder: 'Name, mobile, email, or member ID',
     defaultSort: { key: 'createdAt', order: 'desc' },
     filters: [
-      { type: 'select', key: 'status', label: 'Account', options: statusOptions(['ACTIVE', 'SUSPENDED', 'DELETED']), primary: true, anyLabel: 'All accounts' },
+      { type: 'select', key: 'status', label: 'Account', options: [{ value: 'NOT_DELETED', label: 'Not deleted' }, ...statusOptions(['ACTIVE', 'SUSPENDED', 'DELETED'])], primary: true, anyLabel: 'All accounts' },
+      internalToggle,
+      { type: 'select', key: 'onboarding', label: 'Onboarding', options: [
+        { value: 'COMPLETE', label: 'Completed' },
+        { value: 'INCOMPLETE', label: 'Not completed' },
+        ...ONBOARDING_STEPS.map((step) => ({ value: step.value, label: `Stopped after ${step.done.toLowerCase()}` })),
+      ] },
       { type: 'select', key: 'workEmailStatus', label: 'Work email', options: [...statusOptions(['VERIFIED', 'PENDING', 'REVOKED']), { value: 'NONE', label: 'Not added' }] },
       { type: 'boolean', key: 'hasVehicle', label: 'Vehicle', yes: 'Has a vehicle', no: 'No vehicle' },
       { type: 'select', key: 'intent', label: 'Joined to', options: statusOptions(['TAKE_RIDE', 'PUBLISH_RIDE']) },
@@ -116,20 +149,28 @@ export const RECORD_SECTIONS = {
       { label: 'Work email verified', filters: { workEmailStatus: 'VERIFIED' } },
       { label: 'No work email', filters: { workEmailStatus: 'NONE' } },
       { label: 'Suspended', filters: { status: 'SUSPENDED' } },
+      { label: 'Not deleted', filters: { status: 'NOT_DELETED' } },
+      { label: 'Onboarding not completed', filters: { status: 'NOT_DELETED', onboarding: 'INCOMPLETE' } },
+      { label: 'Internal only', filters: { internal: 'only' } },
     ],
     toParams: (filters) => ({
       query: filters.query,
       status: filters.status,
+      internal: filters.internal,
+      onboardingStep: filters.onboarding && filters.onboarding !== 'INCOMPLETE' ? filters.onboarding : undefined,
+      onboardingCompleted: filters.onboarding === 'INCOMPLETE' ? 'false' : undefined,
       workEmailStatus: filters.workEmailStatus,
       hasVehicle: filters.hasVehicle,
       intent: filters.intent,
       ...dateParams(filters, 'joinedFrom', 'joinedTo', 'createdFrom', 'createdTo'),
     }),
     columns: ({ now }) => [
-      { key: 'name', label: 'Member', width: 230, locked: true, sortKey: 'name', defaultOrder: 'asc', render: (row) => <span className="ax-person"><Avatar name={row.name} size="sm" /><span><strong>{display(row.name)}</strong></span></span>, csv: (row) => row.name },
+      { key: 'name', label: 'Member', width: 230, locked: true, sortKey: 'name', defaultOrder: 'asc', render: (row) => <span className="ax-person"><Avatar name={row.name} size="sm" /><span><strong>{display(row.name)}</strong><InternalTag show={row.isInternal} /></span></span>, csv: (row) => row.name },
       { key: 'mobile', label: 'Mobile', width: 190, render: (row) => <Mono value={row.mobile} /> },
       { key: 'personalEmail', label: 'Email', width: 210, render: (row) => row.personalEmail ? <span className="ax-truncate" title={row.personalEmail}>{row.personalEmail}</span> : <span className="ax-muted">—</span> },
       { key: 'status', label: 'Account', width: 120, render: (row) => <Badge value={row.status} /> },
+      { key: 'onboardingStep', label: 'Onboarding', width: 200, sortKey: 'onboardingStep', render: (row) => <OnboardingCell row={row} />, csv: onboardingCsv },
+      { key: 'isInternal', label: 'Internal', width: 100, render: (row) => (row.isInternal ? <Badge tone="neutral">Internal</Badge> : <span className="ax-muted">No</span>), csv: (row) => (row.isInternal ? 'Yes' : 'No') },
       { key: 'workEmailStatus', label: 'Work email', width: 130, render: (row) => row.workEmailStatus ? <Badge value={row.workEmailStatus} /> : <span className="ax-muted">Not added</span> },
       { key: 'vehicleCount', label: 'Vehicles', width: 100, align: 'end', sortKey: 'vehicleCount', render: (row) => formatNumber(row.vehicleCount) },
       { key: 'tripCount', label: 'Rides', width: 90, align: 'end', sortKey: 'tripCount', render: (row) => formatNumber(row.tripCount) },
@@ -147,6 +188,7 @@ export const RECORD_SECTIONS = {
     defaultSort: { key: 'departureAt', order: 'desc' },
     filters: [
       { type: 'select', key: 'status', label: 'Status', options: statusOptions(['PUBLISHED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'DRAFT']), primary: true, anyLabel: 'All statuses' },
+      internalToggle,
       { type: 'dateRange', key: 'departure', label: 'Departure', fromKey: 'departFrom', toKey: 'departTo' },
       { type: 'text', key: 'originCity', label: 'From', placeholder: 'City or place' },
       { type: 'text', key: 'destinationCity', label: 'To', placeholder: 'City or place' },
@@ -169,12 +211,13 @@ export const RECORD_SECTIONS = {
       bookingMode: filters.bookingMode,
       hasBookings: filters.hasBookings,
       driverUserId: filters.driverUserId,
+      internal: filters.internal,
       ...dateParams(filters, 'departFrom', 'departTo', 'departureFrom', 'departureTo'),
     }),
     columns: ({ now, open }) => [
       { key: 'publicId', label: 'Reference', width: 150, locked: true, render: (row) => <Mono value={row.publicId} /> },
       { key: 'route', label: 'Route', width: 280, render: (row) => <span className="ax-route" title={`${row.origin} → ${row.destination}`}><span>{row.origin}</span><Icon name="arrowRight" size={12} /><span>{row.destination}</span></span>, csv: (row) => `${row.origin} → ${row.destination}` },
-      { key: 'driverName', label: 'Driver', width: 170, render: (row) => <RecordLink onOpen={() => open('member', row.driverUserId)}>{display(row.driverName)}</RecordLink> },
+      { key: 'driverName', label: 'Driver', width: 170, render: (row) => <><RecordLink onOpen={() => open('member', row.driverUserId)}>{display(row.driverName)}</RecordLink><InternalTag show={row.isInternal} /></>, csv: (row) => row.driverName },
       { key: 'departureAt', label: 'Departure', width: 180, sortKey: 'departureAt', render: (row) => <When value={row.departureAt} now={now} />, csv: (row) => row.departureAt },
       { key: 'status', label: 'Status', width: 130, render: (row) => <Badge value={row.status} /> },
       { key: 'seats', label: 'Seats booked', width: 140, sortKey: 'seatsAvailable', defaultOrder: 'asc', render: (row) => <Seats total={row.seatsTotal} available={row.seatsAvailable} />, csv: (row) => `${row.seatsTotal - row.seatsAvailable}/${row.seatsTotal}` },
@@ -193,6 +236,7 @@ export const RECORD_SECTIONS = {
     defaultSort: { key: 'createdAt', order: 'desc' },
     filters: [
       { type: 'select', key: 'status', label: 'Status', options: statusOptions(['REQUESTED', 'CONFIRMED', 'IN_RIDE', 'COMPLETED', 'REJECTED', 'CANCELLED_BY_PASSENGER', 'CANCELLED_BY_DRIVER', 'PAYMENT_PENDING']), primary: true, anyLabel: 'All statuses' },
+      internalToggle,
       { type: 'dateRange', key: 'booked', label: 'Booked', fromKey: 'bookedFrom', toKey: 'bookedTo' },
       { type: 'dateRange', key: 'departure', label: 'Ride departure', fromKey: 'departFrom', toKey: 'departTo' },
       { type: 'entity', key: 'memberId', label: 'Booker', labelKey: 'memberName' },
@@ -209,6 +253,7 @@ export const RECORD_SECTIONS = {
       status: filters.status,
       memberId: filters.memberId,
       tripId: filters.tripId,
+      internal: filters.internal,
       ...dateParams(filters, 'bookedFrom', 'bookedTo', 'createdFrom', 'createdTo'),
       ...dateParams(filters, 'departFrom', 'departTo', 'departureFrom', 'departureTo'),
     }),
@@ -216,7 +261,7 @@ export const RECORD_SECTIONS = {
       { key: 'publicId', label: 'Reference', width: 150, locked: true, render: (row) => <Mono value={row.publicId} /> },
       { key: 'tripPublicId', label: 'Ride', width: 150, render: (row) => <RecordLink onOpen={() => open('trip', row.tripId)} title="Open ride"><span className="ax-mono">{row.tripPublicId}</span></RecordLink> },
       { key: 'route', label: 'Pickup → drop', width: 230, render: (row) => <span className="ax-truncate" title={row.route}>{row.route.replace(' to ', ' → ')}</span> },
-      { key: 'bookedByName', label: 'Booker', width: 170, render: (row) => <RecordLink onOpen={() => open('member', row.bookedByUserId)}>{display(row.bookedByName)}</RecordLink> },
+      { key: 'bookedByName', label: 'Booker', width: 170, render: (row) => <><RecordLink onOpen={() => open('member', row.bookedByUserId)}>{display(row.bookedByName)}</RecordLink><InternalTag show={row.isInternal} /></>, csv: (row) => row.bookedByName },
       { key: 'passengerCount', label: 'Seats', width: 80, align: 'end', sortKey: 'passengerCount', render: (row) => formatNumber(row.passengerCount) },
       { key: 'status', label: 'Status', width: 170, render: (row) => <Badge value={row.status} /> },
       { key: 'totalPrice', label: 'Total', width: 100, align: 'end', sortKey: 'totalPrice', render: (row) => formatMoney(row.totalPrice) },
@@ -235,6 +280,7 @@ export const RECORD_SECTIONS = {
     defaultFilters: { issues: 'SAFETY' },
     filters: [
       { type: 'select', key: 'issues', label: 'Show', options: [{ value: 'SAFETY', label: 'Safety issues' }, { value: 'ANY', label: 'Any issue' }], primary: true, anyLabel: 'All reviews' },
+      internalToggle,
       { type: 'select', key: 'issueCode', label: 'Issue', options: Object.keys(ISSUE_LABELS).map((code) => ({ value: code, label: issueLabel(code) })) },
       { type: 'select', key: 'maxRating', label: 'Rating', options: [1, 2, 3, 4].map((value) => ({ value: String(value), label: `${value} star${value === 1 ? '' : 's'} or lower` })) },
       { type: 'select', key: 'direction', label: 'Written by', options: [{ value: 'PASSENGER_TO_DRIVER', label: 'Passengers about drivers' }, { value: 'DRIVER_TO_PASSENGER', label: 'Drivers about passengers' }] },
@@ -254,13 +300,14 @@ export const RECORD_SECTIONS = {
       maxRating: filters.maxRating,
       direction: filters.direction,
       memberId: filters.memberId,
+      internal: filters.internal,
       ...dateParams(filters, 'submittedFrom', 'submittedTo', 'submittedFrom', 'submittedTo'),
     }),
     columns: ({ now, open }) => [
       { key: 'submittedAt', label: 'Submitted', width: 170, sortKey: 'submittedAt', render: (row) => <When value={row.submittedAt} now={now} />, csv: (row) => row.submittedAt },
       { key: 'rating', label: 'Rating', width: 90, sortKey: 'rating', defaultOrder: 'asc', render: (row) => <Stars rating={row.rating} /> },
       { key: 'issueCodes', label: 'Issues', width: 330, render: (row) => <IssueChips codes={row.issueCodes} />, csv: (row) => row.issueCodes.map(issueLabel).join('; ') },
-      { key: 'reviewerName', label: 'From', width: 160, render: (row) => <RecordLink onOpen={() => open('member', row.reviewerUserId)}>{display(row.reviewerName)}</RecordLink> },
+      { key: 'reviewerName', label: 'From', width: 160, render: (row) => <><RecordLink onOpen={() => open('member', row.reviewerUserId)}>{display(row.reviewerName)}</RecordLink><InternalTag show={row.isInternal} /></>, csv: (row) => row.reviewerName },
       { key: 'revieweeName', label: 'About', width: 160, render: (row) => <RecordLink onOpen={() => open('member', row.revieweeUserId)}>{display(row.revieweeName)}</RecordLink> },
       { key: 'direction', label: 'Direction', width: 170, defaultHidden: true, render: (row) => statusLabel(row.direction) },
       { key: 'comment', label: 'Comment', width: 280, render: (row) => row.comment ? <span className="ax-truncate" title={row.comment}>{row.comment}</span> : <span className="ax-muted">No comment</span> },
@@ -277,6 +324,7 @@ export const RECORD_SECTIONS = {
     defaultSort: { key: 'createdAt', order: 'desc' },
     filters: [
       { type: 'select', key: 'source', label: 'Show', options: [{ value: 'manual', label: 'Awaiting recheck (added by hand)' }, { value: 'provider', label: 'Checked by the RC provider' }], primary: true, anyLabel: 'All vehicles' },
+      internalToggle,
       { type: 'select', key: 'verificationStatus', label: 'Check result', options: statusOptions(['VERIFIED', 'PENDING', 'REJECTED', 'FAILED', 'EXPIRED']) },
       { type: 'select', key: 'status', label: 'Vehicle', options: [{ value: 'ACTIVE', label: 'Active' }, { value: 'INACTIVE', label: 'Removed by the member' }] },
       { type: 'dateRange', key: 'added', label: 'Added', fromKey: 'addedFrom', toKey: 'addedTo' },
@@ -292,12 +340,13 @@ export const RECORD_SECTIONS = {
       source: filters.source,
       verificationStatus: filters.verificationStatus,
       status: filters.status,
+      internal: filters.internal,
       ...dateParams(filters, 'addedFrom', 'addedTo', 'createdFrom', 'createdTo'),
     }),
     columns: ({ now, open }) => [
       { key: 'registrationNumber', label: 'Registration', width: 150, locked: true, sortKey: 'registrationNumber', defaultOrder: 'asc', render: (row) => <Mono value={row.registrationNumber} /> },
       { key: 'vehicle', label: 'Vehicle', width: 230, render: (row) => <span><strong>{row.make} {row.model}</strong>{row.color ? <span className="ax-muted"> · {row.color}</span> : null}</span>, csv: (row) => `${row.make} ${row.model}` },
-      { key: 'memberName', label: 'Owner', width: 170, render: (row) => <RecordLink onOpen={() => open('member', row.memberId)}>{display(row.memberName)}</RecordLink> },
+      { key: 'memberName', label: 'Owner', width: 170, render: (row) => <><RecordLink onOpen={() => open('member', row.memberId)}>{display(row.memberName)}</RecordLink><InternalTag show={row.isInternal} /></>, csv: (row) => row.memberName },
       { key: 'verificationStatus', label: 'Check', width: 190, render: (row) => <span className="ax-badge-row"><Badge value={row.verificationStatus} />{row.isManual ? <Badge tone="warning" dot={false}>Added by hand</Badge> : null}</span>, csv: (row) => `${row.verificationStatus}${row.isManual ? ' (manual)' : ''}` },
       { key: 'checkedAt', label: 'Last check', width: 170, sortKey: 'checkedAt', render: (row) => <When value={row.checkedAt} now={now} />, csv: (row) => row.checkedAt },
       { key: 'rcStatus', label: 'Check detail', width: 170, defaultHidden: true, render: (row) => row.rcStatus ? <span className="ax-mono ax-small">{row.rcStatus}</span> : <span className="ax-muted">—</span> },

@@ -10,6 +10,8 @@ import {
   formatMoney,
   formatNumber,
   issueLabel,
+  ONBOARDING_STEP_TOTAL,
+  onboardingProgress,
   plural,
   relativeTime,
   RESOURCE_LABELS,
@@ -118,11 +120,13 @@ function MemberPanel({ id, seed, onClose, onBack, open, navigate }) {
   const now = useNow();
   const { data, error, loading, reload } = useRecord(`/admin/members/${encodeURIComponent(id)}`, 'member', ['members', 'trips', 'bookings', 'support', 'reviews', 'vehicles']);
   const reviews = data?.reviewsReceived;
+  // Lists hide internal members by default. Keep this member's own records visible.
+  const internalScope = data?.isInternal ? { internal: 'include' } : {};
   return (
     <>
       <PanelHeader kind="member" title={display(data?.name || seed?.name || 'Member')} avatar={data?.name || seed?.name}
         subtitle={data ? `Joined ${relativeTime(data.createdAt, now)} · ${statusLabel(data.onboardingIntent)}` : null}
-        badges={data ? <><Badge value={data.status} />{data.workEmailStatus ? <Badge value={data.workEmailStatus}>Work email {statusLabel(data.workEmailStatus).toLowerCase()}</Badge> : <Badge tone="neutral">No work email</Badge>}</> : null}
+        badges={data ? <><Badge value={data.status} />{data.isInternal ? <Badge tone="neutral" title="Fluxgo team or test account. Lists hide this member by default.">Internal</Badge> : null}{data.workEmailStatus ? <Badge value={data.workEmailStatus}>Work email {statusLabel(data.workEmailStatus).toLowerCase()}</Badge> : <Badge tone="neutral">No work email</Badge>}</> : null}
         onClose={onClose} onBack={onBack} linkParams={{ open: `member:${id}` }} />
       <PanelState loading={loading} error={error} data={data} onRetry={reload}>
         {data ? (
@@ -133,10 +137,10 @@ function MemberPanel({ id, seed, onClose, onBack, open, navigate }) {
               {data.personalEmail ? <a className="ax-contact" href={`mailto:${data.personalEmail}`}><Icon name="mail" size={14} /><span>{data.personalEmail}</span></a> : null}
             </div>
             <div className="ax-stat-grid">
-              <StatTile label="Rides as driver" value={formatNumber(data.tripCount)} onClick={data.tripCount ? () => navigate('trips', { driverUserId: data.id, driverName: data.name || 'Member' }) : undefined} />
-              <StatTile label="Bookings" value={formatNumber(data.bookingCount)} onClick={data.bookingCount ? () => navigate('bookings', { memberId: data.id, memberName: data.name || 'Member' }) : undefined} />
-              <StatTile label={reviews?.count ? `Rating · ${plural(reviews.count, 'review')}` : 'No reviews yet'} value={reviews?.averageRating ? reviews.averageRating.toFixed(1) : '—'} onClick={reviews?.count ? () => navigate('safety', { memberId: data.id, memberName: data.name || 'Member' }) : undefined} />
-              <StatTile label="Safety reports" value={formatNumber(reviews?.safetyReports ?? 0)} tone={reviews?.safetyReports ? 'danger' : undefined} onClick={reviews?.safetyReports ? () => navigate('safety', { issues: 'SAFETY', memberId: data.id, memberName: data.name || 'Member' }) : undefined} />
+              <StatTile label="Rides as driver" value={formatNumber(data.tripCount)} onClick={data.tripCount ? () => navigate('trips', { driverUserId: data.id, driverName: data.name || 'Member', ...internalScope }) : undefined} />
+              <StatTile label="Bookings" value={formatNumber(data.bookingCount)} onClick={data.bookingCount ? () => navigate('bookings', { memberId: data.id, memberName: data.name || 'Member', ...internalScope }) : undefined} />
+              <StatTile label={reviews?.count ? `Rating · ${plural(reviews.count, 'review')}` : 'No reviews yet'} value={reviews?.averageRating ? reviews.averageRating.toFixed(1) : '—'} onClick={reviews?.count ? () => navigate('safety', { memberId: data.id, memberName: data.name || 'Member', ...internalScope }) : undefined} />
+              <StatTile label="Safety reports" value={formatNumber(reviews?.safetyReports ?? 0)} tone={reviews?.safetyReports ? 'danger' : undefined} onClick={reviews?.safetyReports ? () => navigate('safety', { issues: 'SAFETY', memberId: data.id, memberName: data.name || 'Member', ...internalScope }) : undefined} />
               <StatTile label="Blocked by members" value={formatNumber(data.blocks?.blockedByOthers ?? 0)} tone={data.blocks?.blockedByOthers ? 'warning' : undefined} />
               <StatTile label="Issue reports" value={formatNumber(reviews?.issueReports ?? 0)} />
             </div>
@@ -147,6 +151,7 @@ function MemberPanel({ id, seed, onClose, onBack, open, navigate }) {
                 <Detail label="Gender">{data.gender ? statusLabel(data.gender) : null}</Detail>
                 <Detail label="Date of birth">{data.dob}</Detail>
                 <Detail label="Personal email">{data.personalEmailStatus ? <Badge value={data.personalEmailStatus} /> : 'Not added'}</Detail>
+                <Detail label="Onboarding"><OnboardingDetail member={data} /></Detail>
                 <Detail label="Updated">{formatDateTime(data.updatedAt)}</Detail>
               </dl>
             </Section>
@@ -158,7 +163,7 @@ function MemberPanel({ id, seed, onClose, onBack, open, navigate }) {
                 </li>
               )} />
             </Section>
-            <Section title="Recent rides as driver" count={data.tripCount} action={data.tripCount > (data.recentTrips?.length || 0) ? <Button size="sm" variant="ghost" iconRight="arrowRight" onClick={() => navigate('trips', { driverUserId: data.id, driverName: data.name || 'Member' })}>All rides</Button> : null}>
+            <Section title="Recent rides as driver" count={data.tripCount} action={data.tripCount > (data.recentTrips?.length || 0) ? <Button size="sm" variant="ghost" iconRight="arrowRight" onClick={() => navigate('trips', { driverUserId: data.id, driverName: data.name || 'Member', ...internalScope })}>All rides</Button> : null}>
               <MiniList items={data.recentTrips} empty="No rides published." render={(trip) => (
                 <li key={trip.id}><button type="button" className="ax-mini-item" onClick={() => open('trip', trip.id)}>
                   <span className="ax-mini-main"><strong>{trip.origin} → {trip.destination}</strong><span className="ax-muted">{formatDateTime(trip.departureAt)} · {trip.seatsTotal - trip.seatsAvailable}/{trip.seatsTotal} booked</span></span>
@@ -166,7 +171,7 @@ function MemberPanel({ id, seed, onClose, onBack, open, navigate }) {
                 </button></li>
               )} />
             </Section>
-            <Section title="Recent bookings" count={data.bookingCount} action={data.bookingCount > (data.recentBookings?.length || 0) ? <Button size="sm" variant="ghost" iconRight="arrowRight" onClick={() => navigate('bookings', { memberId: data.id, memberName: data.name || 'Member' })}>All bookings</Button> : null}>
+            <Section title="Recent bookings" count={data.bookingCount} action={data.bookingCount > (data.recentBookings?.length || 0) ? <Button size="sm" variant="ghost" iconRight="arrowRight" onClick={() => navigate('bookings', { memberId: data.id, memberName: data.name || 'Member', ...internalScope })}>All bookings</Button> : null}>
               <MiniList items={data.recentBookings} empty="No bookings." render={(booking) => (
                 <li key={booking.id}><button type="button" className="ax-mini-item" onClick={() => open('booking', booking.id)}>
                   <span className="ax-mini-main"><strong>{booking.route.replace(' to ', ' → ')}</strong><span className="ax-muted">{formatDateTime(booking.departureAt)} · {plural(booking.passengerCount, 'seat')} · {formatMoney(booking.totalPrice)}</span></span>
@@ -185,6 +190,7 @@ function MemberPanel({ id, seed, onClose, onBack, open, navigate }) {
             <div className="ax-panel-actions">
               <Button icon="bell" onClick={() => navigate('notify', { to: data.id, toName: data.name || data.mobile })} disabled={data.status !== 'ACTIVE'}>Send a notification</Button>
               <MemberStatusAction member={data} onDone={reload} />
+              <MemberInternalAction member={data} onDone={reload} />
             </div>
           </div>
         ) : null}
@@ -307,6 +313,57 @@ function BookingPanel({ id, seed, onClose, onBack, open }) {
 }
 
 const ACTIVE_BOOKING_STATUSES = new Set(['REQUESTED', 'CONFIRMED']);
+
+function OnboardingDetail({ member }) {
+  if (member.status === 'DELETED') return null;
+  const progress = onboardingProgress(member.onboardingStep);
+  if (!progress) return null;
+  if (progress.completed) return <Badge tone="success">Completed</Badge>;
+  return <span>{progress.doneCount} of {ONBOARDING_STEP_TOTAL} steps done · next: {progress.next.toLowerCase()}</span>;
+}
+
+/** Mark a member as internal (team or test account) or external. Lists hide internal members by default. */
+function MemberInternalAction({ member, onDone }) {
+  const notify = useToast();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const marking = !member.isInternal;
+  const close = () => { setOpen(false); setReason(''); };
+  const submit = async () => {
+    setBusy(true);
+    try {
+      await requestApi(`/admin/members/${encodeURIComponent(member.id)}/internal`, {
+        method: 'PATCH',
+        body: JSON.stringify({ isInternal: marking, reason: reason.trim() || undefined }),
+      });
+      notify(marking ? 'Marked as internal. Lists and counts now hide this member by default.' : 'Marked as external. Lists and counts include this member again.');
+      close();
+      await onDone?.();
+    } catch (requestError) {
+      if (!isSessionExpired(requestError)) notify(errorText(requestError), 'danger');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <>
+      <Button variant="ghost" onClick={() => setOpen(true)}>{marking ? 'Mark as internal' : 'Mark as external'}</Button>
+      <ConfirmDialog open={open} busy={busy} tone="primary"
+        title={marking ? `Mark ${display(member.name)} as internal?` : `Mark ${display(member.name)} as external?`}
+        confirmLabel={marking ? 'Mark as internal' : 'Mark as external'} onCancel={close} onConfirm={submit}
+        description={marking
+          ? 'Use this for Fluxgo team and test accounts. Lists, counts, and dashboards hide this member and their rides, bookings, vehicles, tickets, and reviews unless an admin turns on "Show internal". The app does not change for the member.'
+          : 'Lists, counts, and dashboards include this member and their activity again.'}>
+        <div className="ax-form-stack">
+          <Field label="Note (optional, goes to the audit log)" htmlFor="member-internal-reason">
+            <textarea id="member-internal-reason" rows={2} value={reason} onChange={(event) => setReason(event.target.value)} maxLength={500} placeholder={marking ? 'For example: team test account' : ''} data-autofocus />
+          </Field>
+        </div>
+      </ConfirmDialog>
+    </>
+  );
+}
 
 /** Suspend or reactivate a member. Suspension needs a reason. */
 function MemberStatusAction({ member, onDone }) {

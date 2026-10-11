@@ -2,6 +2,7 @@ const STATUS_LABELS = {
   ACTIVE: 'Active',
   SUSPENDED: 'Suspended',
   DELETED: 'Deleted',
+  NOT_DELETED: 'Not deleted',
   DRAFT: 'Draft',
   PUBLISHED: 'Published',
   IN_PROGRESS: 'In progress',
@@ -108,7 +109,31 @@ export const AUDIT_ACTION_LABELS = {
   SUPPORT_TICKET_ASSIGNED: 'Set a ticket owner',
   SUPPORT_TICKET_UNASSIGNED: 'Removed a ticket owner',
   SUPPORT_TICKET_NOTE_ADDED: 'Added an internal note',
+  MEMBER_MARKED_INTERNAL: 'Marked a member as internal',
+  MEMBER_MARKED_EXTERNAL: 'Marked a member as external',
 };
+
+/**
+ * Onboarding steps in app order. The API returns the next step to finish.
+ * Mobile sign-in is always done for an account.
+ */
+export const ONBOARDING_STEPS = [
+  { value: 'SOURCE', done: 'Mobile sign-in', next: 'Signup source' },
+  { value: 'PROFILE', done: 'Signup source', next: 'Profile details' },
+  { value: 'WORK_EMAIL', done: 'Profile details', next: 'Work email' },
+  { value: 'EMERGENCY_CONTACT', done: 'Work email', next: 'Emergency contact' },
+  { value: 'VEHICLE', done: 'Emergency contact', next: 'Vehicle' },
+];
+export const ONBOARDING_STEP_TOTAL = ONBOARDING_STEPS.length + 1;
+
+/** Describe the onboarding progress for a next-step value. */
+export function onboardingProgress(step) {
+  if (!step) return null;
+  if (step === 'COMPLETE') return { completed: true, doneCount: ONBOARDING_STEP_TOTAL, done: 'Vehicle', next: null };
+  const index = ONBOARDING_STEPS.findIndex((item) => item.value === step);
+  if (index < 0) return null;
+  return { completed: false, doneCount: index + 1, done: ONBOARDING_STEPS[index].done, next: ONBOARDING_STEPS[index].next };
+}
 
 export function auditActionLabel(action) {
   return AUDIT_ACTION_LABELS[action] || titleCase(action || '');
