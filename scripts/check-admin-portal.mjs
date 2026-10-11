@@ -55,6 +55,11 @@ const requiredMarkers = [
   "requestApi('/admin/dashboard/pulse')",
   'useLiveRefresh',
   'IDLE_AFTER_MS',
+  "type: 'toggle', key: 'internal'",
+  '/internal`',
+  "'NOT_DELETED'",
+  'onboardingProgress',
+  "requestApi('/admin/dashboard/summary' + scope)",
 ];
 
 const missing = requiredMarkers.filter((marker) => !text.includes(marker));

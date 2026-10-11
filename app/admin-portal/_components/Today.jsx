@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { errorText, isSessionExpired, requestApi } from '../_lib/api';
 import { auditActionLabel, display, formatDateTime, formatNumber, formatTime, plural, relativeTime, waitingFor } from '../_lib/format';
-import { useNow } from '../_lib/hooks';
+import { useNow, useStoredState } from '../_lib/hooks';
 import { LIVE_KEYS, useLiveRefresh } from '../_lib/live';
 import { Badge, Button, EmptyState, Icon, Skeleton } from './ui';
 
@@ -12,14 +12,19 @@ export function TodayView({ admin, openRecord, navigate, onAttention }) {
   const now = useNow();
   const [state, setState] = useState({ attention: null, summary: null, audit: [] });
   const [error, setError] = useState('');
+  // Counts and queues hide internal (team and test) members unless the admin turns this on.
+  const [showInternal, setShowInternal] = useStoredState('today:showInternal', false);
+  const scope = showInternal ? '?internal=include' : '';
+  // Open lists with the same internal setting as this dashboard.
+  const go = (target, extra = {}) => navigate(target, showInternal && target !== 'audit' ? { ...extra, internal: 'include' } : extra);
 
   // Load only the parts that match the changed data. With no list, load all three.
   const load = useCallback(async (changed) => {
     const want = (keys) => !changed || keys.some((key) => changed.includes(key));
     try {
       const [attention, summary, audit] = await Promise.all([
-        want(['support', 'trips', 'bookings', 'members', 'reviews', 'vehicles']) ? requestApi('/admin/dashboard/attention') : null,
-        want(['members', 'trips', 'bookings', 'support']) ? requestApi('/admin/dashboard/summary') : null,
+        want(['support', 'trips', 'bookings', 'members', 'reviews', 'vehicles']) ? requestApi('/admin/dashboard/attention' + scope) : null,
+        want(['members', 'trips', 'bookings', 'support']) ? requestApi('/admin/dashboard/summary' + scope) : null,
         want(['audit']) ? requestApi('/admin/audit?limit=6&offset=0') : null,
       ]);
       setState((current) => ({
@@ -32,7 +37,7 @@ export function TodayView({ admin, openRecord, navigate, onAttention }) {
     } catch (requestError) {
       if (!isSessionExpired(requestError)) setError(errorText(requestError));
     }
-  }, [onAttention]);
+  }, [onAttention, scope]);
 
   useEffect(() => { void load(); }, [load]);
   useLiveRefresh(LIVE_KEYS, (changed) => { void load(changed); });
@@ -51,29 +56,35 @@ export function TodayView({ admin, openRecord, navigate, onAttention }) {
           <h2>{greeting}{name ? `, ${name}` : ''}</h2>
           <p className="ax-muted">{new Date(now).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })} · {attention ? (tasks ? `${plural(tasks, 'item')} need you` : 'Nothing waits for you right now') : 'Loading…'}</p>
         </div>
+        <div className="ax-today-tools">
+          <label className="ax-check ax-filter-toggle" htmlFor="today-show-internal">
+            <input id="today-show-internal" type="checkbox" checked={Boolean(showInternal)} onChange={(event) => setShowInternal(event.target.checked)} />
+            <span>Show internal</span>
+          </label>
+        </div>
       </div>
       {error ? <div className="ax-inline-error" role="alert"><span>{error}</span><Button size="sm" onClick={() => load()}>Try again</Button></div> : null}
 
       <div className="ax-kpis">
-        <Kpi label="Members" value={summary?.members?.total} detail={attention ? `+${formatNumber(sum(attention.trends, 'newMembers'))} in 7 days` : null} onClick={() => navigate('members')} />
-        <Kpi label="Rides live now" value={attention?.trips.inProgress} detail={summary ? `${formatNumber(summary.trips?.published)} upcoming` : null} onClick={() => navigate('trips', { status: 'IN_PROGRESS' })} />
-        <Kpi label="Bookings, 7 days" value={attention ? sum(attention.trends, 'bookings') : undefined} detail={summary ? `${formatNumber(summary.bookings?.total)} all time` : null} onClick={() => navigate('bookings')} />
-        <Kpi label="Open tickets" value={summary?.support?.open} detail={attention ? (waiting ? `${waiting} waiting on us` : 'All replied') : null} tone={waiting ? 'warning' : undefined} onClick={() => navigate('support', { tab: 'open' })} />
+        <Kpi label="Members" value={summary?.members?.total} detail={attention ? `+${formatNumber(sum(attention.trends, 'newMembers'))} in 7 days` : null} onClick={() => go('members')} />
+        <Kpi label="Rides live now" value={attention?.trips.inProgress} detail={summary ? `${formatNumber(summary.trips?.published)} upcoming` : null} onClick={() => go('trips', { status: 'IN_PROGRESS' })} />
+        <Kpi label="Bookings, 7 days" value={attention ? sum(attention.trends, 'bookings') : undefined} detail={summary ? `${formatNumber(summary.bookings?.total)} all time` : null} onClick={() => go('bookings')} />
+        <Kpi label="Open tickets" value={summary?.support?.open} detail={attention ? (waiting ? `${waiting} waiting on us` : 'All replied') : null} tone={waiting ? 'warning' : undefined} onClick={() => go('support', { tab: 'open' })} />
       </div>
 
       <h3 className="ax-group-title">Needs attention</h3>
       <div className="ax-attention-grid">
         <AttentionCard icon="support" title="Waiting for a reply" count={attention?.support.awaitingReply} tone="warning" loading={!attention}
-          empty="Every open ticket has a reply." onAll={() => navigate('support')}
+          empty="Every open ticket has a reply." onAll={() => go('support')}
           items={attention?.support.items.map((item) => ({
             key: item.id,
             title: display(item.requesterName),
             meta: item.subject,
             side: <Badge tone="warning">{waitingFor(item.waitingSince, now)}</Badge>,
-            onClick: () => navigate('support', { ticket: item.id }),
+            onClick: () => go('support', { ticket: item.id }),
           }))} />
         <AttentionCard icon="clock" title="Departing in the next 2 hours" count={attention?.trips.departingSoon} loading={!attention}
-          empty="No rides leave in the next 2 hours." onAll={() => navigate('trips', { status: 'PUBLISHED', departFrom: todayKey(), departTo: todayKey() })}
+          empty="No rides leave in the next 2 hours." onAll={() => go('trips', { status: 'PUBLISHED', departFrom: todayKey(), departTo: todayKey() })}
           items={attention?.trips.departingSoonItems.map((trip) => ({
             key: trip.id,
             title: `${trip.origin} → ${trip.destination}`,
@@ -82,7 +93,7 @@ export function TodayView({ admin, openRecord, navigate, onAttention }) {
             onClick: () => openRecord('trip', trip.id),
           }))} />
         <AttentionCard icon="rides" title="Rides in progress" count={attention?.trips.inProgress} tone="info" loading={!attention}
-          empty="No rides are in progress." onAll={() => navigate('trips', { status: 'IN_PROGRESS' })}
+          empty="No rides are in progress." onAll={() => go('trips', { status: 'IN_PROGRESS' })}
           items={attention?.trips.inProgressItems.map((trip) => ({
             key: trip.id,
             title: `${trip.origin} → ${trip.destination}`,
@@ -91,7 +102,7 @@ export function TodayView({ admin, openRecord, navigate, onAttention }) {
             onClick: () => openRecord('trip', trip.id),
           }))} />
         <AttentionCard icon="bookings" title="Requests waiting for the driver" count={attention?.bookings.awaitingDriver} loading={!attention}
-          empty="No booking requests wait for a driver." onAll={() => navigate('bookings', { status: 'REQUESTED' })}
+          empty="No booking requests wait for a driver." onAll={() => go('bookings', { status: 'REQUESTED' })}
           items={attention?.bookings.items.map((booking) => ({
             key: booking.id,
             title: display(booking.bookedByName),
@@ -101,9 +112,9 @@ export function TodayView({ admin, openRecord, navigate, onAttention }) {
           }))} />
         <CountCard icon="shield" title="Safety reports, last 7 days" count={attention?.reviews.safetyReportsLast7Days} tone="danger" loading={!attention}
           detail={attention ? `${plural(attention.reviews.issueReportsLast7Days, 'review')} with any issue` : null}
-          action="Review reports" onClick={() => navigate('safety', { issues: 'SAFETY', submittedFrom: weekAgoKey() })} />
+          action="Review reports" onClick={() => go('safety', { issues: 'SAFETY', submittedFrom: weekAgoKey() })} />
         <CountCard icon="vehicles" title="Vehicles awaiting a recheck" count={attention?.vehicles.awaitingRecheck} loading={!attention}
-          detail="Added by hand. The system rechecks them every 6 hours." action="Open vehicles" onClick={() => navigate('vehicles', { source: 'manual', status: 'ACTIVE' })} />
+          detail="Added by hand. The system rechecks them every 6 hours." action="Open vehicles" onClick={() => go('vehicles', { source: 'manual', status: 'ACTIVE' })} />
       </div>
 
       <h3 className="ax-group-title">Last 7 days</h3>
@@ -118,7 +129,7 @@ export function TodayView({ admin, openRecord, navigate, onAttention }) {
 
       <div className="ax-group-title-row">
         <h3 className="ax-group-title">Recent admin activity</h3>
-        <Button size="sm" variant="ghost" iconRight="arrowRight" onClick={() => navigate('audit')}>Audit log</Button>
+        <Button size="sm" variant="ghost" iconRight="arrowRight" onClick={() => go('audit')}>Audit log</Button>
       </div>
       <div className="ax-card">
         {audit.length ? (

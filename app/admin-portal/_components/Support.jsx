@@ -53,7 +53,7 @@ export function SupportInbox({ params, setParams, openRecord, waitingCount }) {
     const id = ++sequence.current;
     if (!silent) setLoading(true);
     try {
-      const result = await requestApi(`/admin/support/tickets${queryString({ ...tab.params, ...(tab.mine ? { assignedAdminUserId: admin?.id } : {}), query: params.query, limit, offset: 0 })}`);
+      const result = await requestApi(`/admin/support/tickets${queryString({ ...tab.params, ...(tab.mine ? { assignedAdminUserId: admin?.id } : {}), query: params.query, internal: params.internal === 'include' ? 'include' : undefined, limit, offset: 0 })}`);
       if (id !== sequence.current) return;
       setItems(result?.items || []);
       setTotal(result?.total || 0);
@@ -64,7 +64,7 @@ export function SupportInbox({ params, setParams, openRecord, waitingCount }) {
     } finally {
       if (id === sequence.current) setLoading(false);
     }
-  }, [tab, params.query, limit, admin?.id]);
+  }, [tab, params.query, params.internal, limit, admin?.id]);
 
   useEffect(() => { void load(); }, [load]);
   useLiveRefresh(['support'], () => { void load({ silent: true }); });
@@ -101,6 +101,10 @@ export function SupportInbox({ params, setParams, openRecord, waitingCount }) {
             <input ref={searchRef} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Subject, reference, name, or mobile" aria-label="Search tickets" />
             {query ? <IconButton icon="close" label="Clear search" size={13} onClick={() => setQuery('')} /> : null}
           </div>
+          <label className="ax-check ax-filter-toggle" htmlFor="support-show-internal">
+            <input id="support-show-internal" type="checkbox" checked={params.internal === 'include'} onChange={(event) => setParams({ internal: event.target.checked ? 'include' : undefined })} />
+            <span>Show internal</span>
+          </label>
         </div>
         {error ? <div className="ax-inline-error" role="alert"><span>{error}</span><Button size="sm" onClick={() => load()}>Try again</Button></div> : null}
         <ul className="ax-ticket-list" ref={listRef}>
@@ -110,7 +114,7 @@ export function SupportInbox({ params, setParams, openRecord, waitingCount }) {
             <li key={ticket.id}>
               <button type="button" data-ticket={ticket.id} className={`ax-ticket${ticket.id === selectedId ? ' is-selected' : ''}${ticket.awaitingReply ? ' is-waiting' : ''}`} onClick={() => select(ticket.id)} aria-current={ticket.id === selectedId ? 'true' : undefined}>
                 <span className="ax-ticket-top">
-                  <strong>{display(ticket.requesterName)}</strong>
+                  <strong>{display(ticket.requesterName)}{ticket.isInternal ? <span className="ax-internal-tag">Internal</span> : null}</strong>
                   <time title={formatDateTime(ticket.lastMessageAt || ticket.updatedAt)}>{relativeTime(ticket.lastMessageAt || ticket.updatedAt, now)}</time>
                 </span>
                 <span className="ax-ticket-subject">{ticket.subject}</span>
