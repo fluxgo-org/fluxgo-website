@@ -111,7 +111,7 @@ export function RecordsView({ section, params, setParams, openRecord, selected, 
 
   return (
     <div className="ax-view">
-      <FilterBar config={resolvedConfig} filters={filters} onChange={updateFilters} searchRef={searchRef} />
+      {config.filters.length || config.search !== false ? <FilterBar config={resolvedConfig} filters={filters} onChange={updateFilters} searchRef={searchRef} /> : null}
       {error ? (
         <div className="ax-inline-error" role="alert"><span>{error}</span><Button size="sm" onClick={() => load()}>Try again</Button></div>
       ) : null}

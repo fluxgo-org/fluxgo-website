@@ -20,11 +20,12 @@ import {
   statusLabel,
 } from '../_lib/format';
 import { Avatar, Badge, Icon, Mono } from '../_components/ui';
+import { filterSummary } from '../_lib/audience';
 
 export const NAV_GROUPS = [
   { label: 'Workspace', items: ['today', 'support', 'safety'] },
   { label: 'Records', items: ['members', 'trips', 'bookings', 'vehicles'] },
-  { label: 'Outreach', items: ['notify'] },
+  { label: 'Outreach', items: ['notify', 'sends'] },
   { label: 'Administration', items: ['admins', 'audit'] },
 ];
 
@@ -37,6 +38,7 @@ export const SECTION_META = {
   bookings: { label: 'Bookings', icon: 'bookings', description: 'Seat bookings' },
   vehicles: { label: 'Vehicles', icon: 'vehicles', description: 'Every vehicle and its check' },
   notify: { label: 'Send notification', icon: 'bell', description: 'Offers and updates' },
+  sends: { label: 'Sent notifications', icon: 'send', description: 'Every send and who got it' },
   admins: { label: 'Admin users', icon: 'admins', description: 'Console access' },
   audit: { label: 'Audit log', icon: 'audit', description: 'Every admin action' },
 };
@@ -358,6 +360,30 @@ export const RECORD_SECTIONS = {
       { key: 'createdAt', label: 'Added', width: 170, sortKey: 'createdAt', render: (row) => <When value={row.createdAt} now={now} />, csv: (row) => row.createdAt },
     ],
   },
+  sends: {
+    label: 'Sent notifications',
+    endpoint: '/admin/notifications/sends',
+    liveKeys: ['audit'],
+    detailKind: 'send',
+    search: false,
+    defaultSort: null,
+    filters: [],
+    presets: [],
+    toParams: () => ({}),
+    columns: ({ now }) => [
+      { key: 'createdAt', label: 'Sent', width: 170, render: (row) => <When value={row.createdAt} now={now} />, csv: (row) => row.createdAt },
+      { key: 'title', label: 'Title', width: 260, locked: true, render: (row) => <strong className="ax-truncate" title={row.title}>{display(row.title)}</strong> },
+      { key: 'kind', label: 'Type', width: 100, render: (row) => <Badge tone="neutral" dot={false}>{row.kind === 'OFFER' ? 'Offer' : 'Update'}</Badge>, csv: (row) => (row.kind === 'OFFER' ? 'Offer' : 'Update') },
+      { key: 'audience', label: 'Audience', width: 240, render: (row) => <SendAudience row={row} />, csv: (row) => (row.audience === 'filters' ? `Filtered: ${filterSummary(row.filters)}` : 'Specific members') },
+      { key: 'recipientCount', label: 'Recipients', width: 110, align: 'end', render: (row) => formatNumber(row.recipientCount) },
+      { key: 'push', label: 'Delivery', width: 110, render: (row) => (row.push === false ? 'In-app only' : 'Push'), csv: (row) => (row.push === false ? 'In-app only' : 'Push') },
+      { key: 'sent', label: 'Push sent', width: 100, align: 'end', render: (row) => (row.push === false ? <span className="ax-muted">—</span> : formatNumber(row.stats?.sent)), csv: (row) => row.stats?.sent },
+      { key: 'failed', label: 'Failed', width: 90, align: 'end', render: (row) => (row.stats?.failed ? <span className="ax-text-danger">{formatNumber(row.stats.failed)}</span> : <span className="ax-muted">0</span>), csv: (row) => row.stats?.failed },
+      { key: 'read', label: 'Read', width: 110, align: 'end', render: (row) => <ReadRate stats={row.stats} />, csv: (row) => row.stats?.read },
+      { key: 'adminUsername', label: 'Sent by', width: 190, render: (row) => <span className="ax-truncate">{display(row.adminUsername)}</span> },
+      { key: 'expiresAt', label: 'Expires', width: 150, defaultHidden: true, render: (row) => (row.expiresAt ? formatDateTime(row.expiresAt) : <span className="ax-muted">Never</span>), csv: (row) => row.expiresAt },
+    ],
+  },
   audit: {
     label: 'Audit log',
     endpoint: '/admin/audit',
@@ -403,7 +429,7 @@ export const RECORD_SECTIONS = {
 export function auditDetails(row) {
   if (row.reason) return row.reason;
   const meta = row.metadata || {};
-  if (row.action === 'NOTIFICATION_PUBLISHED') return `${formatNumber(meta.recipientCount)} recipients · ${statusLabel(meta.kind)}${meta.push === false ? ' · in-app only' : ' · push'}`;
+  if (row.action === 'NOTIFICATION_PUBLISHED') return `${formatNumber(meta.recipientCount)} recipients · ${statusLabel(meta.kind)}${meta.push === false ? ' · in-app only' : ' · push'}${meta.audience ? (meta.audience === 'members' ? ' · specific' : ' · filtered') : ''}`;
   return '—';
 }
 
@@ -419,4 +445,16 @@ function AuditResource({ row, open }) {
         : <span className="ax-mono ax-small" title={row.resourceId}>{row.resourceId.length > 18 ? `${row.resourceId.slice(0, 16)}…` : row.resourceId}</span>) : null}
     </span>
   );
+}
+
+/** Filtered or specific audience, with the filter summary. */
+export function SendAudience({ row }) {
+  if (row.audience !== 'filters') return <span className="ax-muted">Specific members</span>;
+  const summary = filterSummary(row.filters);
+  return <span className="ax-truncate" title={summary}><Badge tone="info" dot={false}>Filtered</Badge> <span className="ax-muted">{summary}</span></span>;
+}
+
+function ReadRate({ stats }) {
+  if (!stats?.total) return <span className="ax-muted">—</span>;
+  return <span title={`${formatNumber(stats.read)} of ${formatNumber(stats.total)} read`}>{formatNumber(stats.read)} <span className="ax-muted">· {Math.round((stats.read / stats.total) * 100)}%</span></span>;
 }

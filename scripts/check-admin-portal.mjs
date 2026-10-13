@@ -67,11 +67,36 @@ const requiredMarkers = [
   'avatarSrc={data ? data.profilePhotoUrl : seed?.profilePhotoUrl}',
   'profilePhotoUrl: member.profilePhotoUrl || null',
   'src={ticket.requesterPhotoUrl}',
+  "{ value: 'filters', label: 'Filtered members' }",
+  'audience: { filters }',
+  'toAudienceFilters',
+  'AUDIENCE_PRESETS',
+  "'lastActiveWithinDays' : 'inactiveForDays'",
+  "['gender', 'acquisitionSource', 'intent', 'workEmailStatus', 'driverRides', 'passengerRides']",
+  'filters.hasPhoto',
+  'filters.city',
+  "status: 'ACTIVE', ...JSON.parse(debouncedKey), limit: PREVIEW_SIZE",
+  'useDebounced(key, 300)',
+  'ax-aud-match',
+  "requestApi('/admin/notifications/sends?limit=6&offset=0')",
+  "endpoint: '/admin/notifications/sends'",
+  '`/admin/notifications/sends/${encodeURIComponent(id)}`',
+  '`/admin/notifications/sends/${encodeURIComponent(id)}/recipients`',
+  "if (kind === 'send') return <SendPanel",
+  'fluxgo-notification-',
 ];
+
+// Removed code: the browser-side loop that collected every active member before a send.
+const removedMarkers = ['collectAllActive', "value: 'all', label: 'All active members'"];
 
 const missing = requiredMarkers.filter((marker) => !text.includes(marker));
 if (missing.length) {
   console.error(`Admin portal check failed. Missing: ${missing.join(', ')}`);
+  process.exit(1);
+}
+const stale = removedMarkers.filter((marker) => text.includes(marker));
+if (stale.length) {
+  console.error(`Admin portal check failed. Removed code is back: ${stale.join(', ')}`);
   process.exit(1);
 }
 console.log('Admin portal source check passed.');

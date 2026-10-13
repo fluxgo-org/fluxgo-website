@@ -1,6 +1,20 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ACTIVITY_GROUPS,
+  AUDIENCE_PRESETS,
+  cleanForm,
+  filterSummary,
+  GENDER_OPTIONS,
+  INTENT_OPTIONS,
+  INTERNAL_OPTIONS,
+  ONBOARDING_OPTIONS,
+  RIDES_OPTIONS,
+  SOURCE_OPTIONS,
+  toAudienceFilters,
+  WORK_EMAIL_OPTIONS,
+} from '../_lib/audience';
 import { errorText, isSessionExpired, queryString, requestApi } from '../_lib/api';
 import { dayEndIso, display, formatDateTime, formatNumber, plural, relativeTime } from '../_lib/format';
 import { useDebounced, useNow } from '../_lib/hooks';
@@ -9,19 +23,47 @@ import { Avatar, Badge, Button, ConfirmDialog, EmptyState, Field, Icon, IconButt
 const TITLE_MAX = 160;
 const BODY_MAX = 2000;
 const BATCH_SIZE = 500;
+const PREVIEW_SIZE = 5;
 
 const TYPES = {
   ANNOUNCEMENT: { kind: 'ANNOUNCEMENT', category: 'UPDATES', label: 'Update', tab: 'Updates' },
   OFFER: { kind: 'OFFER', category: 'OFFERS', label: 'Offer', tab: 'Offers' },
 };
 
-export function NotifyView({ params, setParams, navigate }) {
+/** Count and preview the active members that match the filters. */
+function useAudienceMatch(filters, enabled) {
+  const key = JSON.stringify(filters);
+  const debouncedKey = useDebounced(key, 300);
+  const [state, setState] = useState({ key: null, total: null, items: [], error: '' });
+  const [loading, setLoading] = useState(false);
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    if (!enabled) return undefined;
+    let cancelled = false;
+    setLoading(true);
+    requestApi(`/admin/members${queryString({ status: 'ACTIVE', ...JSON.parse(debouncedKey), limit: PREVIEW_SIZE, offset: 0 })}`)
+      .then((result) => { if (!cancelled) setState({ key: debouncedKey, total: result?.total ?? 0, items: result?.items || [], error: '' }); })
+      .catch((requestError) => { if (!cancelled && !isSessionExpired(requestError)) setState((current) => ({ ...current, key: debouncedKey, error: errorText(requestError) })); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [debouncedKey, enabled, retry]);
+  const current = state.key === key;
+  return {
+    total: current && !state.error ? state.total : null,
+    items: state.items,
+    lastTotal: state.total,
+    error: current ? state.error : '',
+    counting: enabled && (loading || !current),
+    retry: () => setRetry((value) => value + 1),
+  };
+}
+
+export function NotifyView({ params, setParams, navigate, openRecord }) {
   const now = useNow();
   const notify = useToast();
   const [audience, setAudience] = useState('members');
   const [recipients, setRecipients] = useState([]);
-  const [activeTotal, setActiveTotal] = useState(null);
-  const [internalTotal, setInternalTotal] = useState(null);
+  const [form, setForm] = useState({});
   const [type, setType] = useState('ANNOUNCEMENT');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -34,6 +76,7 @@ export function NotifyView({ params, setParams, navigate }) {
 
   useEffect(() => {
     if (!params.to) return;
+    setAudience('members');
     setRecipients((current) => (current.some((item) => item.id === params.to) ? current : [...current, { id: params.to, name: params.toName || 'Member' }]));
     setParams({ to: undefined, toName: undefined });
     // Prefill once from a member panel link.
@@ -42,64 +85,53 @@ export function NotifyView({ params, setParams, navigate }) {
 
   const loadRecent = useCallback(async () => {
     try {
-      const result = await requestApi('/admin/audit?action=NOTIFICATION_PUBLISHED&limit=6&offset=0');
+      const result = await requestApi('/admin/notifications/sends?limit=6&offset=0');
       setRecent(result?.items || []);
     } catch { /* recent sends are optional */ }
   }, []);
-
   useEffect(() => { void loadRecent(); }, [loadRecent]);
-  useEffect(() => {
-    if (audience !== 'all' || activeTotal !== null) return;
-    // Internal members (Fluxgo team and test accounts) get notifications too. Lists hide them by default.
-    requestApi('/admin/members?status=ACTIVE&internal=include&limit=1&offset=0').then((result) => setActiveTotal(result?.total ?? 0)).catch(() => setActiveTotal(null));
-    requestApi('/admin/members?status=ACTIVE&internal=only&limit=1&offset=0').then((result) => setInternalTotal(result?.total ?? 0)).catch(() => setInternalTotal(null));
-  }, [audience, activeTotal]);
 
-  const count = audience === 'all' ? activeTotal || 0 : recipients.length;
-  const batches = Math.ceil(count / BATCH_SIZE);
-  const ready = title.trim() && body.trim() && count > 0;
+  const filtered = audience === 'filters';
+  const filters = useMemo(() => toAudienceFilters(form), [form]);
+  const match = useAudienceMatch(filters, filtered);
+  const count = filtered ? match.total || 0 : recipients.length;
+  const ready = title.trim() && body.trim() && count > 0 && (!filtered || !match.counting);
   const config = TYPES[type];
-
-  const collectAllActive = async () => {
-    const ids = [];
-    for (let offset = 0; ; offset += 100) {
-      const result = await requestApi(`/admin/members${queryString({ status: 'ACTIVE', internal: 'include', limit: 100, offset, sort: 'createdAt', order: 'asc' })}`);
-      (result?.items || []).forEach((member) => ids.push(member.id));
-      setProgress(`Collecting recipients: ${formatNumber(ids.length)} of ${formatNumber(result?.total || 0)}`);
-      if (!result?.hasMore) break;
-    }
-    return ids;
-  };
 
   const send = async () => {
     setSending(true);
     try {
-      const ids = audience === 'all' ? await collectAllActive() : recipients.map((item) => item.id);
       const key = `portal-${new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14)}-${Math.random().toString(36).slice(2, 8)}`;
+      const message = {
+        category: config.category,
+        kind: config.kind,
+        title: title.trim(),
+        body: body.trim(),
+        data: {},
+        push,
+        ...(expires ? { expiresAt: dayEndIso(expires) } : {}),
+      };
       let delivered = 0;
-      for (let index = 0; index < ids.length; index += BATCH_SIZE) {
-        const batch = ids.slice(index, index + BATCH_SIZE);
-        const batchNumber = index / BATCH_SIZE + 1;
-        setProgress(`Sending batch ${batchNumber} of ${Math.ceil(ids.length / BATCH_SIZE)}…`);
-        const result = await requestApi('/admin/notifications', {
-          method: 'POST',
-          body: JSON.stringify({
-            eventKey: ids.length > BATCH_SIZE ? `${key}-b${batchNumber}` : key,
-            recipientUserIds: batch,
-            category: config.category,
-            kind: config.kind,
-            title: title.trim(),
-            body: body.trim(),
-            data: {},
-            push,
-            ...(expires ? { expiresAt: dayEndIso(expires) } : {}),
-          }),
-        });
-        delivered += Number(result?.count || 0);
+      if (filtered) {
+        // One request for any audience size. The server finds the members and writes in bulk.
+        const result = await requestApi('/admin/notifications', { method: 'POST', body: JSON.stringify({ eventKey: key, audience: { filters }, ...message }) });
+        delivered = Number(result?.count || 0);
+      } else {
+        const ids = recipients.map((item) => item.id);
+        for (let index = 0; index < ids.length; index += BATCH_SIZE) {
+          const batchNumber = index / BATCH_SIZE + 1;
+          if (ids.length > BATCH_SIZE) setProgress(`Sending batch ${batchNumber} of ${Math.ceil(ids.length / BATCH_SIZE)}…`);
+          const result = await requestApi('/admin/notifications', {
+            method: 'POST',
+            body: JSON.stringify({ eventKey: ids.length > BATCH_SIZE ? `${key}-b${batchNumber}` : key, recipientUserIds: ids.slice(index, index + BATCH_SIZE), ...message }),
+          });
+          delivered += Number(result?.count || 0);
+        }
       }
       notify(`Sent to ${plural(delivered, 'member')}${push ? ' with push' : ' in the app only'}.`);
       setConfirming(false);
-      setTitle(''); setBody(''); setRecipients([]); setExpires('');
+      setTitle(''); setBody(''); setExpires('');
+      if (!filtered) setRecipients([]);
       void loadRecent();
     } catch (requestError) {
       if (!isSessionExpired(requestError)) notify(errorText(requestError), 'danger');
@@ -109,16 +141,23 @@ export function NotifyView({ params, setParams, navigate }) {
     }
   };
 
+  const footText = filtered
+    ? match.counting ? 'Counting members…' : match.error ? 'Members could not be counted' : count ? `${plural(count, 'recipient')} · ${push ? 'push now' : 'in-app only'}` : 'No members match the filters'
+    : count ? `${plural(count, 'recipient')} · ${push ? 'push now' : 'in-app only'}` : 'Add recipients to continue';
+
   return (
     <div className="ax-notify">
       <form className="ax-card ax-notify-form" onSubmit={(event) => { event.preventDefault(); if (ready) setConfirming(true); }}>
         <section className="ax-form-section">
           <h3>1. Who gets it</h3>
-          <Segmented label="Audience" value={audience} onChange={setAudience} options={[{ value: 'members', label: 'Specific members' }, { value: 'all', label: 'All active members' }]} />
-          {audience === 'members' ? (
-            <MemberPicker selected={recipients} onAdd={(member) => setRecipients((current) => (current.some((item) => item.id === member.id) ? current : [...current, member]))} onRemove={(id) => setRecipients((current) => current.filter((item) => item.id !== id))} />
+          <Segmented label="Audience" value={audience} onChange={setAudience} options={[{ value: 'members', label: 'Specific members' }, { value: 'filters', label: 'Filtered members' }]} />
+          {filtered ? (
+            <>
+              <AudienceFilters form={form} onChange={setForm} />
+              <MatchPreview match={match} />
+            </>
           ) : (
-            <p className="ax-note"><Icon name="members" size={14} />{activeTotal === null ? 'Counting active members…' : `${plural(activeTotal, 'active member')} get this${internalTotal ? `, with ${formatNumber(internalTotal)} internal` : ''}.`}{batches > 1 ? ` We send it in ${batches} batches of up to ${BATCH_SIZE}.` : ''}</p>
+            <MemberPicker selected={recipients} onAdd={(member) => setRecipients((current) => (current.some((item) => item.id === member.id) ? current : [...current, member]))} onRemove={(id) => setRecipients((current) => current.filter((item) => item.id !== id))} />
           )}
         </section>
         <section className="ax-form-section">
@@ -140,7 +179,7 @@ export function NotifyView({ params, setParams, navigate }) {
           </Field>
         </section>
         <div className="ax-form-foot">
-          <span className="ax-muted">{count ? `${plural(count, 'recipient')} · ${push ? 'push now' : 'in-app only'}` : 'Add recipients to continue'}</span>
+          <span className="ax-muted">{footText}</span>
           <Button variant="primary" type="submit" icon="send" disabled={!ready}>Review and send</Button>
         </div>
       </form>
@@ -165,14 +204,20 @@ export function NotifyView({ params, setParams, navigate }) {
           </div>
         </div>
         <div className="ax-card">
-          <div className="ax-card-title-row"><h3 className="ax-card-title">Recent sends</h3><Button size="sm" variant="ghost" onClick={() => navigate('audit', { action: 'NOTIFICATION_PUBLISHED' })}>All</Button></div>
+          <div className="ax-card-title-row"><h3 className="ax-card-title">Recent sends</h3><Button size="sm" variant="ghost" onClick={() => navigate('sends')}>All</Button></div>
           {recent.length ? (
-            <ul className="ax-activity">
+            <ul className="ax-activity ax-sends">
               {recent.map((row) => (
-                <li key={row.id}><div className="ax-activity-static">
-                  <span className="ax-activity-main"><strong>{formatNumber(row.metadata?.recipientCount)} members</strong> · {row.metadata?.kind === 'OFFER' ? 'Offer' : 'Update'}{row.metadata?.push === false ? ' · in-app' : ' · push'}<br /><span className="ax-muted">by {display(row.adminUsername)}</span></span>
-                  <time className="ax-muted" title={formatDateTime(row.createdAt)}>{relativeTime(row.createdAt, now)}</time>
-                </div></li>
+                <li key={row.id}>
+                  <button type="button" onClick={() => openRecord?.('send', row.id, row)}>
+                    <span className="ax-activity-main">
+                      <strong className="ax-truncate">{display(row.title)}</strong>
+                      <span className="ax-sends-meta">{row.kind === 'OFFER' ? 'Offer' : 'Update'} · {row.audience === 'filters' ? 'Filtered' : 'Specific'} · {plural(row.recipientCount || 0, 'member')} · {row.push === false ? 'in-app' : 'push'}</span>
+                      <span className="ax-muted ax-small">by {display(row.adminUsername)}</span>
+                    </span>
+                    <time className="ax-muted" title={formatDateTime(row.createdAt)}>{relativeTime(row.createdAt, now)}</time>
+                  </button>
+                </li>
               ))}
             </ul>
           ) : <EmptyState icon="bell" title="No notifications sent yet" />}
@@ -183,12 +228,123 @@ export function NotifyView({ params, setParams, navigate }) {
         onCancel={() => setConfirming(false)} onConfirm={send}
         description={<>{push ? 'Members get a push on their phones now.' : 'Members see this in the app only.'} You cannot undo this. The send goes to the audit log.</>}>
         <div className="ax-confirm-summary">
+          <span className="ax-confirm-audience"><Icon name={filtered ? 'filter' : 'members'} size={13} />{filtered ? filterSummary(filters) : recipients.slice(0, 3).map((item) => item.name).join(', ') + (recipients.length > 3 ? ` and ${formatNumber(recipients.length - 3)} more` : '')}</span>
           <Badge tone="neutral" dot={false}>{config.label}</Badge>
           <strong>{title}</strong>
           <p>{body}</p>
           {progress ? <p className="ax-muted" role="status">{progress}</p> : null}
         </div>
       </ConfirmDialog>
+    </div>
+  );
+}
+
+function Select({ id, label, value, onChange, options, groups, any = 'Any', wide = false }) {
+  return (
+    <label className={`ax-aud-field${wide ? ' is-wide' : ''}`} htmlFor={id}>
+      <span>{label}</span>
+      <select id={id} value={value || ''} onChange={(event) => onChange(event.target.value)} className={value ? 'is-set' : ''}>
+        <option value="">{any}</option>
+        {options ? options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>) : null}
+        {groups ? groups.map((group) => <optgroup key={group.label} label={group.label}>{group.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</optgroup>) : null}
+      </select>
+    </label>
+  );
+}
+
+/** The audience filter panel: quick presets, then grouped fields. */
+function AudienceFilters({ form, onChange }) {
+  const set = (key) => (value) => onChange((current) => ({ ...current, [key]: value }));
+  const active = cleanForm(form);
+  const activeCount = Object.keys(active).length;
+  const presetFilters = (preset) => cleanForm(preset.filters());
+  const isPreset = (preset) => {
+    const target = presetFilters(preset);
+    const { internal, ...rest } = active;
+    return Object.keys(target).length === Object.keys(rest).length && Object.entries(target).every(([key, value]) => rest[key] === value);
+  };
+  return (
+    <div className="ax-aud">
+      <div className="ax-aud-presets" role="group" aria-label="Quick audiences">
+        {AUDIENCE_PRESETS.map((preset) => {
+          const on = isPreset(preset);
+          return <button key={preset.label} type="button" className={`ax-preset${on ? ' is-active' : ''}`} aria-pressed={on}
+            onClick={() => onChange((current) => (on ? { internal: current.internal } : { internal: current.internal, ...preset.filters() }))}>{preset.label}</button>;
+        })}
+        {activeCount ? <button type="button" className="ax-chip-clear" onClick={() => onChange({})}>Clear</button> : null}
+      </div>
+
+      <fieldset className="ax-aud-group">
+        <legend>Profile</legend>
+        <div className="ax-aud-grid">
+          <Select id="aud-gender" label="Gender" value={form.gender} onChange={set('gender')} options={GENDER_OPTIONS} />
+          <fieldset className="ax-aud-field is-wide ax-aud-range">
+            <legend>Joined</legend>
+            <div>
+              <input type="date" aria-label="Joined on or after" value={form.joinedFrom || ''} max={form.joinedTo || undefined} onChange={(event) => set('joinedFrom')(event.target.value)} className={form.joinedFrom ? 'is-set' : ''} />
+              <span aria-hidden="true">–</span>
+              <input type="date" aria-label="Joined on or before" value={form.joinedTo || ''} min={form.joinedFrom || undefined} onChange={(event) => set('joinedTo')(event.target.value)} className={form.joinedTo ? 'is-set' : ''} />
+            </div>
+          </fieldset>
+          <Select id="aud-intent" label="Joined to" value={form.intent} onChange={set('intent')} options={INTENT_OPTIONS} />
+          <Select id="aud-source" label="Signup source" value={form.acquisitionSource} onChange={set('acquisitionSource')} options={SOURCE_OPTIONS} />
+          <Select id="aud-photo" label="Profile photo" value={form.hasPhoto} onChange={set('hasPhoto')} options={[{ value: 'true', label: 'Has photo' }, { value: 'false', label: 'No photo' }]} />
+        </div>
+      </fieldset>
+
+      <fieldset className="ax-aud-group">
+        <legend>Verification</legend>
+        <div className="ax-aud-grid">
+          <Select id="aud-work-email" label="Work email" value={form.workEmailStatus} onChange={set('workEmailStatus')} options={WORK_EMAIL_OPTIONS} />
+          <Select id="aud-vehicle" label="Vehicle" value={form.hasVehicle} onChange={set('hasVehicle')} options={[{ value: 'true', label: 'Has vehicle' }, { value: 'false', label: 'No vehicle' }]} />
+          <Select id="aud-onboarding" label="Onboarding" value={form.onboarding} onChange={set('onboarding')} options={ONBOARDING_OPTIONS} />
+        </div>
+      </fieldset>
+
+      <fieldset className="ax-aud-group">
+        <legend>Activity</legend>
+        <div className="ax-aud-grid">
+          <Select id="aud-activity" label="Last app use" value={form.activity} onChange={set('activity')} groups={ACTIVITY_GROUPS} wide />
+          <Select id="aud-driver" label="Rides as driver" value={form.driverRides} onChange={set('driverRides')} options={RIDES_OPTIONS} />
+          <Select id="aud-passenger" label="Rides as passenger" value={form.passengerRides} onChange={set('passengerRides')} options={RIDES_OPTIONS} />
+          <label className="ax-aud-field" htmlFor="aud-city">
+            <span>Ride city</span>
+            <input id="aud-city" value={form.city || ''} onChange={(event) => set('city')(event.target.value)} placeholder="Last 90 days" className={form.city ? 'is-set' : ''} autoComplete="off" />
+          </label>
+        </div>
+      </fieldset>
+
+      <div className="ax-aud-internal">
+        <span>Internal members</span>
+        <Segmented size="sm" label="Internal members" value={form.internal || 'include'} onChange={set('internal')} options={INTERNAL_OPTIONS} />
+      </div>
+    </div>
+  );
+}
+
+/** The live member count with the first few names. */
+function MatchPreview({ match }) {
+  if (match.error) {
+    return <div className="ax-aud-match is-error" role="alert"><Icon name="alert" size={15} /><span>{match.error}</span><Button size="sm" onClick={match.retry}>Try again</Button></div>;
+  }
+  const total = match.total ?? match.lastTotal;
+  if (total === null || total === undefined) {
+    return <div className="ax-aud-match" aria-busy="true"><span className="ax-spinner" aria-hidden="true" /><span className="ax-muted">Counting members…</span></div>;
+  }
+  const names = match.items.slice(0, PREVIEW_SIZE).map((member) => display(member.name || member.mobile));
+  const rest = total - names.length;
+  return (
+    <div className={`ax-aud-match${match.counting ? ' is-stale' : ''}${total === 0 ? ' is-empty' : ''}`} role="status" aria-busy={match.counting ? 'true' : 'false'}>
+      {total > 0 ? (
+        <span className="ax-avatar-stack" aria-hidden="true">
+          {match.items.slice(0, PREVIEW_SIZE).map((member) => <Avatar key={member.id} name={member.name} src={member.profilePhotoUrl} size="sm" />)}
+        </span>
+      ) : <Icon name="members" size={16} />}
+      <span className="ax-aud-match-text">
+        <strong>{total === 0 ? 'No members match' : `${formatNumber(total)} ${total === 1 ? 'member matches' : 'members match'}`}</strong>
+        <span className="ax-muted">{total === 0 ? 'Change or clear the filters.' : `${names.join(', ')}${rest > 0 ? ` and ${formatNumber(rest)} more` : ''}`}</span>
+      </span>
+      {match.counting ? <span className="ax-spinner" aria-label="Counting" /> : null}
     </div>
   );
 }

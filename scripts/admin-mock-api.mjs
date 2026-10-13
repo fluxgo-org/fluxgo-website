@@ -123,6 +123,61 @@ trips.forEach((trip) => {
   }
 });
 
+// Audience fields for notification filters. A separate random sequence keeps the other mock data the same.
+let audienceSeed = 7;
+const arand = () => { audienceSeed = (audienceSeed * 16807) % 2147483647; return (audienceSeed - 1) / 2147483646; };
+const apick = (list) => list[Math.floor(arand() * list.length)];
+const SOURCES = ['FRIEND_FAMILY', 'FRIEND_FAMILY', 'COLLEAGUE', 'COLLEAGUE', 'INSTAGRAM', 'WHATSAPP', 'YOUTUBE', 'LINKEDIN', 'GOOGLE_SEARCH', 'APP_STORE', 'OTHER', 'SKIPPED', null];
+const DAY_MS = minutes(60 * 24);
+members.forEach((member) => {
+  const roll = arand();
+  member.audienceGender = roll < 0.06 ? null : roll < 0.1 ? 'NON_BINARY' : member.gender === 'FEMALE' ? 'WOMAN' : 'MAN';
+  member.acquisitionSource = member.onboardingStep === 'SOURCE' ? null : apick(SOURCES);
+  const activity = arand();
+  const age = now - Date.parse(member.createdAt);
+  member.lastActiveAt = activity < 0.08 ? null : iso(-Math.min(age, Math.floor((activity < 0.55 ? arand() * 6 : activity < 0.8 ? 7 + arand() * 25 : 30 + arand() * 70) * DAY_MS)));
+  const since = now - 90 * DAY_MS;
+  const driven = trips.filter((trip) => trip.driverUserId === member.id);
+  const booked = bookings.filter((booking) => booking.bookedByUserId === member.id);
+  member.driverRidesCompleted = driven.filter((trip) => trip.status === 'COMPLETED').length;
+  member.passengerRidesCompleted = booked.filter((booking) => booking.status === 'COMPLETED').length;
+  const cities = new Set();
+  driven.filter((trip) => Date.parse(trip.departureAt) >= since && trip.status !== 'CANCELLED').forEach((trip) => { cities.add(trip.originCity); cities.add(trip.destinationCity); });
+  booked.filter((booking) => Date.parse(booking.tripDepartureAt) >= since && !booking.status.startsWith('CANCELLED')).forEach((booking) => { cities.add(booking.pickup.city); cities.add(booking.drop.city); });
+  member.rideCities = [...cities];
+});
+
+/** Check one member against the members list filters. Returns an error text for a bad combination. */
+function audienceError(params) {
+  if (params.get('lastActiveWithinDays') && params.get('inactiveForDays')) return 'Use lastActiveWithinDays or inactiveForDays, not both.';
+  for (const key of ['lastActiveWithinDays', 'inactiveForDays']) {
+    const value = params.get(key);
+    if (value && !(Number.isInteger(Number(value)) && Number(value) >= 1 && Number(value) <= 365)) return `${key} must be 1 to 365.`;
+  }
+  return null;
+}
+function memberMatches(member, params) {
+  const get = (key) => params.get(key);
+  if (!text(get('query'), member.name, member.mobile, member.personalEmail, member.id)) return false;
+  if (get('status') === 'NOT_DELETED' ? member.status === 'DELETED' : get('status') && member.status !== get('status')) return false;
+  if (get('onboardingStep') && member.onboardingStep !== get('onboardingStep')) return false;
+  if (get('onboardingCompleted') && member.onboardingCompleted !== (get('onboardingCompleted') === 'true')) return false;
+  if (get('workEmailStatus') && (get('workEmailStatus') === 'NONE' ? member.workEmailStatus : member.workEmailStatus !== get('workEmailStatus'))) return false;
+  if (get('hasVehicle') && (member.vehicleCount > 0) !== (get('hasVehicle') === 'true')) return false;
+  if (get('intent') && member.onboardingIntent !== get('intent')) return false;
+  if (!within(member.createdAt, get('createdFrom'), get('createdTo'))) return false;
+  if (get('gender') && (get('gender') === 'NONE' ? member.audienceGender : member.audienceGender !== get('gender'))) return false;
+  if (get('acquisitionSource') && (get('acquisitionSource') === 'NONE' ? member.acquisitionSource : member.acquisitionSource !== get('acquisitionSource'))) return false;
+  if (get('hasPhoto') && Boolean(member.profilePhotoUrl) !== (get('hasPhoto') === 'true')) return false;
+  const lastActive = member.lastActiveAt ? Date.parse(member.lastActiveAt) : null;
+  if (get('lastActiveWithinDays') && !(lastActive && lastActive >= now - Number(get('lastActiveWithinDays')) * DAY_MS)) return false;
+  if (get('inactiveForDays') && lastActive && lastActive >= now - Number(get('inactiveForDays')) * DAY_MS) return false;
+  if (get('driverRides') && (member.driverRidesCompleted > 0) !== (get('driverRides') === 'ANY')) return false;
+  if (get('passengerRides') && (member.passengerRidesCompleted > 0) !== (get('passengerRides') === 'ANY')) return false;
+  if (get('city') && !member.rideCities.some((city) => city.toLowerCase().includes(get('city').toLowerCase()))) return false;
+  return true;
+}
+
 const SUBJECTS = ['Driver did not arrive at pickup', 'Refund for cancelled ride', 'Cannot verify my work email', 'Change pickup point', 'App shows wrong departure time', 'Driver asked for extra money', 'Vehicle number does not match', 'How do I publish a ride?', 'Booking request not accepted', 'Report a passenger'];
 const tickets = Array.from({ length: 16 }, (_, index) => {
   const requester = members[(index * 5 + 3) % members.length];
@@ -169,6 +224,63 @@ for (let index = 0; index < 34; index += 1) {
   else addAudit(who, kind, 'support_ticket', ticket.id, -minutes(int(5, 60 * 24 * 6)), { reason: kind === 'SUPPORT_TICKET_CLOSED' ? 'Resolved on a call' : null });
 }
 audit.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+
+// Notification sends and their recipients.
+const sends = [];
+const FAIL_REASONS = ['Device token is not registered', 'APNs: BadDeviceToken', 'FCM: sender ID mismatch', 'Push provider timed out'];
+function recordSend({ eventKey, category, kind, title, body, data, push, expiresAt, audience, filters, adminUser, createdAt, recipientIds, fresh = false }) {
+  const age = now - Date.parse(createdAt);
+  const send = {
+    id: randomUUID(), eventKey, category, kind, title, body, data: data || {}, push: push !== false, expiresAt: expiresAt || null, audience, filters: filters || null,
+    adminUserId: adminUser.id, adminUsername: adminUser.email || adminUser.username, createdAt,
+    recipients: recipientIds.map((userId) => {
+      const roll = arand();
+      let delivery = 'IN_APP_ONLY';
+      let deliveryError = null;
+      if (push !== false) {
+        if (fresh) delivery = roll < 0.12 ? 'QUEUED' : roll < 0.18 ? 'SENDING' : roll < 0.24 ? 'FAILED' : roll < 0.3 ? 'SUPPRESSED' : 'SENT';
+        else delivery = roll < 0.1 ? 'FAILED' : roll < 0.14 ? 'RETRYABLE' : roll < 0.2 ? 'SUPPRESSED' : 'SENT';
+        if (delivery === 'FAILED' || delivery === 'RETRYABLE') deliveryError = apick(FAIL_REASONS);
+      }
+      const readAt = !fresh && arand() < 0.45 ? new Date(Date.parse(createdAt) + Math.floor(arand() * Math.min(age, 2 * DAY_MS))).toISOString() : null;
+      return { userId, notificationId: randomUUID(), delivery, deliveryError, readAt, createdAt };
+    }),
+  };
+  sends.unshift(send);
+  sends.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  return send;
+}
+function sendRow(send) {
+  const { recipients, data, ...row } = send;
+  const count = (states) => recipients.filter((recipient) => states.includes(recipient.delivery)).length;
+  return {
+    ...row,
+    recipientCount: recipients.length,
+    stats: { total: recipients.length, sent: count(['SENT']), failed: count(['FAILED']), pending: count(['QUEUED', 'SENDING', 'RETRYABLE']), inAppOnly: count(['IN_APP_ONLY']), read: recipients.filter((recipient) => recipient.readAt).length },
+  };
+}
+{
+  const active = members.filter((member) => member.status === 'ACTIVE');
+  const byFilter = (filters) => {
+    const params = new URLSearchParams(Object.entries({ internal: 'include', ...filters }).map(([key, value]) => [key, String(value)]));
+    params.set('status', 'ACTIVE');
+    return scoped(members, params, (member, set) => set.has(member.id)).filter((member) => memberMatches(member, params)).map((member) => member.id);
+  };
+  const seeds = [
+    { title: 'New routes from Gachibowli', body: 'Morning rides to Vijayawada now leave every day at 6:30 am. Book a seat in the app.', kind: 'ANNOUNCEMENT', push: true, filters: { city: 'Hyderabad', internal: 'include' }, days: 0.2, admin: 0 },
+    { title: 'Weekend offer: 20% off your next ride', body: 'Book any ride this Saturday or Sunday and save 20%. The offer ends on Sunday at midnight.', kind: 'OFFER', push: true, filters: { gender: 'WOMAN', passengerRides: 'NONE', internal: 'exclude' }, days: 1.5, admin: 1 },
+    { title: 'Finish your profile', body: 'Add your work email to get the verified badge. It takes one minute.', kind: 'ANNOUNCEMENT', push: true, filters: { onboardingCompleted: false, internal: 'include' }, days: 3, admin: 0 },
+    { title: 'App update 2.4', body: 'Ride chat now shows when the driver reads your message.', kind: 'ANNOUNCEMENT', push: false, ids: active.slice(0, 4).map((member) => member.id), days: 5, admin: 1 },
+    { title: 'We miss you', body: 'Your colleagues share rides every day. Open Fluxgo to see rides on your route.', kind: 'OFFER', push: true, filters: { inactiveForDays: 30, internal: 'include' }, days: 6, admin: 0 },
+  ];
+  seeds.forEach((item, index) => {
+    const ids = item.ids || byFilter(item.filters);
+    const createdAt = iso(-Math.floor(item.days * DAY_MS));
+    const send = recordSend({ eventKey: `portal-seed-${index}`, category: item.kind === 'OFFER' ? 'OFFERS' : 'UPDATES', kind: item.kind, title: item.title, body: item.body, push: item.push, audience: item.ids ? 'members' : 'filters', filters: item.filters || null, adminUser: admins[item.admin], createdAt, recipientIds: ids });
+    addAudit(admins[item.admin], 'NOTIFICATION_PUBLISHED', 'notification_event', send.eventKey, Date.parse(createdAt) - now, { metadata: { category: send.category, kind: send.kind, recipientCount: ids.length, push: send.push, audience: send.audience } });
+  });
+  audit.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+}
 
 const sessions = new Set();
 const pushDevices = new Map();
@@ -225,7 +337,7 @@ function supportRow(ticket) {
   return { ...row, lastMessageAt: last.createdAt, awaitingReply: ticket.status === 'OPEN' && last.senderRole === 'REQUESTER', isInternal: internalIds().has(ticket.requesterUserId) };
 }
 function memberRow(member) {
-  const { vehicles, authProvider, onboardingIntent, gender, dob, ...row } = member;
+  const { vehicles, authProvider, onboardingIntent, gender, dob, audienceGender, acquisitionSource, driverRidesCompleted, passengerRidesCompleted, rideCities, ...row } = member;
   return row;
 }
 function tripRow(trip) {
@@ -339,15 +451,9 @@ function route(method, path, params, body, authed, admin) {
     }];
   }
   if (path === '/v1/admin/members') {
-    let list = scoped(members, params, (member, ids) => ids.has(member.id)).filter((member) => text(params.get('query'), member.name, member.mobile, member.personalEmail, member.id));
-    if (params.get('status') === 'NOT_DELETED') list = list.filter((member) => member.status !== 'DELETED');
-    else if (params.get('status')) list = list.filter((member) => member.status === params.get('status'));
-    if (params.get('onboardingStep')) list = list.filter((member) => member.onboardingStep === params.get('onboardingStep'));
-    if (params.get('onboardingCompleted')) list = list.filter((member) => member.onboardingCompleted === (params.get('onboardingCompleted') === 'true'));
-    if (params.get('workEmailStatus')) list = list.filter((member) => (params.get('workEmailStatus') === 'NONE' ? !member.workEmailStatus : member.workEmailStatus === params.get('workEmailStatus')));
-    if (params.get('hasVehicle')) list = list.filter((member) => (member.vehicleCount > 0) === (params.get('hasVehicle') === 'true'));
-    if (params.get('intent')) list = list.filter((member) => member.onboardingIntent === params.get('intent'));
-    list = list.filter((member) => within(member.createdAt, params.get('createdFrom'), params.get('createdTo')));
+    const invalid = audienceError(params);
+    if (invalid) return [400, { error: { code: 'INVALID_REQUEST', message: invalid } }];
+    const list = scoped(members, params, (member, ids) => ids.has(member.id)).filter((member) => memberMatches(member, params));
     return [200, page(list.map(memberRow), params, 'createdAt')];
   }
   match = path.match(/^\/v1\/admin\/members\/([^/]+)\/internal$/);
@@ -514,9 +620,50 @@ function route(method, path, params, body, authed, admin) {
     return [200, page(list, params)];
   }
   if (path === '/v1/admin/notifications' && method === 'POST') {
-    addAudit(admin, 'NOTIFICATION_PUBLISHED', 'notification_event', body.eventKey, Date.now() - now, { metadata: { category: body.category, kind: body.kind, recipientCount: body.recipientUserIds.length, push: body.push !== false } });
+    const hasIds = Array.isArray(body?.recipientUserIds) && body.recipientUserIds.length > 0;
+    const hasAudience = Boolean(body?.audience && typeof body.audience.filters === 'object' && body.audience.filters);
+    if (hasIds === hasAudience) return [400, { error: { code: 'INVALID_REQUEST', message: 'Send exactly one of recipientUserIds or audience.' } }];
+    if (hasIds && body.recipientUserIds.length > 500) return [400, { error: { code: 'INVALID_REQUEST', message: 'Send at most 500 recipientUserIds.' } }];
+    let ids = body.recipientUserIds;
+    let filters = null;
+    if (hasAudience) {
+      filters = body.audience.filters;
+      if ('query' in filters || 'status' in filters) return [400, { error: { code: 'INVALID_REQUEST', message: 'audience.filters does not take query or status.' } }];
+      const params = new URLSearchParams(Object.entries({ internal: 'include', ...filters }).map(([key, value]) => [key, String(value)]));
+      params.set('status', 'ACTIVE');
+      const invalid = audienceError(params);
+      if (invalid) return [400, { error: { code: 'INVALID_REQUEST', message: invalid } }];
+      ids = scoped(members, params, (member, set) => set.has(member.id)).filter((member) => memberMatches(member, params)).map((member) => member.id);
+      if (ids.length > 50000) return [400, { error: { code: 'INVALID_REQUEST', message: 'The audience is larger than 50,000 members.' } }];
+    }
+    const send = recordSend({ ...body, audience: hasAudience ? 'filters' : 'members', filters, adminUser: admin, createdAt: new Date().toISOString(), recipientIds: ids, fresh: true });
+    addAudit(admin, 'NOTIFICATION_PUBLISHED', 'notification_event', body.eventKey, Date.now() - now, { metadata: { category: body.category, kind: body.kind, recipientCount: ids.length, push: body.push !== false, audience: send.audience, ...(filters ? { filters } : {}) } });
     audit.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
-    return [201, { status: 'ENQUEUED', count: body.recipientUserIds.length }];
+    return [201, { status: 'ENQUEUED', count: ids.length }];
+  }
+  if (path === '/v1/admin/notifications/sends') {
+    return [200, page(sends.map(sendRow), params, 'createdAt')];
+  }
+  match = path.match(/^\/v1\/admin\/notifications\/sends\/([^/]+)\/recipients$/);
+  if (match) {
+    const send = sends.find((item) => item.id === match[1]);
+    if (!send) return [404, { error: { code: 'NOT_FOUND', message: 'Send not found.' } }];
+    let list = send.recipients.map((recipient) => {
+      const member = members.find((item) => item.id === recipient.userId);
+      return { userId: recipient.userId, name: member?.name || null, mobile: member?.mobile || null, profilePhotoUrl: member?.profilePhotoUrl || null, isInternal: Boolean(member?.isInternal), notificationId: recipient.notificationId, delivery: recipient.delivery, deliveryError: recipient.deliveryError, readAt: recipient.readAt, createdAt: recipient.createdAt };
+    });
+    list = list.filter((row) => text(params.get('query'), row.name, row.mobile));
+    if (params.get('delivery')) list = list.filter((row) => row.delivery === params.get('delivery'));
+    if (params.get('read')) list = list.filter((row) => Boolean(row.readAt) === (params.get('read') === 'true'));
+    list.sort((left, right) => String(left.name).localeCompare(String(right.name)));
+    return [200, page(list, params)];
+  }
+  match = path.match(/^\/v1\/admin\/notifications\/sends\/([^/]+)$/);
+  if (match) {
+    const send = sends.find((item) => item.id === match[1]);
+    if (!send) return [404, { error: { code: 'NOT_FOUND', message: 'Send not found.' } }];
+    const row = sendRow(send);
+    return [200, { send: { ...row, data: send.data || {} }, stats: row.stats }];
   }
   if (path === '/v1/admin/audit') {
     let list = audit;
