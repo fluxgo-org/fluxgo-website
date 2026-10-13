@@ -21,8 +21,12 @@ async function copyText(text) {
 /**
  * "Share ride" on the public ride page. Opens the system share sheet with the
  * same text as the app. Browsers without a share sheet get WhatsApp and Copy.
+ * The link goes in `url`, not in `text`: iOS WhatsApp makes a link and a
+ * preview card only from `url`. Android joins the two as "text url".
  */
-export default function ShareRideButton({ title, text }) {
+export default function ShareRideButton({ title, text, url }) {
+  // WhatsApp and the clipboard get one string. The link has its own line.
+  const fullText = `${text}\n${url}`;
   const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const rootRef = useRef(null);
@@ -43,7 +47,7 @@ export default function ShareRideButton({ title, text }) {
   const share = async () => {
     if (typeof navigator.share === 'function') {
       try {
-        await navigator.share({ title, text });
+        await navigator.share({ title, text, url });
         return;
       } catch (error) {
         if (error?.name === 'AbortError') return;
@@ -54,7 +58,7 @@ export default function ShareRideButton({ title, text }) {
   };
 
   const copy = async () => {
-    if (await copyText(text)) {
+    if (await copyText(fullText)) {
       setCopied(true);
       setTimeout(() => setMenuOpen(false), 1200);
     }
@@ -68,7 +72,7 @@ export default function ShareRideButton({ title, text }) {
       </button>
       {menuOpen ? (
         <div className="fx-share-sharemenu" role="menu">
-          <a role="menuitem" href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer" onClick={() => setMenuOpen(false)}>
+          <a role="menuitem" href={`https://wa.me/?text=${encodeURIComponent(fullText)}`} target="_blank" rel="noopener noreferrer" onClick={() => setMenuOpen(false)}>
             Share on WhatsApp
           </a>
           <button type="button" role="menuitem" onClick={copy}>{copied ? 'Copied' : 'Copy ride details'}</button>
