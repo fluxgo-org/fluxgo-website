@@ -116,3 +116,40 @@ export function rideSummary(trip) {
   const car = vehicleLine(trip.vehicle);
   return [when, `${rupees(trip.pricePerSeat)} per seat`, seats, car].filter(Boolean).join(' · ');
 }
+
+function placeLabel(place) {
+  const label = place?.label?.trim() || place?.city || '';
+  return place?.city && !label.toLowerCase().includes(place.city.toLowerCase()) ? `${label}, ${place.city}` : label;
+}
+
+function hostShareLine(host) {
+  const rating = host.rating > 0
+    ? `★ ${host.rating.toFixed(1)} (${host.reviewCount} ${host.reviewCount === 1 ? 'review' : 'reviews'})`
+    : 'New host';
+  return `Host: ${host.displayName} · ${rating}${host.workEmailVerified ? ' · Work email verified' : ''}`;
+}
+
+/**
+ * Text for the share sheet. Uses the same layout as the app's "Share ride"
+ * message (fluxgo-frontend `src/lib/rideShare.ts`), so both shares look the same.
+ */
+export function rideShareMessage(trip, url) {
+  const open = trip.state === 'OPEN';
+  const availability = open
+    ? `${trip.seatsAvailable} ${trip.seatsAvailable === 1 ? 'seat' : 'seats'} left · ${rupees(trip.pricePerSeat)} per seat`
+    : STATE_COPY[trip.state]?.title.replace(/^This ride /, 'Ride ') ?? 'Not taking bookings';
+  const details = [
+    trip.vehicle ? `Car: ${vehicleLine(trip.vehicle)}` : null,
+    trip.host ? hostShareLine(trip.host) : null,
+    `Pickup: ${placeLabel(trip.origin)}`,
+    `Drop: ${placeLabel(trip.destination)}`
+  ].filter(Boolean);
+  return {
+    title: `Fluxgo ride · ${rideTitle(trip)}`,
+    text: [
+      [`Fluxgo ride · ${rideTitle(trip)}`, `${rideDate(trip.departureAt)} · ${rideTime(trip.departureAt)}`, availability].join('\n'),
+      details.join('\n'),
+      `${open && trip.seatsAvailable > 0 ? 'Book a seat' : 'Ride details'}: ${url}`
+    ].join('\n\n')
+  };
+}
