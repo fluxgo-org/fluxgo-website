@@ -144,12 +144,15 @@ export function rideShareMessage(trip, url) {
     `Pickup: ${placeLabel(trip.origin)}`,
     `Drop: ${placeLabel(trip.destination)}`
   ].filter(Boolean);
+  // The link goes last, after its label. The share sheet sends `url` as a
+  // separate link so WhatsApp detects it and shows the preview card.
   return {
     title: `Fluxgo ride · ${rideTitle(trip)}`,
     text: [
       [`Fluxgo ride · ${rideTitle(trip)}`, `${rideDate(trip.departureAt)} · ${rideTime(trip.departureAt)}`, availability].join('\n'),
       details.join('\n'),
-      `${open && trip.seatsAvailable > 0 ? 'Book a seat' : 'Ride details'}: ${url}`
-    ].join('\n\n')
+      `${open && trip.seatsAvailable > 0 ? 'Book a seat' : 'Ride details'}:`
+    ].join('\n\n'),
+    url
   };
 }

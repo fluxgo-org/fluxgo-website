@@ -158,7 +158,7 @@ export default async function RidePage({ params }) {
       <section className="fx-share-hero">
         <header className="fx-share-top">
           <Link href="/" aria-label="Fluxgo home"><Wordmark /></Link>
-          <ShareRideButton title={share.title} text={share.text} />
+          <ShareRideButton title={share.title} text={share.text} url={share.url} />
         </header>
         <div className="fx-share-hero-copy">
           <p className="fx-share-date"><IconCalendar width={20} height={20} /><span>{rideDate(trip.departureAt)}</span><span className="fx-share-date-dot" aria-hidden="true">·</span><span>{rideTime(trip.departureAt)}</span></p>
