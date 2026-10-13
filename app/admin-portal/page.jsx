@@ -19,7 +19,7 @@ import { LiveProvider, useLive, useLiveRefresh } from './_lib/live';
 import { AdminSessionContext } from './_lib/session';
 import { registerServiceWorker, setAppBadge } from './_lib/push';
 
-const RECORD_KINDS = ['member', 'trip', 'booking', 'support', 'review', 'audit'];
+const RECORD_KINDS = ['member', 'trip', 'booking', 'support', 'review', 'audit', 'send'];
 const GO_KEYS = { t: 'today', s: 'support', f: 'safety', m: 'members', r: 'trips', b: 'bookings', v: 'vehicles', n: 'notify', a: 'audit' };
 
 function readParams() {
@@ -269,12 +269,12 @@ function Console({ admin, onLogout, onSessionExpired }) {
           {section === 'today' ? <TodayView admin={admin} openRecord={openRecord} navigate={navigate} onAttention={onAttention} /> : null}
           {section === 'support' ? <SupportInbox params={params} setParams={setParams} openRecord={openRecord} waitingCount={attention?.support.awaitingReply} /> : null}
           {RECORD_SECTIONS[section] ? <RecordsView key={section} section={section} params={params} setParams={setParams} openRecord={openRecord} selected={selected} admins={admins} notify={notify} /> : null}
-          {section === 'notify' ? <NotifyView params={params} setParams={setParams} navigate={navigate} /> : null}
+          {section === 'notify' ? <NotifyView params={params} setParams={setParams} navigate={navigate} openRecord={openRecord} /> : null}
           {section === 'admins' ? <AdminsView admin={admin} onAdminsChanged={setAdmins} /> : null}
         </main>
       </div>
 
-      <Drawer open={Boolean(top)} onClose={closeRecord} label="Record details" wide={top?.kind === 'support'}>
+      <Drawer open={Boolean(top)} onClose={closeRecord} label="Record details" wide={top?.kind === 'support' || top?.kind === 'send'}>
         {top ? <RecordPanel key={`${top.kind}:${top.id}`} kind={top.kind} id={top.id} seed={top.seed} onClose={closeRecord} onBack={stack.length > 1 ? backRecord : undefined} open={openRecord} navigate={navigate} notify={notify} /> : null}
       </Drawer>
 

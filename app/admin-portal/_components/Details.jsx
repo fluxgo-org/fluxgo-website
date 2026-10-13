@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { auditDetails, IssueChips, RecordLink, Stars } from '../_config/sections';
-import { errorText, isSessionExpired, requestApi } from '../_lib/api';
+import { auditDetails, InternalTag, IssueChips, RecordLink, Stars } from '../_config/sections';
+import { filterSummary } from '../_lib/audience';
+import { errorText, isSessionExpired, queryString, requestApi } from '../_lib/api';
 import {
   auditActionLabel,
   display,
@@ -18,13 +19,14 @@ import {
   SAFETY_ISSUES,
   statusLabel,
 } from '../_lib/format';
-import { useNow } from '../_lib/hooks';
+import { useDebounced, useNow } from '../_lib/hooks';
 import { useLiveRefresh } from '../_lib/live';
+import { DataTable, downloadCsv } from './DataTable';
 import { SupportConversation } from './Support';
 import { Avatar, Badge, Button, ConfirmDialog, CopyButton, Detail, EmptyState, Field, Icon, IconButton, Mono, Section, Skeleton, useToast } from './ui';
 
 
-const KIND_LABELS = { member: 'Member', trip: 'Ride', booking: 'Booking', support: 'Support ticket', review: 'Review', audit: 'Audit entry' };
+const KIND_LABELS = { member: 'Member', trip: 'Ride', booking: 'Booking', support: 'Support ticket', review: 'Review', audit: 'Audit entry', send: 'Notification' };
 
 /** Load one record and refresh it while the panel is open. */
 function useRecord(path, key, liveKeys) {
@@ -38,7 +40,7 @@ function useRecord(path, key, liveKeys) {
     try {
       const result = await requestApi(path);
       if (id !== sequence.current) return;
-      setData(result?.[key] || null);
+      setData(key ? result?.[key] || null : result || null);
       setError('');
     } catch (requestError) {
       if (id !== sequence.current || isSessionExpired(requestError)) return;
@@ -60,6 +62,7 @@ export function RecordPanel(props) {
   if (kind === 'support') return <SupportPanel {...props} />;
   if (kind === 'review') return <ReviewPanel {...props} />;
   if (kind === 'audit') return <AuditPanel {...props} />;
+  if (kind === 'send') return <SendPanel {...props} />;
   return null;
 }
 
@@ -519,3 +522,142 @@ function AuditPanel({ seed, onClose, onBack, open }) {
     </>
   );
 }
+
+const DELIVERY = {
+  QUEUED: { label: 'Queued', tone: 'info' },
+  SENDING: { label: 'Sending', tone: 'info' },
+  SENT: { label: 'Push sent', tone: 'success' },
+  RETRYABLE: { label: 'Retrying', tone: 'warning' },
+  FAILED: { label: 'Failed', tone: 'danger' },
+  SUPPRESSED: { label: 'Suppressed', tone: 'neutral' },
+  IN_APP_ONLY: { label: 'In-app only', tone: 'neutral' },
+};
+const RECIPIENT_PAGE = 25;
+const RECIPIENT_EXPORT_LIMIT = 5000;
+
+function DeliveryBadge({ row }) {
+  const delivery = DELIVERY[row.delivery] || { label: statusLabel(row.delivery), tone: 'neutral' };
+  return <Badge tone={delivery.tone} title={row.deliveryError || undefined}>{delivery.label}{row.deliveryError ? <Icon name="alert" size={11} /> : null}</Badge>;
+}
+
+/** One notification send: message, audience, delivery stats, and every recipient. */
+function SendPanel({ id, seed, onClose, onBack, open }) {
+  const now = useNow();
+  const { data, error, loading, reload } = useRecord(`/admin/notifications/sends/${encodeURIComponent(id)}`, null, ['audit']);
+  const send = data?.send || null;
+  const stats = data?.stats || send?.stats || seed?.stats || null;
+  const head = send || seed;
+  const [query, setQuery] = useState('');
+  const [delivery, setDelivery] = useState('');
+  const [read, setRead] = useState('');
+  const [page, setPage] = useState(0);
+  const [rows, setRows] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [listLoading, setListLoading] = useState(true);
+  const [listError, setListError] = useState('');
+  const [exporting, setExporting] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const notify = useToast();
+  const debouncedQuery = useDebounced(query.trim(), 300);
+  const path = `/admin/notifications/sends/${encodeURIComponent(id)}/recipients`;
+  const listParams = { query: debouncedQuery, delivery, read };
+
+  useEffect(() => { setPage(0); }, [debouncedQuery, delivery, read]);
+  useEffect(() => {
+    let cancelled = false;
+    setListLoading(true);
+    requestApi(`${path}${queryString({ ...listParams, limit: RECIPIENT_PAGE, offset: page * RECIPIENT_PAGE })}`)
+      .then((result) => { if (!cancelled) { setRows(result?.items || []); setTotal(result?.total || 0); setListError(''); } })
+      .catch((requestError) => { if (!cancelled && !isSessionExpired(requestError)) setListError(errorText(requestError)); })
+      .finally(() => { if (!cancelled) setListLoading(false); });
+    return () => { cancelled = true; };
+    // The serialized filters identify the request.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [path, debouncedQuery, delivery, read, page, retry]);
+
+  const columns = [
+    { key: 'name', label: 'Member', width: 210, locked: true, render: (row) => <span className="ax-person"><Avatar name={row.name} src={row.profilePhotoUrl} size="sm" /><span><RecordLink onOpen={() => open('member', row.userId, { id: row.userId, name: row.name, profilePhotoUrl: row.profilePhotoUrl })}>{display(row.name)}</RecordLink><InternalTag show={row.isInternal} /></span></span>, csv: (row) => row.name },
+    { key: 'mobile', label: 'Mobile', width: 150, render: (row) => <span className="ax-mono ax-small">{display(row.mobile)}</span> },
+    { key: 'delivery', label: 'Delivery', width: 130, render: (row) => <DeliveryBadge row={row} />, csv: (row) => `${DELIVERY[row.delivery]?.label || row.delivery}${row.deliveryError ? ` (${row.deliveryError})` : ''}` },
+    { key: 'readAt', label: 'Read', width: 130, render: (row) => (row.readAt ? <span title={formatDateTime(row.readAt)}>{relativeTime(row.readAt, now)}</span> : <span className="ax-muted">Not read</span>), csv: (row) => row.readAt || '' },
+    { key: 'userId', label: 'Member ID', width: 280, defaultHidden: true, render: (row) => <Mono value={row.userId} /> },
+  ];
+
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const all = [];
+      for (let offset = 0; offset < Math.min(total, RECIPIENT_EXPORT_LIMIT); offset += 100) {
+        const result = await requestApi(`${path}${queryString({ ...listParams, limit: 100, offset })}`);
+        all.push(...(result?.items || []));
+        if (!result?.hasMore) break;
+      }
+      downloadCsv(`fluxgo-notification-${String(id).slice(0, 8)}-recipients.csv`, columns, all);
+      notify(total > RECIPIENT_EXPORT_LIMIT ? `Exported the first ${formatNumber(RECIPIENT_EXPORT_LIMIT)} of ${formatNumber(total)} recipients.` : `Exported ${plural(all.length, 'recipient')}.`);
+    } catch (requestError) {
+      if (!isSessionExpired(requestError)) notify(errorText(requestError), 'danger');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const filteredList = Boolean(debouncedQuery || delivery || read);
+  const pct = (value) => (stats?.total ? ` · ${Math.round((value / stats.total) * 100)}%` : '');
+  return (
+    <>
+      <PanelHeader kind="send" title={display(head?.title || 'Notification')}
+        subtitle={head ? `Sent by ${display(head.adminUsername)} · ${relativeTime(head.createdAt, now)}` : null}
+        badges={head ? <><Badge tone="neutral" dot={false}>{head.kind === 'OFFER' ? 'Offer' : 'Update'}</Badge><Badge tone="neutral" dot={false}>{head.push === false ? 'In-app only' : 'Push and in-app'}</Badge><Badge tone={head.audience === 'filters' ? 'info' : 'neutral'} dot={false}>{head.audience === 'filters' ? 'Filtered' : 'Specific members'}</Badge></> : null}
+        onClose={onClose} onBack={onBack} linkParams={{ open: `send:${id}` }} />
+      <PanelState loading={loading} error={error} data={send} onRetry={reload}>
+        {send ? (
+          <div className="ax-panel-body">
+            <div className="ax-send-message"><p>{send.body}</p></div>
+            {stats ? (
+              <div className="ax-stat-grid is-five">
+                <StatTile label="Recipients" value={formatNumber(stats.total)} onClick={filteredList ? () => { setQuery(''); setDelivery(''); setRead(''); } : undefined} />
+                <StatTile label="Push sent" value={send.push === false ? '—' : formatNumber(stats.sent)} onClick={send.push !== false && stats.sent ? () => setDelivery('SENT') : undefined} />
+                <StatTile label="Failed" value={formatNumber(stats.failed)} tone={stats.failed ? 'danger' : undefined} onClick={stats.failed ? () => setDelivery('FAILED') : undefined} />
+                <StatTile label="Pending" value={formatNumber(stats.pending)} tone={stats.pending ? 'warning' : undefined} />
+                <StatTile label={`Read${pct(stats.read)}`} value={formatNumber(stats.read)} onClick={stats.read ? () => setRead('true') : undefined} />
+              </div>
+            ) : null}
+            <Section title="Details">
+              <dl className="ax-detail-grid">
+                <Detail label="Audience" full>{send.audience === 'filters' ? filterSummary(send.filters) : 'Specific members'}</Detail>
+                <Detail label="Sent">{formatDateTime(send.createdAt)}</Detail>
+                <Detail label="Sent by">{display(send.adminUsername)}</Detail>
+                <Detail label="Type">{send.kind === 'OFFER' ? 'Offer (Offers tab)' : 'Update (Updates tab)'}</Detail>
+                <Detail label="Delivery">{send.push === false ? 'In-app only' : 'Push and in-app'}</Detail>
+                <Detail label="Expires">{send.expiresAt ? formatDateTime(send.expiresAt) : 'Never'}</Detail>
+                <Detail label="Event key"><Mono value={send.eventKey} /></Detail>
+              </dl>
+            </Section>
+            <Section title="Recipients" count={formatNumber(total)}>
+              <div className="ax-recipient-filters">
+                <div className="ax-search is-compact">
+                  <Icon name="search" size={15} />
+                  <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name or mobile" aria-label="Search recipients" autoComplete="off" />
+                </div>
+                <select value={delivery} onChange={(event) => setDelivery(event.target.value)} aria-label="Delivery">
+                  <option value="">Any delivery</option>
+                  {Object.entries(DELIVERY).map(([value, item]) => <option key={value} value={value}>{item.label}</option>)}
+                </select>
+                <select value={read} onChange={(event) => setRead(event.target.value)} aria-label="Read">
+                  <option value="">Read or not</option>
+                  <option value="true">Read</option>
+                  <option value="false">Not read</option>
+                </select>
+              </div>
+              {listError ? <div className="ax-inline-error" role="alert"><span>{listError}</span><Button size="sm" onClick={() => setRetry((value) => value + 1)}>Try again</Button></div> : null}
+              <DataTable tableId="send-recipients" label="Recipients" columns={columns} rows={rows} loading={listLoading} getRowId={(row) => row.notificationId || row.userId}
+                total={total} page={page} pageSize={RECIPIENT_PAGE} onPageChange={setPage} onExport={exportCsv} exporting={exporting}
+                empty={<EmptyState title={filteredList ? 'No matching recipients' : 'No recipients'}>{filteredList ? 'Change or clear the filters.' : null}</EmptyState>} />
+            </Section>
+          </div>
+        ) : null}
+      </PanelState>
+    </>
+  );
+}
+
