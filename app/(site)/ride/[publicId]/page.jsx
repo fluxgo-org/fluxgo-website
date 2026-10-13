@@ -23,6 +23,7 @@ import {
   loadRide,
   luggageLabel,
   rideDate,
+  rideShareMessage,
   rideSummary,
   rideTime,
   rideTitle,
@@ -30,6 +31,7 @@ import {
   titleCase,
   vehicleName
 } from './ride-data';
+import ShareRideButton from './ShareRideButton';
 
 export async function generateMetadata({ params }) {
   const { publicId } = await params;
@@ -142,6 +144,7 @@ export default async function RidePage({ params }) {
   const { trip } = result;
   const kind = deviceKind((await headers()).get('user-agent') ?? '');
   const actions = actionsFor(kind, trip);
+  const share = rideShareMessage(trip, `${SITE_URL}/ride/${trip.publicId}`);
   const closed = STATE_COPY[trip.state];
   const routeTime = duration(trip.routeDurationSeconds);
   const stops = [
@@ -155,6 +158,7 @@ export default async function RidePage({ params }) {
       <section className="fx-share-hero">
         <header className="fx-share-top">
           <Link href="/" aria-label="Fluxgo home"><Wordmark /></Link>
+          <ShareRideButton title={share.title} text={share.text} />
         </header>
         <div className="fx-share-hero-copy">
           <p className="fx-share-date"><IconCalendar width={20} height={20} /><span>{rideDate(trip.departureAt)}</span><span className="fx-share-date-dot" aria-hidden="true">·</span><span>{rideTime(trip.departureAt)}</span></p>

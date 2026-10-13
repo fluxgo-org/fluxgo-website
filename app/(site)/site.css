@@ -718,6 +718,13 @@ body:has(> .fx) { margin: 0; }
 .fx-share-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: var(--on-dark); }
 .fx-share-top .fx-wordmark { font-size: 24px; }
 .fx-share-top .fx-mono { color: var(--on-dark-3); }
+.fx-share-sharebox { position: relative; }
+.fx-share-sharebtn { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--hair-dark); color: var(--on-dark); font: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
+.fx-share-sharebtn:hover { background: rgba(233, 240, 234, 0.2); }
+.fx-share-sharebtn:focus-visible, .fx-share-sharemenu > :focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
+.fx-share-sharemenu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 50; display: grid; min-width: 200px; padding: 6px; border-radius: 16px; background: var(--white); box-shadow: var(--shadow-float), inset 0 0 0 1px var(--line); }
+.fx-share-sharemenu > * { display: block; width: 100%; padding: 11px 12px; border: 0; border-radius: 10px; background: none; color: var(--ink); font: inherit; font-size: 15px; font-weight: 550; text-align: left; cursor: pointer; }
+.fx-share-sharemenu > :hover { background: var(--fill); }
 
 .fx-share-hero { background: var(--hero); color: var(--on-dark); padding: 20px var(--gutter) 64px; }
 .fx-share-hero > * { width: min(100%, 680px); margin-inline: auto; }
