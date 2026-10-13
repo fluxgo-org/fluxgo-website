@@ -63,7 +63,7 @@ export function RecordPanel(props) {
   return null;
 }
 
-function PanelHeader({ kind, title, subtitle, badges, onClose, onBack, linkParams, avatar }) {
+function PanelHeader({ kind, title, subtitle, badges, onClose, onBack, linkParams, avatar, avatarSrc }) {
   const [copied, setCopied] = useState(false);
   const copyLink = async () => {
     const url = new URL(window.location.href);
@@ -80,7 +80,7 @@ function PanelHeader({ kind, title, subtitle, badges, onClose, onBack, linkParam
         </div>
       </div>
       <div className="ax-panel-title">
-        {avatar ? <Avatar name={avatar} size="lg" /> : null}
+        {avatar ? <Avatar name={avatar} src={avatarSrc} size="lg" /> : null}
         <div>
           <h2>{title}</h2>
           {subtitle ? <p>{subtitle}</p> : null}
@@ -124,7 +124,7 @@ function MemberPanel({ id, seed, onClose, onBack, open, navigate }) {
   const internalScope = data?.isInternal ? { internal: 'include' } : {};
   return (
     <>
-      <PanelHeader kind="member" title={display(data?.name || seed?.name || 'Member')} avatar={data?.name || seed?.name}
+      <PanelHeader kind="member" title={display(data?.name || seed?.name || 'Member')} avatar={data?.name || seed?.name} avatarSrc={data ? data.profilePhotoUrl : seed?.profilePhotoUrl}
         subtitle={data ? `Joined ${relativeTime(data.createdAt, now)} · ${statusLabel(data.onboardingIntent)}` : null}
         badges={data ? <><Badge value={data.status} />{data.isInternal ? <Badge tone="neutral" title="Fluxgo team or test account. Lists hide this member by default.">Internal</Badge> : null}{data.workEmailStatus ? <Badge value={data.workEmailStatus}>Work email {statusLabel(data.workEmailStatus).toLowerCase()}</Badge> : <Badge tone="neutral">No work email</Badge>}</> : null}
         onClose={onClose} onBack={onBack} linkParams={{ open: `member:${id}` }} />

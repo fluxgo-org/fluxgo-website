@@ -61,6 +61,12 @@ const requiredMarkers = [
   'onboardingProgress',
   "requestApi('/admin/dashboard/summary' + queryString({ internal }))",
   "status: 'ACTIVE', internal: 'include'",
+  "export function Avatar({ name, size = 'md', src })",
+  'referrerPolicy="no-referrer"',
+  'src={row.profilePhotoUrl}',
+  'avatarSrc={data ? data.profilePhotoUrl : seed?.profilePhotoUrl}',
+  'profilePhotoUrl: member.profilePhotoUrl || null',
+  'src={ticket.requesterPhotoUrl}',
 ];
 
 const missing = requiredMarkers.filter((marker) => !text.includes(marker));
