@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { errorText, isSessionExpired, requestApi } from '../_lib/api';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { errorText, isSessionExpired, queryString, requestApi } from '../_lib/api';
 import { auditActionLabel, display, formatDateTime, formatNumber, formatTime, plural, relativeTime, waitingFor } from '../_lib/format';
 import { useNow, useStoredState } from '../_lib/hooks';
 import { LIVE_KEYS, useLiveRefresh } from '../_lib/live';
@@ -10,53 +10,86 @@ import { Badge, Button, EmptyState, Icon, Skeleton } from './ui';
 
 export function TodayView({ admin, openRecord, navigate, onAttention }) {
   const now = useNow();
-  const [state, setState] = useState({ attention: null, summary: null, audit: [] });
+  const [state, setState] = useState({ attention: null, summary: null, audit: [], rangeKey: '' });
   const [error, setError] = useState('');
   // Counts and queues hide internal (team and test) members unless the admin turns this on.
   const [showInternal, setShowInternal] = useStoredState('today:showInternal', false);
-  const scope = showInternal ? '?internal=include' : '';
+  // The screen always opens on today. The range is not stored.
+  const [range, setRange] = useState(() => presetRange('today'));
+  // An older API rejects from and to. Then the screen keeps the 7-day view.
+  const legacyRef = useRef(false);
+  const requestRef = useRef(0);
+  const rangeKey = `${range.from}:${range.to}`;
   // Open lists with the same internal setting as this dashboard.
   const go = (target, extra = {}) => navigate(target, showInternal && target !== 'audit' ? { ...extra, internal: 'include' } : extra);
 
   // Load only the parts that match the changed data. With no list, load all three.
   const load = useCallback(async (changed) => {
     const want = (keys) => !changed || keys.some((key) => changed.includes(key));
+    const internal = showInternal ? 'include' : undefined;
+    const request = ++requestRef.current;
+    const loadAttention = async () => {
+      if (legacyRef.current) return requestApi('/admin/dashboard/attention' + queryString({ internal }));
+      try {
+        return await requestApi('/admin/dashboard/attention' + queryString({ internal, from: range.from, to: range.to }));
+      } catch (rangeError) {
+        if (rangeError?.status !== 400) throw rangeError;
+        const plain = await requestApi('/admin/dashboard/attention' + queryString({ internal }));
+        if (plain?.period) throw rangeError;
+        legacyRef.current = true;
+        return plain;
+      }
+    };
     try {
       const [attention, summary, audit] = await Promise.all([
-        want(['support', 'trips', 'bookings', 'members', 'reviews', 'vehicles']) ? requestApi('/admin/dashboard/attention' + scope) : null,
-        want(['members', 'trips', 'bookings', 'support']) ? requestApi('/admin/dashboard/summary' + scope) : null,
+        want(['support', 'trips', 'bookings', 'members', 'reviews', 'vehicles']) ? loadAttention() : null,
+        want(['members', 'trips', 'bookings', 'support']) ? requestApi('/admin/dashboard/summary' + queryString({ internal })) : null,
         want(['audit']) ? requestApi('/admin/audit?limit=6&offset=0') : null,
       ]);
+      if (request !== requestRef.current) return;
       setState((current) => ({
         attention: attention ?? current.attention,
         summary: summary ?? current.summary,
         audit: audit ? audit.items || [] : current.audit,
+        rangeKey: attention ? `${range.from}:${range.to}` : current.rangeKey,
       }));
       if (attention) onAttention?.(attention);
       setError('');
     } catch (requestError) {
+      if (request !== requestRef.current) return;
       if (!isSessionExpired(requestError)) setError(errorText(requestError));
     }
-  }, [onAttention, scope]);
+  }, [onAttention, showInternal, range.from, range.to]);
 
   useEffect(() => { void load(); }, [load]);
   useLiveRefresh(LIVE_KEYS, (changed) => { void load(changed); });
 
   const { attention, summary, audit } = state;
+  const legacy = Boolean(attention && !attention.period);
+  // Show placeholders while the counts for a new range load.
+  const period = attention?.period && state.rangeKey === rangeKey ? attention.period : null;
+  const today = kolkataDay();
+  const periodName = rangeLabel(range, today);
   const hour = new Date(now).getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const name = String(admin?.email || admin?.username || '').split('@')[0];
   const waiting = attention?.support.awaitingReply ?? 0;
-  const tasks = attention ? waiting + attention.bookings.awaitingDriver + attention.vehicles.awaitingRecheck + attention.reviews.safetyReportsLast7Days : 0;
+  const tasks = attention ? waiting + attention.bookings.awaitingDriver + attention.vehicles.awaitingRecheck + (legacy ? attention.reviews.safetyReportsLast7Days : 0) : 0;
+  const totals = period?.totals;
+  const dates = (fromKey, toKey) => ({ [fromKey]: range.from, [toKey]: range.to });
+  const subtitle = legacy
+    ? new Date(now).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })
+    : range.preset === 'today' || range.preset === 'yesterday' ? `${periodName} · ${dayText(range.from, { weekday: 'long', day: 'numeric', month: 'long' })}` : periodName;
 
   return (
     <div className="ax-today">
       <div className="ax-today-head">
         <div>
           <h2>{greeting}{name ? `, ${name}` : ''}</h2>
-          <p className="ax-muted">{new Date(now).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })} · {attention ? (tasks ? `${plural(tasks, 'item')} need you` : 'Nothing waits for you right now') : 'Loading…'}</p>
+          <p className="ax-muted">{subtitle} · {attention ? (tasks ? `${plural(tasks, 'item')} need you` : 'Nothing waits for you right now') : 'Loading…'}</p>
         </div>
         <div className="ax-today-tools">
+          {legacy ? null : <PeriodPicker range={range} today={today} onChange={setRange} />}
           <label className="ax-check ax-filter-toggle" htmlFor="today-show-internal">
             <input id="today-show-internal" type="checkbox" checked={Boolean(showInternal)} onChange={(event) => setShowInternal(event.target.checked)} />
             <span>Show internal</span>
@@ -65,14 +98,35 @@ export function TodayView({ admin, openRecord, navigate, onAttention }) {
       </div>
       {error ? <div className="ax-inline-error" role="alert"><span>{error}</span><Button size="sm" onClick={() => load()}>Try again</Button></div> : null}
 
-      <div className="ax-kpis">
-        <Kpi label="Members" value={summary?.members?.total} detail={attention ? `+${formatNumber(sum(attention.trends, 'newMembers'))} in 7 days` : null} onClick={() => go('members')} />
-        <Kpi label="Rides live now" value={attention?.trips.inProgress} detail={summary ? `${formatNumber(summary.trips?.published)} upcoming` : null} onClick={() => go('trips', { status: 'IN_PROGRESS' })} />
-        <Kpi label="Bookings, 7 days" value={attention ? sum(attention.trends, 'bookings') : undefined} detail={summary ? `${formatNumber(summary.bookings?.total)} all time` : null} onClick={() => go('bookings')} />
-        <Kpi label="Open tickets" value={summary?.support?.open} detail={attention ? (waiting ? `${waiting} waiting on us` : 'All replied') : null} tone={waiting ? 'warning' : undefined} onClick={() => go('support', { tab: 'open' })} />
-      </div>
+      {legacy ? (
+        <div className="ax-kpis">
+          <Kpi label="Members" value={summary?.members?.total} detail={`+${formatNumber(sum(attention.trends, 'newMembers'))} in 7 days`} onClick={() => go('members')} />
+          <Kpi label="Rides live now" value={attention.trips.inProgress} detail={summary ? `${formatNumber(summary.trips?.published)} upcoming` : null} onClick={() => go('trips', { status: 'IN_PROGRESS' })} />
+          <Kpi label="Bookings, 7 days" value={sum(attention.trends, 'bookings')} detail={summary ? `${formatNumber(summary.bookings?.total)} all time` : null} onClick={() => go('bookings')} />
+          <Kpi label="Open tickets" value={summary?.support?.open} detail={waiting ? `${waiting} waiting on us` : 'All replied'} tone={waiting ? 'warning' : undefined} onClick={() => go('support', { tab: 'open' })} />
+        </div>
+      ) : (
+        <>
+          <h3 className="ax-group-title">{periodName}</h3>
+          <div className="ax-kpis is-period">
+            <Kpi label="New members" value={totals?.newMembers} detail={summary ? `${formatNumber(summary.members?.total)} in total` : null} onClick={() => go('members', dates('joinedFrom', 'joinedTo'))} />
+            <Kpi label="Rides published" value={totals?.ridesPublished} onClick={() => go('trips')} />
+            <Kpi label="Bookings" value={totals?.bookings} detail={summary ? `${formatNumber(summary.bookings?.total)} all time` : null} onClick={() => go('bookings', dates('bookedFrom', 'bookedTo'))} />
+            <Kpi label="Rides completed" value={totals?.ridesCompleted} onClick={() => go('trips', { status: 'COMPLETED' })} />
+            <Kpi label="Tickets opened" value={totals?.ticketsOpened} onClick={() => go('support', { tab: 'open' })} />
+            <Kpi label="Safety reports" value={totals?.safetyReports} detail={totals ? `${plural(totals.issueReports, 'issue report')}` : null} tone={totals?.safetyReports ? 'danger' : undefined}
+              onClick={() => go('safety', { issues: 'SAFETY', ...dates('submittedFrom', 'submittedTo') })} />
+          </div>
+        </>
+      )}
 
-      <h3 className="ax-group-title">Needs attention</h3>
+      <h3 className="ax-group-title">{legacy ? 'Needs attention' : 'Right now'}</h3>
+      {legacy ? null : (
+        <div className="ax-kpis is-live">
+          <Kpi label="Rides live now" value={attention?.trips.inProgress} detail={summary ? `${formatNumber(summary.trips?.published)} upcoming` : null} onClick={() => go('trips', { status: 'IN_PROGRESS' })} />
+          <Kpi label="Open tickets" value={summary?.support?.open} detail={attention ? (waiting ? `${waiting} waiting on us` : 'All replied') : null} tone={waiting ? 'warning' : undefined} onClick={() => go('support', { tab: 'open' })} />
+        </div>
+      )}
       <div className="ax-attention-grid">
         <AttentionCard icon="support" title="Waiting for a reply" count={attention?.support.awaitingReply} tone="warning" loading={!attention}
           empty="Every open ticket has a reply." onAll={() => go('support')}
@@ -84,7 +138,7 @@ export function TodayView({ admin, openRecord, navigate, onAttention }) {
             onClick: () => go('support', { ticket: item.id }),
           }))} />
         <AttentionCard icon="clock" title="Departing in the next 2 hours" count={attention?.trips.departingSoon} loading={!attention}
-          empty="No rides leave in the next 2 hours." onAll={() => go('trips', { status: 'PUBLISHED', departFrom: todayKey(), departTo: todayKey() })}
+          empty="No rides leave in the next 2 hours." onAll={() => go('trips', { status: 'PUBLISHED', departFrom: today, departTo: today })}
           items={attention?.trips.departingSoonItems.map((trip) => ({
             key: trip.id,
             title: `${trip.origin} → ${trip.destination}`,
@@ -110,22 +164,30 @@ export function TodayView({ admin, openRecord, navigate, onAttention }) {
             side: <Badge tone="warning">{waitingFor(booking.createdAt, now)}</Badge>,
             onClick: () => openRecord('booking', booking.id),
           }))} />
-        <CountCard icon="shield" title="Safety reports, last 7 days" count={attention?.reviews.safetyReportsLast7Days} tone="danger" loading={!attention}
-          detail={attention ? `${plural(attention.reviews.issueReportsLast7Days, 'review')} with any issue` : null}
-          action="Review reports" onClick={() => go('safety', { issues: 'SAFETY', submittedFrom: weekAgoKey() })} />
+        {legacy ? (
+          <CountCard icon="shield" title="Safety reports, last 7 days" count={attention.reviews.safetyReportsLast7Days} tone="danger"
+            detail={`${plural(attention.reviews.issueReportsLast7Days, 'review')} with any issue`}
+            action="Review reports" onClick={() => go('safety', { issues: 'SAFETY', submittedFrom: addDays(today, -6) })} />
+        ) : null}
         <CountCard icon="vehicles" title="Vehicles awaiting a recheck" count={attention?.vehicles.awaitingRecheck} loading={!attention}
           detail="Added by hand. The system rechecks them every 6 hours." action="Open vehicles" onClick={() => go('vehicles', { source: 'manual', status: 'ACTIVE' })} />
       </div>
 
-      <h3 className="ax-group-title">Last 7 days</h3>
-      <div className="ax-trends">
-        {[
-          { key: 'newMembers', label: 'New members' },
-          { key: 'ridesPublished', label: 'Rides published' },
-          { key: 'bookings', label: 'Bookings' },
-          { key: 'ridesCompleted', label: 'Rides completed' },
-        ].map((metric) => <TrendChart key={metric.key} label={metric.label} days={attention?.trends || null} field={metric.key} />)}
-      </div>
+      {legacy ? (
+        <>
+          <h3 className="ax-group-title">Last 7 days</h3>
+          <div className="ax-trends">
+            {TREND_METRICS.map((metric) => <TrendChart key={metric.key} label={metric.label} days={attention.trends} field={metric.key} periodName="the last 7 days" today={today} />)}
+          </div>
+        </>
+      ) : range.days >= 2 ? (
+        <>
+          <h3 className="ax-group-title">{periodName}, per day</h3>
+          <div className="ax-trends">
+            {TREND_METRICS.map((metric) => <TrendChart key={metric.key} label={metric.label} days={period?.daily || null} field={metric.key} periodName={periodName} today={today} />)}
+          </div>
+        </>
+      ) : null}
 
       <div className="ax-group-title-row">
         <h3 className="ax-group-title">Recent admin activity</h3>
@@ -150,19 +212,109 @@ export function TodayView({ admin, openRecord, navigate, onAttention }) {
   );
 }
 
+const TREND_METRICS = [
+  { key: 'newMembers', label: 'New members' },
+  { key: 'ridesPublished', label: 'Rides published' },
+  { key: 'bookings', label: 'Bookings' },
+  { key: 'ridesCompleted', label: 'Rides completed' },
+];
+
+const PRESETS = [
+  { value: 'today', label: 'Today' },
+  { value: 'yesterday', label: 'Yesterday' },
+  { value: 'last7', label: 'Last 7 days' },
+  { value: 'last30', label: 'Last 30 days' },
+  { value: 'custom', label: 'Custom' },
+];
+const MAX_DAYS = 92;
+
 function sum(days, field) {
   return (days || []).reduce((total, day) => total + Number(day[field] || 0), 0);
 }
 
-function todayKey() {
-  const date = new Date();
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+/** Today's yyyy-mm-dd day in India, whatever the browser zone is. */
+function kolkataDay(date = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
 }
 
-function weekAgoKey() {
-  const date = new Date();
-  date.setDate(date.getDate() - 6);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+function dayDate(key) {
+  return new Date(`${key}T00:00:00Z`);
+}
+
+function addDays(key, count) {
+  const date = dayDate(key);
+  date.setUTCDate(date.getUTCDate() + count);
+  return date.toISOString().slice(0, 10);
+}
+
+function daysBetween(from, to) {
+  return Math.round((dayDate(to) - dayDate(from)) / 86_400_000) + 1;
+}
+
+function dayText(key, options) {
+  return dayDate(key).toLocaleDateString('en-IN', { timeZone: 'UTC', ...options });
+}
+
+function presetRange(preset, today = kolkataDay()) {
+  const from = { today, yesterday: addDays(today, -1), last7: addDays(today, -6), last30: addDays(today, -29) }[preset] || today;
+  const to = preset === 'yesterday' ? from : today;
+  return { preset, from, to, days: daysBetween(from, to) };
+}
+
+/** A short name for a range: "Today", "Last 7 days" or "7–13 Oct". */
+function rangeLabel(range, today) {
+  if (range.preset !== 'custom') return PRESETS.find((item) => item.value === range.preset)?.label || '';
+  if (range.from === range.to) return range.to === today ? 'Today' : dayText(range.from, { day: 'numeric', month: 'short', year: yearOf(range.from) === yearOf(today) ? undefined : 'numeric' });
+  const sameYear = yearOf(range.from) === yearOf(range.to);
+  const yearOption = sameYear && yearOf(range.to) === yearOf(today) ? undefined : 'numeric';
+  if (sameYear && range.from.slice(5, 7) === range.to.slice(5, 7)) return `${dayText(range.from, { day: 'numeric' })}–${dayText(range.to, { day: 'numeric', month: 'short', year: yearOption })}`;
+  return `${dayText(range.from, { day: 'numeric', month: 'short', year: sameYear ? undefined : 'numeric' })} – ${dayText(range.to, { day: 'numeric', month: 'short', year: yearOption })}`;
+}
+
+function yearOf(key) {
+  return key.slice(0, 4);
+}
+
+function rangeError(from, to, today) {
+  if (!from || !to) return 'Choose a start and an end date.';
+  if (to > today || from > today) return 'Choose dates up to today.';
+  if (from > to) return 'The start date must be on or before the end date.';
+  if (daysBetween(from, to) > MAX_DAYS) return `Choose ${MAX_DAYS} days or fewer.`;
+  return '';
+}
+
+/** Preset menu, plus two date fields for a custom range. */
+function PeriodPicker({ range, today, onChange }) {
+  const [draft, setDraft] = useState({ from: range.from, to: range.to });
+  const message = range.preset === 'custom' ? rangeError(draft.from, draft.to, today) : '';
+  const choose = (preset) => {
+    if (preset === 'custom') {
+      setDraft({ from: range.from, to: range.to });
+      onChange({ ...range, preset: 'custom' });
+    } else onChange(presetRange(preset, today));
+  };
+  const edit = (patch) => {
+    const next = { ...draft, ...patch };
+    setDraft(next);
+    if (!rangeError(next.from, next.to, today)) onChange({ preset: 'custom', from: next.from, to: next.to, days: daysBetween(next.from, next.to) });
+  };
+  return (
+    <div className="ax-period">
+      <div className="ax-period-row">
+        <select aria-label="Period" value={range.preset} onChange={(event) => choose(event.target.value)}>
+          {PRESETS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+        </select>
+        {range.preset === 'custom' ? (
+          <div className="ax-period-dates">
+            <input type="date" aria-label="From" value={draft.from} max={today} onChange={(event) => edit({ from: event.target.value })} aria-invalid={message ? 'true' : 'false'} />
+            <span aria-hidden="true">–</span>
+            <input type="date" aria-label="To" value={draft.to} max={today} onChange={(event) => edit({ to: event.target.value })} aria-invalid={message ? 'true' : 'false'} />
+          </div>
+        ) : null}
+      </div>
+      {message ? <p className="ax-field-error" role="alert">{message}</p> : null}
+    </div>
+  );
 }
 
 function Kpi({ label, value, detail, onClick, tone }) {
@@ -216,31 +368,44 @@ function CountCard({ icon, title, count, detail, action, onClick, tone, loading 
   );
 }
 
-/** One metric over seven days. A single series: the title names it, so no legend. */
-function TrendChart({ label, days, field }) {
+/** One metric per day over the period. A single series: the title names it, so no legend. */
+function TrendChart({ label, days, field, periodName, today }) {
   const [hover, setHover] = useState(null);
   if (!days) return <div className="ax-trend"><span className="ax-trend-label">{label}</span><Skeleton width="100%" height={72} /></div>;
   const values = days.map((day) => Number(day[field] || 0));
   const total = values.reduce((a, b) => a + b, 0);
   const max = Math.max(1, ...values);
-  const dayName = (key) => new Date(`${key}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short' });
-  const dayLong = (key) => new Date(`${key}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  const count = days.length;
+  const short = count <= 7;
+  // Long ranges label about seven days, counted back from the last day.
+  const step = short ? 1 : Math.ceil(count / 7);
+  const dayLong = (key) => dayText(key, { weekday: 'short', day: 'numeric', month: 'short' });
+  const axisLabel = (key, index) => {
+    if (key === today && index === count - 1) return 'Today';
+    if (short) return dayText(key, { weekday: 'short' });
+    // Name the month on the first label and where the month changes.
+    const newMonth = index - step < 0 || days[index - step].day.slice(5, 7) !== key.slice(5, 7);
+    return dayText(key, { day: 'numeric', month: newMonth ? 'short' : undefined });
+  };
+  const columns = { gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))` };
   const active = hover === null ? null : days[hover];
   return (
-    <figure className="ax-trend">
+    <figure className={`ax-trend${count > 31 ? ' is-dense' : count > 7 ? ' is-long' : ''}`}>
       <figcaption>
         <span className="ax-trend-label">{label}</span>
         <strong className="ax-trend-total">{formatNumber(total)}</strong>
-        <span className="ax-trend-hover" aria-hidden="true">{active ? `${dayLong(active.day)}: ${formatNumber(values[hover])}` : ' '}</span>
+        <span className="ax-trend-hover" aria-hidden="true">{active ? `${dayLong(active.day)}: ${formatNumber(values[hover])}` : ' '}</span>
       </figcaption>
-      <div className="ax-trend-bars" role="img" aria-label={`${label} per day for the last 7 days, ${formatNumber(total)} in total`} onMouseLeave={() => setHover(null)}>
+      <div className="ax-trend-bars" style={columns} role="img" aria-label={`${label} per day, ${periodName}, ${formatNumber(total)} in total`} onMouseLeave={() => setHover(null)}>
         {values.map((value, index) => (
-          <span key={days[index].day} className={`ax-trend-col${hover === index ? ' is-hover' : ''}${index === values.length - 1 ? ' is-today' : ''}`} onMouseEnter={() => setHover(index)}>
+          <span key={days[index].day} className={`ax-trend-col${hover === index ? ' is-hover' : ''}${days[index].day === today ? ' is-today' : ''}`} onMouseEnter={() => setHover(index)}>
             <span className="ax-trend-bar" style={{ height: value ? `${Math.max(4, (value / max) * 100)}%` : 0 }} />
           </span>
         ))}
       </div>
-      <div className="ax-trend-axis" aria-hidden="true">{days.map((day, index) => <span key={day.day}>{index === days.length - 1 ? 'Today' : dayName(day.day)}</span>)}</div>
+      <div className="ax-trend-axis" style={columns} aria-hidden="true">
+        {days.map((day, index) => <span key={day.day}>{(count - 1 - index) % step === 0 ? axisLabel(day.day, index) : ''}</span>)}
+      </div>
       <table className="ax-sr-only"><caption>{label}</caption><tbody>{days.map((day, index) => <tr key={day.day}><th scope="row">{dayLong(day.day)}</th><td>{values[index]}</td></tr>)}</tbody></table>
     </figure>
   );

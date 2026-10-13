@@ -787,3 +787,32 @@ button.ax-mini-item:hover { background: var(--surface-2); }
 .ax-onboarding small { color: var(--ink3); font-size: 11.5px; }
 .ax-today-tools { display: flex; align-items: center; gap: 12px; }
 .ax-today-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+
+/* Today: period filter, period counts, and charts for any range */
+.ax-today-tools { flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; }
+.ax-period { display: grid; gap: 4px; }
+.ax-period-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.admin-root .ax-period select { width: auto; min-width: 140px; height: 34px; min-height: 34px; padding-top: 0; padding-bottom: 0; }
+.ax-period-dates { display: flex; align-items: center; gap: 6px; }
+.ax-period-dates > span { color: var(--ink3); }
+.admin-root .ax-period-dates input { width: 150px; height: 34px; min-height: 34px; padding-top: 0; padding-bottom: 0; }
+.ax-period .ax-field-error { max-width: 340px; }
+.ax-kpis.is-period { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.ax-kpi.is-danger .ax-kpi-value { color: var(--danger); }
+.ax-trend.is-long .ax-trend-bars { gap: 2px; }
+.ax-trend.is-long .ax-trend-bar { width: 80%; }
+.ax-trend.is-dense .ax-trend-bars { gap: 1px; }
+.ax-trend.is-dense .ax-trend-bar { width: 100%; border-radius: 2px 2px 0 0; }
+.ax-trend-axis span { display: flex; justify-content: center; white-space: nowrap; min-width: 0; }
+.ax-trend:is(.is-long, .is-dense) .ax-trend-axis span:first-child { justify-content: flex-start; }
+.ax-trend:is(.is-long, .is-dense) .ax-trend-axis span:last-child { justify-content: flex-end; }
+@media (max-width: 1200px) {
+  .ax-kpis.is-period { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .ax-kpis.is-period { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ax-trends { grid-template-columns: minmax(0, 1fr); }
+  .ax-today-tools { justify-content: flex-start; width: 100%; }
+  .ax-period-dates { flex: 1 1 100%; }
+  .admin-root .ax-period-dates input { width: auto; flex: 1; min-width: 0; }
+}
