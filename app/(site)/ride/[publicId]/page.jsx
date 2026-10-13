@@ -77,11 +77,8 @@ function WorkEmailBadge({ size = 20 }) {
   return <img className="fx-share-workmail" src="/assets/work-email-verified.png" alt="Work email verified" width={size} height={size} />;
 }
 
+/** Public links never show the host's photo (decision 2026-10-13). Show the initial only. */
 function Avatar({ host }) {
-  if (host.profilePhotoUrl) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img className="fx-share-avatar" src={host.profilePhotoUrl} alt="" width="52" height="52" />;
-  }
   return <span className="fx-share-avatar" aria-hidden="true">{host.displayName.charAt(0)}</span>;
 }
 
