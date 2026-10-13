@@ -318,7 +318,7 @@ export function SupportConversation({ ticketId, openRecord, onBack, onClose, onC
         </div>
         <h2>{ticket.subject}</h2>
         <div className="ax-thread-requester">
-          <Avatar name={ticket.requesterName} size="sm" />
+          <Avatar name={ticket.requesterName} src={ticket.requesterPhotoUrl} size="sm" />
           <RecordLink onOpen={openRecord ? () => openRecord('member', ticket.requesterUserId) : undefined}>{display(ticket.requesterName)}</RecordLink>
           {ticket.requesterMobile ? <a className="ax-contact" href={`tel:${ticket.requesterMobile}`}><Icon name="phone" size={13} /><span className="ax-mono">{ticket.requesterMobile}</span></a> : null}
           {ticket.requesterEmail ? <a className="ax-contact" href={`mailto:${ticket.requesterEmail}`}><Icon name="mail" size={13} />{ticket.requesterEmail}</a> : null}

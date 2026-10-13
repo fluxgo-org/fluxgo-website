@@ -87,8 +87,24 @@ export function Kbd({ children }) {
   return <kbd className="ax-kbd">{children}</kbd>;
 }
 
-export function Avatar({ name, size = 'md' }) {
-  return <span className={`ax-avatar is-${size}`} aria-hidden="true">{initials(name)}</span>;
+/** Accept only HTTPS photo URLs. The local mock API uses http://localhost. */
+function safePhotoUrl(src) {
+  if (typeof src !== 'string') return null;
+  return src.startsWith('https://') || /^http:\/\/localhost(:\d+)?\//.test(src) ? src : null;
+}
+
+/** Member photo in a circle. Shows initials when there is no photo or the photo fails to load. */
+export function Avatar({ name, size = 'md', src }) {
+  const photo = safePhotoUrl(src);
+  const [failedSrc, setFailedSrc] = useState(null);
+  const showPhoto = photo && failedSrc !== photo;
+  return (
+    <span className={`ax-avatar is-${size}${showPhoto ? ' has-photo' : ''}`} aria-hidden="true">
+      {showPhoto
+        ? <img key={photo} src={photo} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailedSrc(photo)} />
+        : initials(name)}
+    </span>
+  );
 }
 
 /** Copy one value to the clipboard and confirm with a short check mark. */

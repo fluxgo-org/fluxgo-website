@@ -165,7 +165,7 @@ export const RECORD_SECTIONS = {
       ...dateParams(filters, 'joinedFrom', 'joinedTo', 'createdFrom', 'createdTo'),
     }),
     columns: ({ now }) => [
-      { key: 'name', label: 'Member', width: 230, locked: true, sortKey: 'name', defaultOrder: 'asc', render: (row) => <span className="ax-person"><Avatar name={row.name} size="sm" /><span><strong>{display(row.name)}</strong><InternalTag show={row.isInternal} /></span></span>, csv: (row) => row.name },
+      { key: 'name', label: 'Member', width: 230, locked: true, sortKey: 'name', defaultOrder: 'asc', render: (row) => <span className="ax-person"><Avatar name={row.name} src={row.profilePhotoUrl} size="sm" /><span><strong>{display(row.name)}</strong><InternalTag show={row.isInternal} /></span></span>, csv: (row) => row.name },
       { key: 'mobile', label: 'Mobile', width: 190, render: (row) => <Mono value={row.mobile} /> },
       { key: 'personalEmail', label: 'Email', width: 210, render: (row) => row.personalEmail ? <span className="ax-truncate" title={row.personalEmail}>{row.personalEmail}</span> : <span className="ax-muted">—</span> },
       { key: 'status', label: 'Account', width: 120, render: (row) => <Badge value={row.status} /> },

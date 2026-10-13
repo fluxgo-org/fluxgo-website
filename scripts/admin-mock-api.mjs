@@ -55,6 +55,15 @@ const members = Array.from({ length: 64 }, (_, index) => {
   };
 });
 members.forEach((member) => { member.onboardingCompleted = member.onboardingStep === 'COMPLETE'; });
+// About 1 in 3 members have a profile photo. The mock serves them itself. Member 3 has a broken URL to test the initials fallback.
+members.forEach((member, index) => {
+  member.profilePhotoUrl = index === 3 ? `http://localhost:${PORT}/mock-photos/missing-${index}.svg` : index % 3 === 0 ? `http://localhost:${PORT}/mock-photos/${index}.svg` : null;
+});
+const PHOTO_COLORS = [['#0f766e', '#99f6e4'], ['#7c3aed', '#ddd6fe'], ['#b45309', '#fde68a'], ['#be123c', '#fecdd3'], ['#1d4ed8', '#bfdbfe'], ['#15803d', '#bbf7d0']];
+function mockPhoto(n) {
+  const [dark, light] = PHOTO_COLORS[Math.floor(n / 3) % PHOTO_COLORS.length];
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" fill="${light}"/><circle cx="48" cy="38" r="18" fill="${dark}"/><path d="M14 96c4-22 18-32 34-32s30 10 34 32z" fill="${dark}"/></svg>`;
+}
 const internalIds = () => new Set(members.filter((member) => member.isInternal).map((member) => member.id));
 /** Apply the internal scope: exclude (default), include, or only. */
 function scoped(list, params, involved) {
@@ -124,7 +133,7 @@ const tickets = Array.from({ length: 16 }, (_, index) => {
   if (index % 3 === 0 || status === 'CLOSED') messages.push({ id: randomUUID(), senderUserId: null, senderAdminUserId: admins[1].id, senderRole: 'SUPPORT', text: `Hi ${requester.firstName}, I am checking this with the driver now.`, createdAt: iso(created + minutes(25)) });
   if (index % 3 === 0 && index < 10 && index !== 0) messages.push({ id: randomUUID(), senderUserId: requester.id, senderAdminUserId: null, senderRole: 'REQUESTER', text: 'Thank you. Any update?', createdAt: iso(-minutes(int(15, 200))) });
   const last = messages[messages.length - 1];
-  return { assignedAdminUserId: index % 4 === 1 ? admins[1].id : null, assignedAdminName: index % 4 === 1 ? admins[1].email : null, notes: index === 2 ? [{ id: randomUUID(), adminUserId: admins[1].id, adminName: admins[1].email, text: 'Called the driver. He will refund the extra amount by Friday.', createdAt: iso(-minutes(90)) }] : [], id: randomUUID(), publicId: ref('SP'), requesterUserId: requester.id, requesterName: requester.name, requesterEmail: requester.personalEmail, requesterMobile: requester.mobile, assignedAgentUserId: null, subject: SUBJECTS[index % SUBJECTS.length], category: pick(['RIDE', 'BOOKING', 'ACCOUNT', 'GENERAL']), status, createdAt: iso(created), updatedAt: last.createdAt, closedAt: status === 'CLOSED' ? last.createdAt : null, messages };
+  return { assignedAdminUserId: index % 4 === 1 ? admins[1].id : null, assignedAdminName: index % 4 === 1 ? admins[1].email : null, notes: index === 2 ? [{ id: randomUUID(), adminUserId: admins[1].id, adminName: admins[1].email, text: 'Called the driver. He will refund the extra amount by Friday.', createdAt: iso(-minutes(90)) }] : [], id: randomUUID(), publicId: ref('SP'), requesterUserId: requester.id, requesterName: requester.name, requesterPhotoUrl: requester.profilePhotoUrl, requesterEmail: requester.personalEmail, requesterMobile: requester.mobile, assignedAgentUserId: null, subject: SUBJECTS[index % SUBJECTS.length], category: pick(['RIDE', 'BOOKING', 'ACCOUNT', 'GENERAL']), status, createdAt: iso(created), updatedAt: last.createdAt, closedAt: status === 'CLOSED' ? last.createdAt : null, messages };
 });
 
 const reviews = bookings.filter((booking) => booking.status === 'COMPLETED').slice(0, 30).map((booking, index) => {
@@ -320,7 +329,7 @@ function route(method, path, params, body, authed, admin) {
     const lite = (trip) => ({ id: trip.id, publicId: trip.publicId, origin: trip.origin, destination: trip.destination, driverUserId: trip.driverUserId, driverName: trip.driverName, departureAt: trip.departureAt, seatsTotal: trip.seatsTotal, seatsAvailable: trip.seatsAvailable, status: trip.status });
     return [200, {
       generatedAt: iso(0),
-      support: { awaitingReply: waiting.length, items: waiting.slice(0, 8).map((ticket) => ({ id: ticket.id, publicId: ticket.publicId, subject: ticket.subject, category: ticket.category, requesterName: ticket.requesterName, waitingSince: lastMessage(ticket).createdAt })) },
+      support: { awaitingReply: waiting.length, items: waiting.slice(0, 8).map((ticket) => ({ id: ticket.id, publicId: ticket.publicId, subject: ticket.subject, category: ticket.category, requesterName: ticket.requesterName, requesterPhotoUrl: ticket.requesterPhotoUrl, waitingSince: lastMessage(ticket).createdAt })) },
       trips: { departingSoon: soon.length, inProgress: live.length, departingSoonItems: soon.slice(0, 8).map(lite), inProgressItems: live.slice(0, 8).map(lite) },
       bookings: { awaitingDriver: requested.length, items: requested.slice(0, 8).map((booking) => ({ id: booking.id, publicId: booking.publicId, tripId: booking.tripId, tripPublicId: booking.tripPublicId, bookedByName: booking.bookedByName, passengerCount: booking.passengerCount, createdAt: booking.createdAt, departureAt: booking.tripDepartureAt })) },
       vehicles: { awaitingRecheck: manualVehicles.filter((vehicle) => vehicle.state === 'AWAITING_RECHECK').length },
@@ -536,6 +545,13 @@ createServer((request, response) => {
     vary: 'origin',
   };
   if (request.method === 'OPTIONS') { response.writeHead(204, headers); response.end(); return; }
+  const photo = url.pathname.match(/^\/mock-photos\/(\d+)\.svg$/);
+  if (photo && request.method === 'GET') {
+    response.writeHead(200, { 'content-type': 'image/svg+xml', 'cache-control': 'max-age=3600' });
+    response.end(mockPhoto(Number(photo[1])));
+    return;
+  }
+  if (url.pathname.startsWith('/mock-photos/')) { response.writeHead(404); response.end(); return; }
   let raw = '';
   request.on('data', (chunk) => { raw += chunk; });
   request.on('end', () => {
