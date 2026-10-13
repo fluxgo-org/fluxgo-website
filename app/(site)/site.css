@@ -778,7 +778,7 @@ body:has(> .fx) { margin: 0; }
 .fx-share-ok { display: inline-flex; align-items: center; gap: 5px; color: var(--brand); }
 
 .fx-share-host-row { display: flex; align-items: center; gap: 14px; }
-.fx-share-avatar { display: grid; place-items: center; flex: 0 0 52px; width: 52px; height: 52px; border-radius: 50%; object-fit: cover; background: var(--tint); color: var(--brand); font-weight: 700; font-size: 20px; }
+.fx-share-avatar { display: grid; place-items: center; flex: 0 0 52px; width: 52px; height: 52px; border-radius: 50%; background: var(--tint); color: var(--brand); font-weight: 700; font-size: 20px; }
 .fx-share-host-stats { display: flex; align-items: center; gap: 5px; font-size: 14px !important; margin-top: 2px; }
 .fx-share-host-name { display: flex; align-items: center; gap: 6px; }
 .fx-share-workmail { flex: 0 0 auto; object-fit: contain; }
