@@ -172,6 +172,43 @@ function trend() {
 }
 const trends = trend();
 
+// Set ADMIN_MOCK_LEGACY=1 to act like an API from before the date filter: no period, and from/to give 400.
+const LEGACY = process.env.ADMIN_MOCK_LEGACY === '1';
+const kolkataDay = (date = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+const shiftDay = (key, count) => { const date = new Date(`${key}T00:00:00Z`); date.setUTCDate(date.getUTCDate() + count); return date.toISOString().slice(0, 10); };
+/** Stable made-up counts for one day, so a range shows the same numbers on every load. */
+function dayCounts(day) {
+  let hash = 0;
+  for (const char of day) hash = (hash * 31 + char.charCodeAt(0)) % 2147483647;
+  const value = (max, salt) => { const x = Math.sin(hash * 0.001 + salt * 12.9898) * 43758.5453; return Math.floor((x - Math.floor(x)) * (max + 1)); };
+  const partial = day === kolkataDay() ? 0.5 : 1;
+  return {
+    day,
+    newMembers: Math.round(value(9, 1) * partial), ridesPublished: Math.round((2 + value(9, 2)) * partial),
+    bookings: Math.round((3 + value(15, 3)) * partial), ridesCompleted: Math.round(value(8, 4) * partial),
+    ticketsOpened: Math.round(value(3, 5) * partial), issueReports: Math.round(value(4, 6) * partial), safetyReports: Math.round(value(2, 8) * partial),
+  };
+}
+/** Build the period block, or return an error the way the API does. */
+function periodFor(params) {
+  const from = params.get('from');
+  const to = params.get('to');
+  const bad = (message) => ({ error: [400, { error: { code: 'INVALID_REQUEST', message } }] });
+  if (Boolean(from) !== Boolean(to)) return bad('Send both from and to, or neither');
+  const today = kolkataDay();
+  const start = from || today;
+  const end = to || today;
+  if (![start, end].every((key) => /^\d{4}-\d{2}-\d{2}$/.test(key))) return bad('Use YYYY-MM-DD dates');
+  if (end > today) return bad('to must not be after today');
+  if (start > end) return bad('from must be on or before to');
+  const days = Math.round((Date.parse(end) - Date.parse(start)) / 86_400_000) + 1;
+  if (days > 92) return bad('The range must be 92 days or fewer');
+  const daily = Array.from({ length: days }, (_, index) => dayCounts(shiftDay(start, index)));
+  const totals = {};
+  for (const key of ['newMembers', 'ridesPublished', 'bookings', 'ridesCompleted', 'ticketsOpened', 'issueReports', 'safetyReports']) totals[key] = daily.reduce((total, row) => total + row[key], 0);
+  return { period: { from: start, to: end, days, totals, daily: daily.map(({ day, newMembers, ridesPublished, bookings, ridesCompleted }) => ({ day, newMembers, ridesPublished, bookings, ridesCompleted })) } };
+}
+
 function lastMessage(ticket) { return ticket.messages[ticket.messages.length - 1]; }
 function supportRow(ticket) {
   const last = lastMessage(ticket);
@@ -269,6 +306,9 @@ function route(method, path, params, body, authed, admin) {
     } }];
   }
   if (path === '/v1/admin/dashboard/attention') {
+    if (LEGACY && (params.has('from') || params.has('to'))) return [400, { error: { code: 'VALIDATION_FAILED', message: 'property from should not exist' } }];
+    const range = LEGACY ? {} : periodFor(params);
+    if (range.error) return range.error;
     const trips = scoped(tripsAll, params, tripInternal);
     const bookings = scoped(bookingsAll, params, bookingInternal);
     const tickets = scoped(ticketsAll, params, (ticket, ids) => ids.has(ticket.requesterUserId));
@@ -286,6 +326,7 @@ function route(method, path, params, body, authed, admin) {
       vehicles: { awaitingRecheck: manualVehicles.filter((vehicle) => vehicle.state === 'AWAITING_RECHECK').length },
       reviews: { issueReportsLast7Days: recent.filter((review) => review.issueCodes.length).length, safetyReportsLast7Days: recent.filter((review) => review.hasSafetyIssue).length || reviews.filter((review) => review.hasSafetyIssue).length },
       trends,
+      ...(range.period ? { period: range.period } : {}),
     }];
   }
   if (path === '/v1/admin/members') {
