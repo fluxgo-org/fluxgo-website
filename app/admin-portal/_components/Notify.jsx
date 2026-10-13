@@ -21,6 +21,7 @@ export function NotifyView({ params, setParams, navigate }) {
   const [audience, setAudience] = useState('members');
   const [recipients, setRecipients] = useState([]);
   const [activeTotal, setActiveTotal] = useState(null);
+  const [internalTotal, setInternalTotal] = useState(null);
   const [type, setType] = useState('ANNOUNCEMENT');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -49,7 +50,9 @@ export function NotifyView({ params, setParams, navigate }) {
   useEffect(() => { void loadRecent(); }, [loadRecent]);
   useEffect(() => {
     if (audience !== 'all' || activeTotal !== null) return;
-    requestApi('/admin/members?status=ACTIVE&limit=1&offset=0').then((result) => setActiveTotal(result?.total ?? 0)).catch(() => setActiveTotal(null));
+    // Internal members (Fluxgo team and test accounts) get notifications too. Lists hide them by default.
+    requestApi('/admin/members?status=ACTIVE&internal=include&limit=1&offset=0').then((result) => setActiveTotal(result?.total ?? 0)).catch(() => setActiveTotal(null));
+    requestApi('/admin/members?status=ACTIVE&internal=only&limit=1&offset=0').then((result) => setInternalTotal(result?.total ?? 0)).catch(() => setInternalTotal(null));
   }, [audience, activeTotal]);
 
   const count = audience === 'all' ? activeTotal || 0 : recipients.length;
@@ -60,7 +63,7 @@ export function NotifyView({ params, setParams, navigate }) {
   const collectAllActive = async () => {
     const ids = [];
     for (let offset = 0; ; offset += 100) {
-      const result = await requestApi(`/admin/members${queryString({ status: 'ACTIVE', limit: 100, offset, sort: 'createdAt', order: 'asc' })}`);
+      const result = await requestApi(`/admin/members${queryString({ status: 'ACTIVE', internal: 'include', limit: 100, offset, sort: 'createdAt', order: 'asc' })}`);
       (result?.items || []).forEach((member) => ids.push(member.id));
       setProgress(`Collecting recipients: ${formatNumber(ids.length)} of ${formatNumber(result?.total || 0)}`);
       if (!result?.hasMore) break;
@@ -115,7 +118,7 @@ export function NotifyView({ params, setParams, navigate }) {
           {audience === 'members' ? (
             <MemberPicker selected={recipients} onAdd={(member) => setRecipients((current) => (current.some((item) => item.id === member.id) ? current : [...current, member]))} onRemove={(id) => setRecipients((current) => current.filter((item) => item.id !== id))} />
           ) : (
-            <p className="ax-note"><Icon name="members" size={14} />{activeTotal === null ? 'Counting active members…' : `${plural(activeTotal, 'active member')} get this.`}{batches > 1 ? ` We send it in ${batches} batches of up to ${BATCH_SIZE}.` : ''}</p>
+            <p className="ax-note"><Icon name="members" size={14} />{activeTotal === null ? 'Counting active members…' : `${plural(activeTotal, 'active member')} get this${internalTotal ? `, with ${formatNumber(internalTotal)} internal` : ''}.`}{batches > 1 ? ` We send it in ${batches} batches of up to ${BATCH_SIZE}.` : ''}</p>
           )}
         </section>
         <section className="ax-form-section">
@@ -201,7 +204,7 @@ function MemberPicker({ selected, onAdd, onRemove }) {
   useEffect(() => {
     if (!debounced.trim()) { setResults([]); return; }
     let cancelled = false;
-    requestApi(`/admin/members${queryString({ query: debounced.trim(), status: 'ACTIVE', limit: 8, offset: 0 })}`)
+    requestApi(`/admin/members${queryString({ query: debounced.trim(), status: 'ACTIVE', internal: 'include', limit: 8, offset: 0 })}`)
       .then((result) => { if (!cancelled) { setResults(result?.items || []); setActive(0); } })
       .catch(() => { if (!cancelled) setResults([]); });
     return () => { cancelled = true; };
@@ -214,7 +217,7 @@ function MemberPicker({ selected, onAdd, onRemove }) {
   }, []);
 
   const choose = (member) => {
-    onAdd({ id: member.id, name: member.name || member.mobile, mobile: member.mobile });
+    onAdd({ id: member.id, name: member.name || member.mobile, mobile: member.mobile, isInternal: Boolean(member.isInternal) });
     setQuery('');
     setResults([]);
   };
@@ -238,7 +241,7 @@ function MemberPicker({ selected, onAdd, onRemove }) {
             return (
               <li key={member.id} role="option" aria-selected={index === active}>
                 <button type="button" className={index === active ? 'is-active' : ''} onMouseEnter={() => setActive(index)} onClick={() => choose(member)} disabled={added}>
-                  <Avatar name={member.name} size="sm" /><span><strong>{display(member.name)}</strong><span className="ax-muted ax-mono ax-small">{member.mobile}</span></span>{added ? <Icon name="check" size={14} /> : null}
+                  <Avatar name={member.name} size="sm" /><span><strong>{display(member.name)}{member.isInternal ? <span className="ax-internal-tag">Internal</span> : null}</strong><span className="ax-muted ax-mono ax-small">{member.mobile}</span></span>{added ? <Icon name="check" size={14} /> : null}
                 </button>
               </li>
             );
@@ -248,7 +251,7 @@ function MemberPicker({ selected, onAdd, onRemove }) {
       {selected.length ? (
         <div className="ax-chips">
           {selected.map((member) => (
-            <span key={member.id} className="ax-chip"><Avatar name={member.name} size="xs" />{member.name}<IconButton icon="close" size={12} label={`Remove ${member.name}`} onClick={() => onRemove(member.id)} /></span>
+            <span key={member.id} className="ax-chip"><Avatar name={member.name} size="xs" />{member.name}{member.isInternal ? <span className="ax-internal-tag">Internal</span> : null}<IconButton icon="close" size={12} label={`Remove ${member.name}`} onClick={() => onRemove(member.id)} /></span>
           ))}
         </div>
       ) : <p className="ax-field-hint">No recipients yet.</p>}

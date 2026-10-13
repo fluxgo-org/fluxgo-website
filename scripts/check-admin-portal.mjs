@@ -59,7 +59,8 @@ const requiredMarkers = [
   '/internal`',
   "'NOT_DELETED'",
   'onboardingProgress',
-  "requestApi('/admin/dashboard/summary' + scope)",
+  "requestApi('/admin/dashboard/summary' + queryString({ internal }))",
+  "status: 'ACTIVE', internal: 'include'",
 ];
 
 const missing = requiredMarkers.filter((marker) => !text.includes(marker));

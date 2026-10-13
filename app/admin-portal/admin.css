@@ -676,7 +676,7 @@ button.ax-mini-item:hover { background: var(--surface-2); }
 .ax-picker .ax-search { max-width: none; }
 .ax-picker-results { position: absolute; top: 44px; left: 0; right: 0; z-index: 30; padding: 6px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-lg); }
 .ax-picker-results button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px; border-radius: 8px; text-align: left; }
-.ax-picker-results button > span { display: grid; flex: 1; }
+.ax-picker-results button > span:not(.ax-avatar) { display: grid; flex: 1; }
 .ax-picker-results button.is-active { background: var(--tint); }
 .ax-picker-results button:disabled { opacity: 0.6; }
 
