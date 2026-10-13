@@ -21,12 +21,13 @@ async function copyText(text) {
 /**
  * "Share ride" on the public ride page. Opens the system share sheet with the
  * same text as the app. Browsers without a share sheet get WhatsApp and Copy.
- * The link goes in `url`, not in `text`: iOS WhatsApp makes a link and a
- * preview card only from `url`. Android joins the two as "text url".
+ * The share sheet gets one plain string with the link inside, the same
+ * payload the app sends. With a separate `url` (and `title`), iOS gives
+ * WhatsApp two items and WhatsApp shows no preview card.
  */
-export default function ShareRideButton({ title, text, url }) {
-  // WhatsApp and the clipboard get one string. The link has its own line.
-  const fullText = `${text}\n${url}`;
+export default function ShareRideButton({ text, url }) {
+  // One string, as in the app: "Book a seat: https://www.fluxgo.in/ride/…".
+  const fullText = `${text} ${url}`;
   const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const rootRef = useRef(null);
@@ -47,7 +48,7 @@ export default function ShareRideButton({ title, text, url }) {
   const share = async () => {
     if (typeof navigator.share === 'function') {
       try {
-        await navigator.share({ title, text, url });
+        await navigator.share({ text: fullText });
         return;
       } catch (error) {
         if (error?.name === 'AbortError') return;

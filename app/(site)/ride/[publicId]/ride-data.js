@@ -144,10 +144,9 @@ export function rideShareMessage(trip, url) {
     `Pickup: ${placeLabel(trip.origin)}`,
     `Drop: ${placeLabel(trip.destination)}`
   ].filter(Boolean);
-  // The link goes last, after its label. The share sheet sends `url` as a
-  // separate link so WhatsApp detects it and shows the preview card.
+  // The link goes last, after its label. ShareRideButton joins text and url
+  // into one string, the same message the app shares.
   return {
-    title: `Fluxgo ride · ${rideTitle(trip)}`,
     text: [
       [`Fluxgo ride · ${rideTitle(trip)}`, `${rideDate(trip.departureAt)} · ${rideTime(trip.departureAt)}`, availability].join('\n'),
       details.join('\n'),
