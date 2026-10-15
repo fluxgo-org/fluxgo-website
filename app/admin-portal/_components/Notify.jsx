@@ -18,7 +18,7 @@ import {
 import { errorText, isSessionExpired, queryString, requestApi } from '../_lib/api';
 import { dayEndIso, display, formatDateTime, formatNumber, plural, relativeTime } from '../_lib/format';
 import { useDebounced, useNow } from '../_lib/hooks';
-import { Avatar, Badge, Button, ConfirmDialog, EmptyState, Field, Icon, IconButton, Segmented, useToast } from './ui';
+import { Avatar, Badge, Button, ConfirmDialog, EmptyState, Field, Icon, IconButton, Segmented, useToast, VerifiedMark } from './ui';
 
 const TITLE_MAX = 160;
 const BODY_MAX = 2000;
@@ -373,7 +373,7 @@ function MemberPicker({ selected, onAdd, onRemove }) {
   }, []);
 
   const choose = (member) => {
-    onAdd({ id: member.id, name: member.name || member.mobile, mobile: member.mobile, profilePhotoUrl: member.profilePhotoUrl || null, isInternal: Boolean(member.isInternal) });
+    onAdd({ id: member.id, name: member.name || member.mobile, mobile: member.mobile, profilePhotoUrl: member.profilePhotoUrl || null, isInternal: Boolean(member.isInternal), isVerified: Boolean(member.isVerified) });
     setQuery('');
     setResults([]);
   };
@@ -397,7 +397,7 @@ function MemberPicker({ selected, onAdd, onRemove }) {
             return (
               <li key={member.id} role="option" aria-selected={index === active}>
                 <button type="button" className={index === active ? 'is-active' : ''} onMouseEnter={() => setActive(index)} onClick={() => choose(member)} disabled={added}>
-                  <Avatar name={member.name} src={member.profilePhotoUrl} size="sm" /><span><strong>{display(member.name)}{member.isInternal ? <span className="ax-internal-tag">Internal</span> : null}</strong><span className="ax-muted ax-mono ax-small">{member.mobile}</span></span>{added ? <Icon name="check" size={14} /> : null}
+                  <Avatar name={member.name} src={member.profilePhotoUrl} size="sm" /><span><strong>{display(member.name)}<VerifiedMark show={member.isVerified} size={13} />{member.isInternal ? <span className="ax-internal-tag">Internal</span> : null}</strong><span className="ax-muted ax-mono ax-small">{member.mobile}</span></span>{added ? <Icon name="check" size={14} /> : null}
                 </button>
               </li>
             );
@@ -407,7 +407,7 @@ function MemberPicker({ selected, onAdd, onRemove }) {
       {selected.length ? (
         <div className="ax-chips">
           {selected.map((member) => (
-            <span key={member.id} className="ax-chip"><Avatar name={member.name} src={member.profilePhotoUrl} size="xs" />{member.name}{member.isInternal ? <span className="ax-internal-tag">Internal</span> : null}<IconButton icon="close" size={12} label={`Remove ${member.name}`} onClick={() => onRemove(member.id)} /></span>
+            <span key={member.id} className="ax-chip"><Avatar name={member.name} src={member.profilePhotoUrl} size="xs" />{member.name}<VerifiedMark show={member.isVerified} size={12} />{member.isInternal ? <span className="ax-internal-tag">Internal</span> : null}<IconButton icon="close" size={12} label={`Remove ${member.name}`} onClick={() => onRemove(member.id)} /></span>
           ))}
         </div>
       ) : <p className="ax-field-hint">No recipients yet.</p>}

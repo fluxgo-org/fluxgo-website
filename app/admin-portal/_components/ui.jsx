@@ -108,6 +108,19 @@ export function Avatar({ name, size = 'md', src }) {
   );
 }
 
+/**
+ * The verified mark next to a member name. A member is verified when the work email is verified,
+ * the same rule as the verified badge in the app.
+ */
+export function VerifiedMark({ show, size = 14 }) {
+  if (!show) return null;
+  return (
+    <span className="ax-verified" role="img" aria-label="Verified" title="Verified: work email confirmed">
+      <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="8" /><path d="M4.6 8.2l2.2 2.2 4.6-4.8" /></svg>
+    </span>
+  );
+}
+
 /** Copy one value to the clipboard and confirm with a short check mark. */
 export function CopyButton({ value, label = 'Copy' }) {
   const [copied, setCopied] = useState(false);

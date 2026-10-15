@@ -90,10 +90,20 @@ const requiredMarkers = [
   'Use the page filters',
   'function bucketize(daily, by)',
   'ax-metric-col${hover === index',
+  'EXPORT_FORMATS',
+  "format === 'md'",
+  '/Filter /DCTDecode',
+  "canvasBlob(canvas, 'image/png')",
+  'exporter={exporter}',
+  'export function VerifiedMark',
+  '<VerifiedMark show={row.isVerified} />',
+  '<VerifiedMark show={row.driverVerified} />',
+  '<VerifiedMark show={row.bookedByVerified} />',
+  '<VerifiedMark show={ticket.requesterVerified}',
 ];
 
 // Removed code: the browser-side loop that collected every active member before a send.
-const removedMarkers = ['collectAllActive', "value: 'all', label: 'All active members'"];
+const removedMarkers = ['collectAllActive', "value: 'all', label: 'All active members'", "'Export CSV'"];
 
 const missing = requiredMarkers.filter((marker) => !text.includes(marker));
 if (missing.length) {
