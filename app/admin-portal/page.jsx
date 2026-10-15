@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AdminsView } from './_components/Admins';
+import { AnalyticsView } from './_components/Analytics';
 import { CommandPalette } from './_components/CommandPalette';
 import { RecordPanel } from './_components/Details';
 import { LoginScreen } from './_components/Login';
@@ -20,7 +21,7 @@ import { AdminSessionContext } from './_lib/session';
 import { registerServiceWorker, setAppBadge } from './_lib/push';
 
 const RECORD_KINDS = ['member', 'trip', 'booking', 'support', 'review', 'audit', 'send'];
-const GO_KEYS = { t: 'today', s: 'support', f: 'safety', m: 'members', r: 'trips', b: 'bookings', v: 'vehicles', n: 'notify', a: 'audit' };
+const GO_KEYS = { t: 'today', y: 'analytics', s: 'support', f: 'safety', m: 'members', r: 'trips', b: 'bookings', v: 'vehicles', n: 'notify', a: 'audit' };
 
 function readParams() {
   if (typeof window === 'undefined') return {};
@@ -267,6 +268,7 @@ function Console({ admin, onLogout, onSessionExpired }) {
 
         <main className={`ax-content is-${section}`}>
           {section === 'today' ? <TodayView admin={admin} openRecord={openRecord} navigate={navigate} onAttention={onAttention} /> : null}
+          {section === 'analytics' ? <AnalyticsView params={params} setParams={setParams} /> : null}
           {section === 'support' ? <SupportInbox params={params} setParams={setParams} openRecord={openRecord} waitingCount={attention?.support.awaitingReply} /> : null}
           {RECORD_SECTIONS[section] ? <RecordsView key={section} section={section} params={params} setParams={setParams} openRecord={openRecord} selected={selected} admins={admins} notify={notify} /> : null}
           {section === 'notify' ? <NotifyView params={params} setParams={setParams} navigate={navigate} openRecord={openRecord} /> : null}
@@ -287,7 +289,7 @@ function Console({ admin, onLogout, onSessionExpired }) {
           <div><dt><Kbd>⌘</Kbd><Kbd>K</Kbd></dt><dd>Search everything</dd></div>
           <div><dt><Kbd>/</Kbd></dt><dd>Search this list</dd></div>
           <div><dt><Kbd>[</Kbd></dt><dd>Collapse or expand the sidebar</dd></div>
-          <div><dt><Kbd>G</Kbd> then <Kbd>T</Kbd> <Kbd>S</Kbd> <Kbd>F</Kbd> <Kbd>M</Kbd> <Kbd>R</Kbd> <Kbd>B</Kbd> <Kbd>V</Kbd> <Kbd>N</Kbd> <Kbd>A</Kbd></dt><dd>Go to Today, Support, Safety, Members, Rides, Bookings, Vehicles, Notify, Audit</dd></div>
+          <div><dt><Kbd>G</Kbd> then <Kbd>T</Kbd> <Kbd>Y</Kbd> <Kbd>S</Kbd> <Kbd>F</Kbd> <Kbd>M</Kbd> <Kbd>R</Kbd> <Kbd>B</Kbd> <Kbd>V</Kbd> <Kbd>N</Kbd> <Kbd>A</Kbd></dt><dd>Go to Today, Analytics, Support, Safety, Members, Rides, Bookings, Vehicles, Notify, Audit</dd></div>
           <div><dt><Kbd>↑</Kbd><Kbd>↓</Kbd> <Kbd>↵</Kbd></dt><dd>Move in a table and open a row</dd></div>
           <div><dt><Kbd>J</Kbd><Kbd>K</Kbd></dt><dd>Next or previous ticket</dd></div>
           <div><dt><Kbd>R</Kbd></dt><dd>Write a reply</dd></div>

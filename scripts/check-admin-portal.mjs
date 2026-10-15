@@ -84,6 +84,12 @@ const requiredMarkers = [
   '`/admin/notifications/sends/${encodeURIComponent(id)}/recipients`',
   "if (kind === 'send') return <SendPanel",
   'fluxgo-notification-',
+  'requestApi(`/admin/analytics${key}`)',
+  "items: ['today', 'analytics', 'support', 'safety']",
+  'This chart only',
+  'Use the page filters',
+  'function bucketize(daily, by)',
+  'ax-metric-col${hover === index',
 ];
 
 // Removed code: the browser-side loop that collected every active member before a send.

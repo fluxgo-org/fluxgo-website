@@ -311,6 +311,73 @@ function dayCounts(day) {
   };
 }
 /** Build the period block, or return an error the way the API does. */
+/** Made-up Analytics data. Set ADMIN_MOCK_ANALYTICS_HISTORY=not_configured to preview partial days before tracking. */
+const ANALYTICS_HISTORY = process.env.ADMIN_MOCK_ANALYTICS_HISTORY || 'posthog';
+const ANALYTICS_GROUPS = ['active', 'growth', 'supply', 'demand', 'quality'];
+function analyticsFor(params) {
+  const today = kolkataDay();
+  const to = params.get('to') || today;
+  const from = params.get('from') || shiftDay(to, -29);
+  const bad = (message) => [400, { error: { code: 'INVALID_REQUEST', message } }];
+  if (Boolean(params.get('from')) !== Boolean(params.get('to'))) return bad('from and to must be sent together');
+  if (![from, to].every((key) => /^\d{4}-\d{2}-\d{2}$/.test(key))) return bad('Use YYYY-MM-DD dates');
+  if (to > today) return bad('to must not be after today in India time');
+  if (from > to) return bad('from must not be after to');
+  const count = Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000) + 1;
+  if (count > 366) return bad('The period must be at most 366 days');
+  const groups = (params.get('groups') || ANALYTICS_GROUPS.join(',')).split(',');
+  if (groups.some((group) => !ANALYTICS_GROUPS.includes(group))) return bad('Unknown group');
+  const internal = params.get('internal') || 'exclude';
+  // Internal members are about 1 in 12 of the activity.
+  const scale = internal === 'only' ? 0.08 : internal === 'include' ? 1.08 : 1;
+  const days = Array.from({ length: count }, (_, index) => shiftDay(from, index));
+  const noise = (day, salt, max) => {
+    let hash = 7;
+    for (const char of day) hash = (hash * 31 + char.charCodeAt(0)) % 2147483647;
+    const x = Math.sin(hash * 0.001 + salt * 12.9898) * 43758.5453;
+    return (x - Math.floor(x)) * max;
+  };
+  const age = (day) => Math.max(0, (Date.parse(day) - Date.parse(shiftDay(today, -400))) / 86_400_000);
+  const n = (value) => Math.max(0, Math.round(value * scale));
+  const tracking = shiftDay(today, -18);
+  const payload = { generatedAt: iso(0), period: { from, to, days: count }, internal };
+  if (groups.includes('active')) {
+    const dau = (day) => 40 + age(day) * 0.35 + noise(day, 1, 25) + (new Date(`${day}T00:00:00Z`).getUTCDay() % 6 === 0 ? 12 : 0);
+    const partial = ANALYTICS_HISTORY !== 'posthog';
+    payload.active = {
+      trackingStartedOn: tracking,
+      history: ANALYTICS_HISTORY,
+      truncated: false,
+      daily: days.map((day) => {
+        const low = partial && shiftDay(day, -29) <= tracking ? 0.55 : 1;
+        return { day, dau: n(dau(day) * low), wau: n(dau(day) * 2.9 * low), mau: n(dau(day) * 6.2 * low), partial: low < 1 };
+      }),
+    };
+  }
+  if (groups.includes('growth')) payload.growth = { daily: days.map((day) => { const signups = n(4 + noise(day, 2, 9)); return { day, signups, onboarded: Math.round(signups * (0.55 + noise(day, 3, 0.35))) }; }) };
+  if (groups.includes('supply')) payload.supply = { daily: days.map((day) => {
+    const ridesPublished = n(3 + noise(day, 4, 8));
+    const ridesCompleted = n(2 + noise(day, 5, 6));
+    const seatsOnCompleted = ridesCompleted * 3;
+    const seatsFilledOnCompleted = Math.round(seatsOnCompleted * (0.4 + noise(day, 6, 0.45)));
+    return { day, ridesPublished, seatsOffered: ridesPublished * 3, ridesWithBooking: Math.round(ridesPublished * (0.45 + noise(day, 7, 0.4))), ridesCancelled: Math.round(noise(day, 8, 2)),
+      ridesCompleted, seatsOnCompleted, seatsFilledOnCompleted, completedValue: seatsFilledOnCompleted * (350 + Math.round(noise(day, 9, 250))) };
+  }) };
+  if (groups.includes('demand')) payload.demand = { daily: days.map((day) => {
+    const bookings = n(5 + noise(day, 10, 14));
+    const cancelledByPassenger = Math.round(bookings * noise(day, 11, 0.12));
+    const cancelledByDriver = Math.round(bookings * noise(day, 12, 0.06));
+    const rejected = Math.round(bookings * noise(day, 13, 0.08));
+    const pending = day === today ? Math.round(bookings * 0.3) : 0;
+    return { day, bookings, seatsBooked: Math.round(bookings * 1.4), confirmed: Math.max(0, bookings - cancelledByPassenger - cancelledByDriver - rejected - pending), pending, rejected, cancelledByPassenger, cancelledByDriver };
+  }) };
+  if (groups.includes('quality')) payload.quality = { daily: days.map((day) => {
+    const reviews = n(2 + noise(day, 14, 7));
+    return { day, reviews, ratingTotal: Math.round(reviews * (4.1 + noise(day, 15, 0.8))), lowRatings: Math.round(noise(day, 16, 1.4)), issueReports: Math.round(noise(day, 17, 2)), safetyReports: Math.round(noise(day, 18, 1.2)), ticketsOpened: n(noise(day, 19, 4)) };
+  }) };
+  return [200, payload];
+}
+
 function periodFor(params) {
   const from = params.get('from');
   const to = params.get('to');
@@ -426,6 +493,7 @@ function route(method, path, params, body, authed, admin) {
       audit: newest(audit.map((row) => row.createdAt)),
     } }];
   }
+  if (path === '/v1/admin/analytics') return analyticsFor(params);
   if (path === '/v1/admin/dashboard/attention') {
     if (LEGACY && (params.has('from') || params.has('to'))) return [400, { error: { code: 'VALIDATION_FAILED', message: 'property from should not exist' } }];
     const range = LEGACY ? {} : periodFor(params);

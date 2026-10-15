@@ -6,6 +6,7 @@ import { useFocusTrap } from '../_lib/hooks';
 
 const ICON_PATHS = {
   today: 'M3 12l9-8 9 8M5 10v10h5v-6h4v6h5V10',
+  analytics: 'M4 20V11M10 20V5M16 20v-6M21 20H3',
   support: 'M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z',
   shield: 'M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z',
   members: 'M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM22 19v-1a4 4 0 0 0-3-3.9M16 3.1a3.5 3.5 0 0 1 0 6.8',
