@@ -19,7 +19,7 @@ import {
   SAFETY_ISSUES,
   statusLabel,
 } from '../_lib/format';
-import { Avatar, Badge, Icon, Mono } from '../_components/ui';
+import { Avatar, Badge, Icon, Mono, VerifiedMark } from '../_components/ui';
 import { filterSummary } from '../_lib/audience';
 
 export const NAV_GROUPS = [
@@ -167,7 +167,7 @@ export const RECORD_SECTIONS = {
       ...dateParams(filters, 'joinedFrom', 'joinedTo', 'createdFrom', 'createdTo'),
     }),
     columns: ({ now }) => [
-      { key: 'name', label: 'Member', width: 230, locked: true, sortKey: 'name', defaultOrder: 'asc', render: (row) => <span className="ax-person"><Avatar name={row.name} src={row.profilePhotoUrl} size="sm" /><span><strong>{display(row.name)}</strong><InternalTag show={row.isInternal} /></span></span>, csv: (row) => row.name },
+      { key: 'name', label: 'Member', width: 230, locked: true, sortKey: 'name', defaultOrder: 'asc', verified: (row) => row.isVerified, render: (row) => <span className="ax-person"><Avatar name={row.name} src={row.profilePhotoUrl} size="sm" /><span><strong>{display(row.name)}</strong><VerifiedMark show={row.isVerified} /><InternalTag show={row.isInternal} /></span></span>, csv: (row) => row.name },
       { key: 'mobile', label: 'Mobile', width: 190, render: (row) => <Mono value={row.mobile} /> },
       { key: 'personalEmail', label: 'Email', width: 210, render: (row) => row.personalEmail ? <span className="ax-truncate" title={row.personalEmail}>{row.personalEmail}</span> : <span className="ax-muted">—</span> },
       { key: 'status', label: 'Account', width: 120, render: (row) => <Badge value={row.status} /> },
@@ -219,12 +219,12 @@ export const RECORD_SECTIONS = {
     columns: ({ now, open }) => [
       { key: 'publicId', label: 'Reference', width: 150, locked: true, render: (row) => <Mono value={row.publicId} /> },
       { key: 'route', label: 'Route', width: 280, render: (row) => <span className="ax-route" title={`${row.origin} → ${row.destination}`}><span>{row.origin}</span><Icon name="arrowRight" size={12} /><span>{row.destination}</span></span>, csv: (row) => `${row.origin} → ${row.destination}` },
-      { key: 'driverName', label: 'Driver', width: 170, render: (row) => <><RecordLink onOpen={() => open('member', row.driverUserId)}>{display(row.driverName)}</RecordLink><InternalTag show={row.isInternal} /></>, csv: (row) => row.driverName },
+      { key: 'driverName', label: 'Driver', width: 170, verified: (row) => row.driverVerified, render: (row) => <><RecordLink onOpen={() => open('member', row.driverUserId)}>{display(row.driverName)}</RecordLink><VerifiedMark show={row.driverVerified} /><InternalTag show={row.isInternal} /></>, csv: (row) => row.driverName },
       { key: 'departureAt', label: 'Departure', width: 180, sortKey: 'departureAt', render: (row) => <When value={row.departureAt} now={now} />, csv: (row) => row.departureAt },
       { key: 'status', label: 'Status', width: 130, render: (row) => <Badge value={row.status} /> },
       { key: 'seats', label: 'Seats booked', width: 140, sortKey: 'seatsAvailable', defaultOrder: 'asc', render: (row) => <Seats total={row.seatsTotal} available={row.seatsAvailable} />, csv: (row) => `${row.seatsTotal - row.seatsAvailable}/${row.seatsTotal}` },
       { key: 'bookingCount', label: 'Bookings', width: 100, align: 'end', sortKey: 'bookingCount', render: (row) => formatNumber(row.bookingCount) },
-      { key: 'pricePerSeat', label: 'Fare / seat', width: 110, align: 'end', sortKey: 'pricePerSeat', render: (row) => formatMoney(row.pricePerSeat) },
+      { key: 'pricePerSeat', label: 'Fare / seat', width: 110, align: 'end', sortKey: 'pricePerSeat', render: (row) => formatMoney(row.pricePerSeat), text: (row) => formatMoney(row.pricePerSeat) },
       { key: 'bookingMode', label: 'Mode', width: 110, render: (row) => <Badge value={row.bookingMode} tone="neutral" dot={false} /> },
       { key: 'createdAt', label: 'Published', width: 170, sortKey: 'createdAt', defaultHidden: true, render: (row) => <When value={row.createdAt} now={now} />, csv: (row) => row.createdAt },
     ],
@@ -263,10 +263,10 @@ export const RECORD_SECTIONS = {
       { key: 'publicId', label: 'Reference', width: 150, locked: true, render: (row) => <Mono value={row.publicId} /> },
       { key: 'tripPublicId', label: 'Ride', width: 150, render: (row) => <RecordLink onOpen={() => open('trip', row.tripId)} title="Open ride"><span className="ax-mono">{row.tripPublicId}</span></RecordLink> },
       { key: 'route', label: 'Pickup → drop', width: 230, render: (row) => <span className="ax-truncate" title={row.route}>{row.route.replace(' to ', ' → ')}</span> },
-      { key: 'bookedByName', label: 'Booker', width: 170, render: (row) => <><RecordLink onOpen={() => open('member', row.bookedByUserId)}>{display(row.bookedByName)}</RecordLink><InternalTag show={row.isInternal} /></>, csv: (row) => row.bookedByName },
+      { key: 'bookedByName', label: 'Booker', width: 170, verified: (row) => row.bookedByVerified, render: (row) => <><RecordLink onOpen={() => open('member', row.bookedByUserId)}>{display(row.bookedByName)}</RecordLink><VerifiedMark show={row.bookedByVerified} /><InternalTag show={row.isInternal} /></>, csv: (row) => row.bookedByName },
       { key: 'passengerCount', label: 'Seats', width: 80, align: 'end', sortKey: 'passengerCount', render: (row) => formatNumber(row.passengerCount) },
       { key: 'status', label: 'Status', width: 170, render: (row) => <Badge value={row.status} /> },
-      { key: 'totalPrice', label: 'Total', width: 100, align: 'end', sortKey: 'totalPrice', render: (row) => formatMoney(row.totalPrice) },
+      { key: 'totalPrice', label: 'Total', width: 100, align: 'end', sortKey: 'totalPrice', render: (row) => formatMoney(row.totalPrice), text: (row) => formatMoney(row.totalPrice) },
       { key: 'tripDepartureAt', label: 'Departure', width: 180, sortKey: 'departureAt', render: (row) => <When value={row.tripDepartureAt} now={now} />, csv: (row) => row.tripDepartureAt },
       { key: 'createdAt', label: 'Booked', width: 170, sortKey: 'createdAt', render: (row) => <When value={row.createdAt} now={now} />, csv: (row) => row.createdAt },
       { key: 'paymentStatus', label: 'Payment', width: 130, defaultHidden: true, render: (row) => <Badge value={row.paymentStatus} tone="neutral" dot={false} /> },
@@ -309,8 +309,8 @@ export const RECORD_SECTIONS = {
       { key: 'submittedAt', label: 'Submitted', width: 170, sortKey: 'submittedAt', render: (row) => <When value={row.submittedAt} now={now} />, csv: (row) => row.submittedAt },
       { key: 'rating', label: 'Rating', width: 90, sortKey: 'rating', defaultOrder: 'asc', render: (row) => <Stars rating={row.rating} /> },
       { key: 'issueCodes', label: 'Issues', width: 330, render: (row) => <IssueChips codes={row.issueCodes} />, csv: (row) => row.issueCodes.map(issueLabel).join('; ') },
-      { key: 'reviewerName', label: 'From', width: 160, render: (row) => <><RecordLink onOpen={() => open('member', row.reviewerUserId)}>{display(row.reviewerName)}</RecordLink><InternalTag show={row.isInternal} /></>, csv: (row) => row.reviewerName },
-      { key: 'revieweeName', label: 'About', width: 160, render: (row) => <RecordLink onOpen={() => open('member', row.revieweeUserId)}>{display(row.revieweeName)}</RecordLink> },
+      { key: 'reviewerName', label: 'From', width: 160, verified: (row) => row.reviewerVerified, render: (row) => <><RecordLink onOpen={() => open('member', row.reviewerUserId)}>{display(row.reviewerName)}</RecordLink><VerifiedMark show={row.reviewerVerified} /><InternalTag show={row.isInternal} /></>, csv: (row) => row.reviewerName },
+      { key: 'revieweeName', label: 'About', width: 160, verified: (row) => row.revieweeVerified, render: (row) => <><RecordLink onOpen={() => open('member', row.revieweeUserId)}>{display(row.revieweeName)}</RecordLink><VerifiedMark show={row.revieweeVerified} /></> },
       { key: 'direction', label: 'Direction', width: 170, defaultHidden: true, render: (row) => statusLabel(row.direction) },
       { key: 'comment', label: 'Comment', width: 280, render: (row) => row.comment ? <span className="ax-truncate" title={row.comment}>{row.comment}</span> : <span className="ax-muted">No comment</span> },
       { key: 'tripPublicId', label: 'Ride', width: 150, render: (row) => <RecordLink onOpen={() => open('trip', row.tripId)}><span className="ax-mono">{row.tripPublicId}</span></RecordLink> },
@@ -348,7 +348,7 @@ export const RECORD_SECTIONS = {
     columns: ({ now, open }) => [
       { key: 'registrationNumber', label: 'Registration', width: 150, locked: true, sortKey: 'registrationNumber', defaultOrder: 'asc', render: (row) => <Mono value={row.registrationNumber} /> },
       { key: 'vehicle', label: 'Vehicle', width: 230, render: (row) => <span><strong>{row.make} {row.model}</strong>{row.color ? <span className="ax-muted"> · {row.color}</span> : null}</span>, csv: (row) => `${row.make} ${row.model}` },
-      { key: 'memberName', label: 'Owner', width: 170, render: (row) => <><RecordLink onOpen={() => open('member', row.memberId)}>{display(row.memberName)}</RecordLink><InternalTag show={row.isInternal} /></>, csv: (row) => row.memberName },
+      { key: 'memberName', label: 'Owner', width: 170, verified: (row) => row.memberVerified, render: (row) => <><RecordLink onOpen={() => open('member', row.memberId)}>{display(row.memberName)}</RecordLink><VerifiedMark show={row.memberVerified} /><InternalTag show={row.isInternal} /></>, csv: (row) => row.memberName },
       { key: 'verificationStatus', label: 'Check', width: 190, render: (row) => <span className="ax-badge-row"><Badge value={row.verificationStatus} />{row.isManual ? <Badge tone="warning" dot={false}>Added by hand</Badge> : null}</span>, csv: (row) => `${row.verificationStatus}${row.isManual ? ' (manual)' : ''}` },
       { key: 'checkedAt', label: 'Last check', width: 170, sortKey: 'checkedAt', render: (row) => <When value={row.checkedAt} now={now} />, csv: (row) => row.checkedAt },
       { key: 'rcStatus', label: 'Check detail', width: 170, defaultHidden: true, render: (row) => row.rcStatus ? <span className="ax-mono ax-small">{row.rcStatus}</span> : <span className="ax-muted">—</span> },
@@ -418,7 +418,7 @@ export const RECORD_SECTIONS = {
     columns: ({ now, open }) => [
       { key: 'createdAt', label: 'Time', width: 170, sortKey: 'createdAt', render: (row) => <When value={row.createdAt} now={now} />, csv: (row) => row.createdAt },
       { key: 'adminUsername', label: 'Admin', width: 200, render: (row) => <span className="ax-truncate">{display(row.adminUsername)}</span> },
-      { key: 'action', label: 'Action', width: 210, render: (row) => <strong>{auditActionLabel(row.action)}</strong>, csv: (row) => row.action },
+      { key: 'action', label: 'Action', width: 210, render: (row) => <strong>{auditActionLabel(row.action)}</strong>, csv: (row) => row.action, text: (row) => auditActionLabel(row.action) },
       { key: 'resource', label: 'Record', width: 220, render: (row) => <AuditResource row={row} open={open} />, csv: (row) => `${row.resourceType}:${row.resourceId || ''}` },
       { key: 'reason', label: 'Reason or details', width: 260, render: (row) => <span className="ax-truncate">{auditDetails(row)}</span>, csv: (row) => auditDetails(row) },
       { key: 'ipAddress', label: 'IP address', width: 140, defaultHidden: true, render: (row) => <span className="ax-mono ax-small">{display(row.ipAddress)}</span> },

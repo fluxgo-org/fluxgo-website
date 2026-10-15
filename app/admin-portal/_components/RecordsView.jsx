@@ -3,10 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RECORD_SECTIONS } from '../_config/sections';
 import { errorText, isSessionExpired, queryString, requestApi } from '../_lib/api';
-import { formatNumber, plural } from '../_lib/format';
 import { isTypingTarget, useNow } from '../_lib/hooks';
 import { useLiveRefresh } from '../_lib/live';
-import { DataTable, downloadCsv, PAGE_SIZES } from './DataTable';
+import { DataTable, PAGE_SIZES } from './DataTable';
 import { FilterBar } from './FilterBar';
 import { Button, EmptyState } from './ui';
 
@@ -28,7 +27,7 @@ export function readListState(section, params) {
   return { filters, page, size, sort };
 }
 
-export function RecordsView({ section, params, setParams, openRecord, selected, admins, notify }) {
+export function RecordsView({ section, params, setParams, openRecord, selected, admins }) {
   const config = RECORD_SECTIONS[section];
   const now = useNow();
   const { filters, page, size, sort } = readListState(section, params);
@@ -36,7 +35,6 @@ export function RecordsView({ section, params, setParams, openRecord, selected, 
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [exporting, setExporting] = useState(false);
   const sequence = useRef(0);
   const searchRef = useRef(null);
 
@@ -87,24 +85,20 @@ export function RecordsView({ section, params, setParams, openRecord, selected, 
       : field)),
   }), [config, admins]);
 
-  const exportCsv = async () => {
-    setExporting(true);
-    try {
+  const exporter = useMemo(() => ({
+    title: config.label,
+    limit: EXPORT_LIMIT,
+    filename: () => `fluxgo-${section}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}`,
+    load: async () => {
       const all = [];
       for (let offset = 0; offset < Math.min(total, EXPORT_LIMIT); offset += 100) {
         const result = await requestApi(`${config.endpoint}${queryString({ ...apiParams, limit: 100, offset })}`);
         all.push(...(result?.items || []));
         if (!result?.hasMore) break;
       }
-      const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
-      downloadCsv(`fluxgo-${section}-${stamp}.csv`, columns, all);
-      notify?.(total > EXPORT_LIMIT ? `Exported the first ${formatNumber(EXPORT_LIMIT)} of ${formatNumber(total)} rows.` : `Exported ${plural(all.length, 'row')}.`);
-    } catch (requestError) {
-      if (!isSessionExpired(requestError)) notify?.(errorText(requestError), 'danger');
-    } finally {
-      setExporting(false);
-    }
-  };
+      return all;
+    },
+  }), [config, section, total, apiParams]);
 
   const hasFilters = Object.keys(filters).length > 0;
   const getRowId = config.getRowId || ((row) => row.id || row.publicId);
@@ -131,8 +125,7 @@ export function RecordsView({ section, params, setParams, openRecord, selected, 
         pageSize={size}
         onPageChange={(next) => setParams({ page: next > 0 ? String(next + 1) : undefined })}
         onPageSizeChange={(next) => setParams({ size: next === PAGE_SIZES[0] ? undefined : String(next), page: undefined })}
-        onExport={exportCsv}
-        exporting={exporting}
+        exporter={exporter}
         empty={<EmptyState title={hasFilters ? 'No matching records' : `No ${config.label.toLowerCase()} yet`}>{hasFilters ? 'Change or clear the filters to see more.' : null}</EmptyState>}
       />
     </div>

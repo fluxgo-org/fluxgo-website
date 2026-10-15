@@ -21,9 +21,9 @@ import {
 } from '../_lib/format';
 import { useDebounced, useNow } from '../_lib/hooks';
 import { useLiveRefresh } from '../_lib/live';
-import { DataTable, downloadCsv } from './DataTable';
+import { DataTable } from './DataTable';
 import { SupportConversation } from './Support';
-import { Avatar, Badge, Button, ConfirmDialog, CopyButton, Detail, EmptyState, Field, Icon, IconButton, Mono, Section, Skeleton, useToast } from './ui';
+import { Avatar, Badge, Button, ConfirmDialog, CopyButton, Detail, EmptyState, Field, Icon, IconButton, Mono, Section, Skeleton, useToast, VerifiedMark } from './ui';
 
 
 const KIND_LABELS = { member: 'Member', trip: 'Ride', booking: 'Booking', support: 'Support ticket', review: 'Review', audit: 'Audit entry', send: 'Notification' };
@@ -127,7 +127,7 @@ function MemberPanel({ id, seed, onClose, onBack, open, navigate }) {
   const internalScope = data?.isInternal ? { internal: 'include' } : {};
   return (
     <>
-      <PanelHeader kind="member" title={display(data?.name || seed?.name || 'Member')} avatar={data?.name || seed?.name} avatarSrc={data ? data.profilePhotoUrl : seed?.profilePhotoUrl}
+      <PanelHeader kind="member" title={<>{display(data?.name || seed?.name || 'Member')}<VerifiedMark show={data ? data.isVerified : seed?.isVerified} size={16} /></>} avatar={data?.name || seed?.name} avatarSrc={data ? data.profilePhotoUrl : seed?.profilePhotoUrl}
         subtitle={data ? `Joined ${relativeTime(data.createdAt, now)} · ${statusLabel(data.onboardingIntent)}` : null}
         badges={data ? <><Badge value={data.status} />{data.isInternal ? <Badge tone="neutral" title="Fluxgo team or test account. Lists hide this member by default.">Internal</Badge> : null}{data.workEmailStatus ? <Badge value={data.workEmailStatus}>Work email {statusLabel(data.workEmailStatus).toLowerCase()}</Badge> : <Badge tone="neutral">No work email</Badge>}</> : null}
         onClose={onClose} onBack={onBack} linkParams={{ open: `member:${id}` }} />
@@ -229,7 +229,7 @@ function TripPanel({ id, seed, onClose, onBack, open, navigate }) {
             </Section>
             <Section title="Details">
               <dl className="ax-detail-grid">
-                <Detail label="Driver"><RecordLink onOpen={() => open('member', data.driverUserId)}>{display(data.driverName)}</RecordLink></Detail>
+                <Detail label="Driver"><RecordLink onOpen={() => open('member', data.driverUserId)}>{display(data.driverName)}</RecordLink><VerifiedMark show={data.driverVerified} /></Detail>
                 <Detail label="Vehicle">{data.vehicle ? <span>{data.vehicle.make} {data.vehicle.model} <span className="ax-mono ax-small">{data.vehicle.registrationNumber}</span></span> : null}</Detail>
                 <Detail label="Vehicle check">{data.vehicle ? <Badge value={data.vehicle.verificationStatus} /> : null}</Detail>
                 <Detail label="Departure">{formatDateTime(data.departureAt)}</Detail>
@@ -242,7 +242,7 @@ function TripPanel({ id, seed, onClose, onBack, open, navigate }) {
             <Section title="Bookings" count={data.bookings?.length || 0}>
               <MiniList items={data.bookings} empty="No bookings yet." render={(booking) => (
                 <li key={booking.id}><button type="button" className="ax-mini-item" onClick={() => open('booking', booking.id)}>
-                  <span className="ax-mini-main"><strong>{display(booking.bookedByName)}</strong><span className="ax-muted">{booking.publicId} · {plural(booking.passengerCount, 'seat')} · {formatMoney(booking.totalPrice)} · {relativeTime(booking.createdAt, now)}</span></span>
+                  <span className="ax-mini-main"><strong>{display(booking.bookedByName)}<VerifiedMark show={booking.bookedByVerified} /></strong><span className="ax-muted">{booking.publicId} · {plural(booking.passengerCount, 'seat')} · {formatMoney(booking.totalPrice)} · {relativeTime(booking.createdAt, now)}</span></span>
                   <span className="ax-mini-side"><Badge value={booking.status} /><Icon name="chevronRight" size={14} /></span>
                 </button></li>
               )} />
@@ -280,7 +280,7 @@ function BookingPanel({ id, seed, onClose, onBack, open }) {
               <dl className="ax-detail-grid">
                 <Detail label="Ride"><RecordLink onOpen={() => open('trip', data.tripId)}><span className="ax-mono">{data.tripPublicId}</span></RecordLink></Detail>
                 <Detail label="Driver"><RecordLink onOpen={() => open('member', data.driverUserId)}>Open driver</RecordLink></Detail>
-                <Detail label="Booker"><RecordLink onOpen={() => open('member', data.bookedByUserId)}>{display(data.bookedByName)}</RecordLink></Detail>
+                <Detail label="Booker"><RecordLink onOpen={() => open('member', data.bookedByUserId)}>{display(data.bookedByName)}</RecordLink><VerifiedMark show={data.bookedByVerified} /></Detail>
                 <Detail label="Booker travels">{data.bookerTravels ? 'Yes' : 'No'}</Detail>
                 <Detail label="Seat preference">{statusLabel(data.seatPreference)}</Detail>
                 <Detail label="Luggage">{data.luggageCount ? `${data.luggageCount} · ${statusLabel(data.luggageSize)}` : 'None'}</Detail>
@@ -489,8 +489,8 @@ function ReviewPanel({ seed, onClose, onBack, open }) {
         {review.highlightCodes?.length ? <Section title="Highlights"><IssueChips codes={review.highlightCodes} limit={10} /></Section> : null}
         <Section title="People and ride">
           <dl className="ax-detail-grid">
-            <Detail label="Written by"><RecordLink onOpen={() => open('member', review.reviewerUserId)}>{display(review.reviewerName)}</RecordLink></Detail>
-            <Detail label="About"><RecordLink onOpen={() => open('member', review.revieweeUserId)}>{display(review.revieweeName)}</RecordLink></Detail>
+            <Detail label="Written by"><RecordLink onOpen={() => open('member', review.reviewerUserId)}>{display(review.reviewerName)}</RecordLink><VerifiedMark show={review.reviewerVerified} /></Detail>
+            <Detail label="About"><RecordLink onOpen={() => open('member', review.revieweeUserId)}>{display(review.revieweeName)}</RecordLink><VerifiedMark show={review.revieweeVerified} /></Detail>
             <Detail label="Ride"><RecordLink onOpen={() => open('trip', review.tripId)}><span className="ax-mono">{review.tripPublicId}</span></RecordLink></Detail>
             <Detail label="Booking"><RecordLink onOpen={() => open('booking', review.bookingId)}><span className="ax-mono">{review.bookingPublicId}</span></RecordLink></Detail>
           </dl>
@@ -555,9 +555,7 @@ function SendPanel({ id, seed, onClose, onBack, open }) {
   const [total, setTotal] = useState(0);
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState('');
-  const [exporting, setExporting] = useState(false);
   const [retry, setRetry] = useState(0);
-  const notify = useToast();
   const debouncedQuery = useDebounced(query.trim(), 300);
   const path = `/admin/notifications/sends/${encodeURIComponent(id)}/recipients`;
   const listParams = { query: debouncedQuery, delivery, read };
@@ -576,29 +574,26 @@ function SendPanel({ id, seed, onClose, onBack, open }) {
   }, [path, debouncedQuery, delivery, read, page, retry]);
 
   const columns = [
-    { key: 'name', label: 'Member', width: 210, locked: true, render: (row) => <span className="ax-person"><Avatar name={row.name} src={row.profilePhotoUrl} size="sm" /><span><RecordLink onOpen={() => open('member', row.userId, { id: row.userId, name: row.name, profilePhotoUrl: row.profilePhotoUrl })}>{display(row.name)}</RecordLink><InternalTag show={row.isInternal} /></span></span>, csv: (row) => row.name },
+    { key: 'name', label: 'Member', width: 210, locked: true, verified: (row) => row.isVerified, render: (row) => <span className="ax-person"><Avatar name={row.name} src={row.profilePhotoUrl} size="sm" /><span><RecordLink onOpen={() => open('member', row.userId, { id: row.userId, name: row.name, profilePhotoUrl: row.profilePhotoUrl, isVerified: row.isVerified })}>{display(row.name)}</RecordLink><VerifiedMark show={row.isVerified} /><InternalTag show={row.isInternal} /></span></span>, csv: (row) => row.name },
     { key: 'mobile', label: 'Mobile', width: 150, render: (row) => <span className="ax-mono ax-small">{display(row.mobile)}</span> },
     { key: 'delivery', label: 'Delivery', width: 130, render: (row) => <DeliveryBadge row={row} />, csv: (row) => `${DELIVERY[row.delivery]?.label || row.delivery}${row.deliveryError ? ` (${row.deliveryError})` : ''}` },
-    { key: 'readAt', label: 'Read', width: 130, render: (row) => (row.readAt ? <span title={formatDateTime(row.readAt)}>{relativeTime(row.readAt, now)}</span> : <span className="ax-muted">Not read</span>), csv: (row) => row.readAt || '' },
+    { key: 'readAt', label: 'Read', width: 130, render: (row) => (row.readAt ? <span title={formatDateTime(row.readAt)}>{relativeTime(row.readAt, now)}</span> : <span className="ax-muted">Not read</span>), csv: (row) => row.readAt || '', text: (row) => (row.readAt ? formatDateTime(row.readAt) : 'Not read') },
     { key: 'userId', label: 'Member ID', width: 280, defaultHidden: true, render: (row) => <Mono value={row.userId} /> },
   ];
 
-  const exportCsv = async () => {
-    setExporting(true);
-    try {
+  const exporter = {
+    title: `Recipients: ${head?.title || 'Notification'}`,
+    limit: RECIPIENT_EXPORT_LIMIT,
+    filename: () => `fluxgo-notification-${String(id).slice(0, 8)}-recipients`,
+    load: async () => {
       const all = [];
       for (let offset = 0; offset < Math.min(total, RECIPIENT_EXPORT_LIMIT); offset += 100) {
         const result = await requestApi(`${path}${queryString({ ...listParams, limit: 100, offset })}`);
         all.push(...(result?.items || []));
         if (!result?.hasMore) break;
       }
-      downloadCsv(`fluxgo-notification-${String(id).slice(0, 8)}-recipients.csv`, columns, all);
-      notify(total > RECIPIENT_EXPORT_LIMIT ? `Exported the first ${formatNumber(RECIPIENT_EXPORT_LIMIT)} of ${formatNumber(total)} recipients.` : `Exported ${plural(all.length, 'recipient')}.`);
-    } catch (requestError) {
-      if (!isSessionExpired(requestError)) notify(errorText(requestError), 'danger');
-    } finally {
-      setExporting(false);
-    }
+      return all;
+    },
   };
 
   const filteredList = Boolean(debouncedQuery || delivery || read);
@@ -651,7 +646,7 @@ function SendPanel({ id, seed, onClose, onBack, open }) {
               </div>
               {listError ? <div className="ax-inline-error" role="alert"><span>{listError}</span><Button size="sm" onClick={() => setRetry((value) => value + 1)}>Try again</Button></div> : null}
               <DataTable tableId="send-recipients" label="Recipients" columns={columns} rows={rows} loading={listLoading} getRowId={(row) => row.notificationId || row.userId}
-                total={total} page={page} pageSize={RECIPIENT_PAGE} onPageChange={setPage} onExport={exportCsv} exporting={exporting}
+                total={total} page={page} pageSize={RECIPIENT_PAGE} onPageChange={setPage} exporter={exporter}
                 empty={<EmptyState title={filteredList ? 'No matching recipients' : 'No recipients'}>{filteredList ? 'Change or clear the filters.' : null}</EmptyState>} />
             </Section>
           </div>
