@@ -7,7 +7,7 @@ import { display, formatDate, formatDateTime, formatTime, relativeTime, statusLa
 import { isTypingTarget, useNow, useStoredState } from '../_lib/hooks';
 import { useFastLive, useLiveRefresh } from '../_lib/live';
 import { adminLabel, useAdminSession } from '../_lib/session';
-import { Avatar, Badge, Button, ConfirmDialog, CopyButton, EmptyState, Field, Icon, IconButton, Kbd, Popover, Segmented, Skeleton, useToast } from './ui';
+import { Avatar, Badge, Button, ConfirmDialog, CopyButton, EmptyState, Field, Icon, IconButton, Kbd, Popover, Segmented, Skeleton, useToast, VerifiedMark } from './ui';
 
 const LIST_PAGE = 50;
 const REPLY_MAX = 2000;
@@ -114,7 +114,7 @@ export function SupportInbox({ params, setParams, openRecord, waitingCount }) {
             <li key={ticket.id}>
               <button type="button" data-ticket={ticket.id} className={`ax-ticket${ticket.id === selectedId ? ' is-selected' : ''}${ticket.awaitingReply ? ' is-waiting' : ''}`} onClick={() => select(ticket.id)} aria-current={ticket.id === selectedId ? 'true' : undefined}>
                 <span className="ax-ticket-top">
-                  <strong>{display(ticket.requesterName)}{ticket.isInternal ? <span className="ax-internal-tag">Internal</span> : null}</strong>
+                  <strong>{display(ticket.requesterName)}<VerifiedMark show={ticket.requesterVerified} size={13} />{ticket.isInternal ? <span className="ax-internal-tag">Internal</span> : null}</strong>
                   <time title={formatDateTime(ticket.lastMessageAt || ticket.updatedAt)}>{relativeTime(ticket.lastMessageAt || ticket.updatedAt, now)}</time>
                 </span>
                 <span className="ax-ticket-subject">{ticket.subject}</span>
@@ -319,7 +319,7 @@ export function SupportConversation({ ticketId, openRecord, onBack, onClose, onC
         <h2>{ticket.subject}</h2>
         <div className="ax-thread-requester">
           <Avatar name={ticket.requesterName} src={ticket.requesterPhotoUrl} size="sm" />
-          <RecordLink onOpen={openRecord ? () => openRecord('member', ticket.requesterUserId) : undefined}>{display(ticket.requesterName)}</RecordLink>
+          <span><RecordLink onOpen={openRecord ? () => openRecord('member', ticket.requesterUserId) : undefined}>{display(ticket.requesterName)}</RecordLink><VerifiedMark show={ticket.requesterVerified} /></span>
           {ticket.requesterMobile ? <a className="ax-contact" href={`tel:${ticket.requesterMobile}`}><Icon name="phone" size={13} /><span className="ax-mono">{ticket.requesterMobile}</span></a> : null}
           {ticket.requesterEmail ? <a className="ax-contact" href={`mailto:${ticket.requesterEmail}`}><Icon name="mail" size={13} />{ticket.requesterEmail}</a> : null}
           <span className="ax-muted">· {statusLabel(ticket.category)}</span>

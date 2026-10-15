@@ -1,9 +1,11 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
+import { errorText, isSessionExpired } from '../_lib/api';
+import { EXPORT_FORMATS, exportTable } from '../_lib/export';
 import { formatNumber } from '../_lib/format';
 import { useStoredState } from '../_lib/hooks';
-import { Button, EmptyState, Icon, IconButton, Popover, Skeleton } from './ui';
+import { Button, EmptyState, Icon, IconButton, Popover, Skeleton, useToast } from './ui';
 
 const MIN_WIDTH = 64;
 export const PAGE_SIZES = [25, 50, 100];
@@ -13,6 +15,8 @@ export const PAGE_SIZES = [25, 50, 100];
  * - Drag a header edge to change a column width. Widths are kept per table in this browser.
  * - Click a sortable header to sort. The parent sends the sort to the API.
  * - Use the Columns menu to show, hide, or move columns. Drag a header to move a column.
+ * - Use the Export menu to download CSV, Markdown, PDF, or an image. Pass `exporter`:
+ *   { title, filename(), load() → all rows, limit }. PDF, image, and Markdown use the shown columns.
  */
 export function DataTable({
   tableId,
@@ -30,8 +34,7 @@ export function DataTable({
   onPageChange,
   onPageSizeChange,
   empty,
-  onExport,
-  exporting,
+  exporter,
   toolbar,
   label,
 }) {
@@ -41,7 +44,9 @@ export function DataTable({
   const [order, setOrder] = useStoredState(`table:${tableId}:order`, null);
   const [dragKey, setDragKey] = useState(null);
   const [dropKey, setDropKey] = useState(null);
+  const [exporting, setExporting] = useState('');
   const bodyRef = useRef(null);
+  const notify = useToast();
 
   // Apply the stored order. New columns that the stored order does not know go last.
   const ordered = useMemo(() => {
@@ -70,7 +75,21 @@ export function DataTable({
     [keys[from], keys[to]] = [keys[to], keys[from]];
     setOrder(keys);
   };
-  const tableWidth = visible.reduce((sum, column) => sum + (widths[column.key] || column.width || 160), 0);
+  const widthOf = (column) => widths[column.key] || column.width || 160;
+  const tableWidth = visible.reduce((sum, column) => sum + widthOf(column), 0);
+
+  const runExport = async (format) => {
+    setExporting(format);
+    try {
+      const all = await exporter.load();
+      const message = await exportTable({ format, filename: exporter.filename(), title: exporter.title, columns: visible, allColumns: columns, rows: all, total, limit: exporter.limit, widthOf });
+      notify(message);
+    } catch (exportError) {
+      if (!isSessionExpired(exportError)) notify(errorText(exportError, 'The export failed. Try again.'), 'danger');
+    } finally {
+      setExporting('');
+    }
+  };
 
   const startResize = (event, column) => {
     event.preventDefault();
@@ -167,12 +186,26 @@ export function DataTable({
               </div>
             )}
           </Popover>
-          {onExport ? <Button size="sm" icon="download" onClick={onExport} busy={exporting} disabled={!total}>{exporting ? 'Exporting…' : 'Export CSV'}</Button> : null}
+          {exporter ? (
+            <Popover label="Export" trigger={(props) => <Button size="sm" icon="download" onClick={props.toggle} aria-expanded={props['aria-expanded']} busy={Boolean(exporting)} disabled={!total || Boolean(exporting)}>{exporting ? 'Exporting…' : 'Export'}</Button>}>
+              {({ close }) => (
+                <div className="ax-menu">
+                  <p className="ax-menu-label">Export {exporter.limit && total > exporter.limit ? `the first ${formatNumber(exporter.limit)} rows` : formatNumber(total) + (total === 1 ? ' row' : ' rows')}</p>
+                  {EXPORT_FORMATS.map((format) => (
+                    <button key={format.value} type="button" className="ax-menu-item" onClick={() => { close(); void runExport(format.value); }}>
+                      <span>{format.label}</span>
+                      <span className="ax-muted">{format.hint}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </Popover>
+          ) : null}
         </div>
       </div>
       <div className="ax-table-scroll">
         <table className="ax-table" style={{ width: tableWidth, minWidth: '100%' }} aria-label={label} aria-busy={loading ? 'true' : 'false'}>
-          <colgroup>{visible.map((column) => <col key={column.key} style={{ width: widths[column.key] || column.width || 160 }} />)}</colgroup>
+          <colgroup>{visible.map((column) => <col key={column.key} style={{ width: widthOf(column) }} />)}</colgroup>
           <thead>
             <tr>
               {visible.map((column) => {
@@ -243,23 +276,4 @@ export function DataTable({
       ) : null}
     </div>
   );
-}
-
-/** Build a CSV file from rows and start a download. */
-export function downloadCsv(filename, columns, rows) {
-  const escape = (value) => {
-    const text = value === null || value === undefined ? '' : String(value);
-    return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-  };
-  const lines = [columns.map((column) => escape(column.label)).join(',')];
-  rows.forEach((row) => lines.push(columns.map((column) => escape(column.csv ? column.csv(row) : row[column.key])).join(',')));
-  const blob = new Blob([`﻿${lines.join('\n')}`], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

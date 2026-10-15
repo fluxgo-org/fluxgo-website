@@ -682,6 +682,22 @@ setInterval(() => {
   ticket.updatedAt = new Date().toISOString();
 }, Number(process.env.ADMIN_MOCK_MESSAGE_MS || 120_000));
 
+/**
+ * Add the verified flags that the API sends: a member is verified when the work email is VERIFIED.
+ * The API reads them from work_email_verifications; the mock reads the member's workEmailStatus.
+ */
+const ID_FLAGS = [['driverUserId', 'driverVerified'], ['bookedByUserId', 'bookedByVerified'], ['reviewerUserId', 'reviewerVerified'], ['revieweeUserId', 'revieweeVerified'], ['memberId', 'memberVerified'], ['requesterUserId', 'requesterVerified']];
+function withVerified(value) {
+  if (Array.isArray(value)) return value.map(withVerified);
+  if (!value || typeof value !== 'object') return value;
+  const verified = (id) => members.find((member) => member.id === id)?.workEmailStatus === 'VERIFIED';
+  const next = Object.fromEntries(Object.entries(value).map(([key, item]) => [key, withVerified(item)]));
+  for (const [idKey, flag] of ID_FLAGS) if (typeof value[idKey] === 'string') next[flag] = verified(value[idKey]);
+  if (typeof value.mobile === 'string' && typeof value.id === 'string' && 'workEmailStatus' in value) next.isVerified = verified(value.id);
+  if (typeof value.userId === 'string' && 'delivery' in value) next.isVerified = verified(value.userId);
+  return next;
+}
+
 createServer((request, response) => {
   const url = new URL(request.url, `http://localhost:${PORT}`);
   const headers = {
@@ -709,7 +725,7 @@ createServer((request, response) => {
     const [status, payload, extra] = route(request.method, url.pathname, url.searchParams, body, authed, admins[0]);
     setTimeout(() => {
       response.writeHead(status, { ...headers, ...(payload ? { 'content-type': 'application/json' } : {}), ...(extra || {}) });
-      response.end(payload ? JSON.stringify(payload) : undefined);
+      response.end(payload ? JSON.stringify(withVerified(payload)) : undefined);
     }, 120 + Math.floor(Math.random() * 180));
   });
 }).listen(PORT, () => {

@@ -77,8 +77,8 @@ export function AdminsView({ admin, onAdminsChanged }) {
   const columns = [
     { key: 'email', label: 'Sign-in email', width: 260, locked: true, render: (row) => row.email ? <span className="ax-person"><strong>{row.email}</strong>{row.id === admin?.id ? <Badge tone="info" dot={false}>You</Badge> : null}</span> : <Badge tone="danger">No email: cannot sign in</Badge> },
     { key: 'username', label: 'Display name', width: 180, render: (row) => display(row.username) },
-    { key: 'role', label: 'Role', width: 130, render: () => 'Super admin' },
-    { key: 'status', label: 'Access', width: 120, render: (row) => <Badge value={row.status === 'ACTIVE' ? 'ACTIVE' : 'DISABLED'}>{row.status === 'ACTIVE' ? 'On' : 'Off'}</Badge> },
+    { key: 'role', label: 'Role', width: 130, render: () => 'Super admin', csv: () => 'Super admin' },
+    { key: 'status', label: 'Access', width: 120, render: (row) => <Badge value={row.status === 'ACTIVE' ? 'ACTIVE' : 'DISABLED'}>{row.status === 'ACTIVE' ? 'On' : 'Off'}</Badge>, csv: (row) => (row.status === 'ACTIVE' ? 'On' : 'Off') },
     { key: 'passwordChangedAt', label: 'Password changed', width: 170, render: (row) => <span title={formatDateTime(row.passwordChangedAt)}>{relativeTime(row.passwordChangedAt, now)}</span> },
     { key: 'createdAt', label: 'Added', width: 170, render: (row) => <span title={formatDateTime(row.createdAt)}>{relativeTime(row.createdAt, now)}</span> },
     { key: 'actions', label: '', width: 130, align: 'end', render: (row) => row.id === admin?.id ? <span className="ax-muted ax-small">Current session</span> : <Button size="sm" variant={row.status === 'ACTIVE' ? 'ghost' : 'secondary'} onClick={() => setToggle(row)} busy={busy === row.id}>{row.status === 'ACTIVE' ? 'Turn off' : 'Turn on'}</Button> },
@@ -91,6 +91,7 @@ export function AdminsView({ admin, onAdminsChanged }) {
       <DataTable tableId="admins" label="Admin users" columns={columns} rows={rows} loading={loading}
         toolbar={<Button variant="primary" icon="plus" onClick={() => { setForm({ email: '', username: '', password: generatePassword() }); setCreating(true); }}>Add admin</Button>}
         total={rows.length} page={0} pageSize={rows.length || 1}
+        exporter={{ title: 'Admin users', filename: () => `fluxgo-admins-${new Date().toISOString().slice(0, 10)}`, load: async () => rows }}
         empty={<EmptyState icon="admins" title="No admins" />} />
 
       <Dialog open={creating} title="Add an admin" onClose={() => setCreating(false)} busy={busy === 'create'} width={480}
