@@ -6,6 +6,7 @@ import { auditActionLabel, display, formatDateTime, formatNumber, formatTime, pl
 import { useNow, useStoredState } from '../_lib/hooks';
 import { LIVE_KEYS, useLiveRefresh } from '../_lib/live';
 import { Badge, Button, EmptyState, Icon, Skeleton } from './ui';
+import { addDays, dayText, kolkataDay, PeriodPicker, presetRange, rangeLabel } from './PeriodPicker';
 
 
 export function TodayView({ admin, openRecord, navigate, onAttention }) {
@@ -219,102 +220,8 @@ const TREND_METRICS = [
   { key: 'ridesCompleted', label: 'Rides completed' },
 ];
 
-const PRESETS = [
-  { value: 'today', label: 'Today' },
-  { value: 'yesterday', label: 'Yesterday' },
-  { value: 'last7', label: 'Last 7 days' },
-  { value: 'last30', label: 'Last 30 days' },
-  { value: 'custom', label: 'Custom' },
-];
-const MAX_DAYS = 92;
-
 function sum(days, field) {
   return (days || []).reduce((total, day) => total + Number(day[field] || 0), 0);
-}
-
-/** Today's yyyy-mm-dd day in India, whatever the browser zone is. */
-function kolkataDay(date = new Date()) {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
-}
-
-function dayDate(key) {
-  return new Date(`${key}T00:00:00Z`);
-}
-
-function addDays(key, count) {
-  const date = dayDate(key);
-  date.setUTCDate(date.getUTCDate() + count);
-  return date.toISOString().slice(0, 10);
-}
-
-function daysBetween(from, to) {
-  return Math.round((dayDate(to) - dayDate(from)) / 86_400_000) + 1;
-}
-
-function dayText(key, options) {
-  return dayDate(key).toLocaleDateString('en-IN', { timeZone: 'UTC', ...options });
-}
-
-function presetRange(preset, today = kolkataDay()) {
-  const from = { today, yesterday: addDays(today, -1), last7: addDays(today, -6), last30: addDays(today, -29) }[preset] || today;
-  const to = preset === 'yesterday' ? from : today;
-  return { preset, from, to, days: daysBetween(from, to) };
-}
-
-/** A short name for a range: "Today", "Last 7 days" or "7–13 Oct". */
-function rangeLabel(range, today) {
-  if (range.preset !== 'custom') return PRESETS.find((item) => item.value === range.preset)?.label || '';
-  if (range.from === range.to) return range.to === today ? 'Today' : dayText(range.from, { day: 'numeric', month: 'short', year: yearOf(range.from) === yearOf(today) ? undefined : 'numeric' });
-  const sameYear = yearOf(range.from) === yearOf(range.to);
-  const yearOption = sameYear && yearOf(range.to) === yearOf(today) ? undefined : 'numeric';
-  if (sameYear && range.from.slice(5, 7) === range.to.slice(5, 7)) return `${dayText(range.from, { day: 'numeric' })}–${dayText(range.to, { day: 'numeric', month: 'short', year: yearOption })}`;
-  return `${dayText(range.from, { day: 'numeric', month: 'short', year: sameYear ? undefined : 'numeric' })} – ${dayText(range.to, { day: 'numeric', month: 'short', year: yearOption })}`;
-}
-
-function yearOf(key) {
-  return key.slice(0, 4);
-}
-
-function rangeError(from, to, today) {
-  if (!from || !to) return 'Choose a start and an end date.';
-  if (to > today || from > today) return 'Choose dates up to today.';
-  if (from > to) return 'The start date must be on or before the end date.';
-  if (daysBetween(from, to) > MAX_DAYS) return `Choose ${MAX_DAYS} days or fewer.`;
-  return '';
-}
-
-/** Preset menu, plus two date fields for a custom range. */
-function PeriodPicker({ range, today, onChange }) {
-  const [draft, setDraft] = useState({ from: range.from, to: range.to });
-  const message = range.preset === 'custom' ? rangeError(draft.from, draft.to, today) : '';
-  const choose = (preset) => {
-    if (preset === 'custom') {
-      setDraft({ from: range.from, to: range.to });
-      onChange({ ...range, preset: 'custom' });
-    } else onChange(presetRange(preset, today));
-  };
-  const edit = (patch) => {
-    const next = { ...draft, ...patch };
-    setDraft(next);
-    if (!rangeError(next.from, next.to, today)) onChange({ preset: 'custom', from: next.from, to: next.to, days: daysBetween(next.from, next.to) });
-  };
-  return (
-    <div className="ax-period">
-      <div className="ax-period-row">
-        <select aria-label="Period" value={range.preset} onChange={(event) => choose(event.target.value)}>
-          {PRESETS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-        </select>
-        {range.preset === 'custom' ? (
-          <div className="ax-period-dates">
-            <input type="date" aria-label="From" value={draft.from} max={today} onChange={(event) => edit({ from: event.target.value })} aria-invalid={message ? 'true' : 'false'} />
-            <span aria-hidden="true">–</span>
-            <input type="date" aria-label="To" value={draft.to} max={today} onChange={(event) => edit({ to: event.target.value })} aria-invalid={message ? 'true' : 'false'} />
-          </div>
-        ) : null}
-      </div>
-      {message ? <p className="ax-field-error" role="alert">{message}</p> : null}
-    </div>
-  );
 }
 
 function Kpi({ label, value, detail, onClick, tone }) {

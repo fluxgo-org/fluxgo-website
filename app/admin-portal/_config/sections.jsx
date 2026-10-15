@@ -23,7 +23,7 @@ import { Avatar, Badge, Icon, Mono, VerifiedMark } from '../_components/ui';
 import { filterSummary } from '../_lib/audience';
 
 export const NAV_GROUPS = [
-  { label: 'Workspace', items: ['today', 'support', 'safety'] },
+  { label: 'Workspace', items: ['today', 'analytics', 'support', 'safety'] },
   { label: 'Records', items: ['members', 'trips', 'bookings', 'vehicles'] },
   { label: 'Outreach', items: ['notify', 'sends'] },
   { label: 'Administration', items: ['admins', 'audit'] },
@@ -31,6 +31,7 @@ export const NAV_GROUPS = [
 
 export const SECTION_META = {
   today: { label: 'Today', icon: 'today', description: 'What needs you now' },
+  analytics: { label: 'Analytics', icon: 'analytics', description: 'Active members and key metrics' },
   support: { label: 'Support', icon: 'support', description: 'Member conversations' },
   safety: { label: 'Safety reports', icon: 'shield', description: 'Reviews with issues' },
   members: { label: 'Members', icon: 'members', description: 'Accounts and verification' },
