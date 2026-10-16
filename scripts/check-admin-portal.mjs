@@ -112,6 +112,7 @@ const requiredMarkers = [
   'reviewsGiven',
   'reviewerId: filters.reviewerId',
   'revieweeId: filters.revieweeId',
+  'className="ax-name-cell"',
 ];
 
 // Removed code: the browser-side loop that collected every active member before a send.
