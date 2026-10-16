@@ -11,10 +11,3 @@ export const SITE_URL = 'https://www.fluxgo.in';
  * link goes to a different domain from the current page.
  */
 export const OPEN_HOST_URL = (process.env.NEXT_PUBLIC_FLUXGO_OPEN_HOST_URL || 'https://go.fluxgo.in').replace(/\/+$/, '');
-/** Android is in closed testing, so a public visitor goes to the web app until this flag is true. */
-export const ANDROID_STORE_PUBLIC = process.env.NEXT_PUBLIC_FLUXGO_ANDROID_STORE_PUBLIC === 'true';
-/**
- * The App Store build that opens shared links is not live yet. Until this flag
- * is true, ride pages send iPhone visitors to the web app and say the app is coming soon.
- */
-export const IOS_APP_LINKS_LIVE = process.env.NEXT_PUBLIC_FLUXGO_IOS_APP_LINKS_LIVE === 'true';

@@ -5,7 +5,6 @@ import Hero from './_components/Hero';
 import Journey, { Stop } from './_components/Journey';
 import StoreButtons from './_components/StoreButtons';
 import Reveal from './_components/Reveal';
-import { WEB_APP_URL } from './_components/links';
 import {
   IconArrow, IconBag, IconBolt, IconCalendar, IconClock, IconHand,
   IconPin, IconSeat, IconShield, IconSwap, IconTick
@@ -60,7 +59,7 @@ const FAQ = [
   { q: 'What if something feels wrong during a ride?', a: 'Ask to stop at a safe public place. If you are in danger, call 112. Your trusted contact is saved in the app, and you can report the ride from the trip screen. Our team reads every report.' },
   { q: 'Is Fluxgo a taxi service?', a: 'No. Drivers on Fluxgo are already making the trip. They share the empty seats and the cost of the road. Nobody drives for a fare.' },
   { q: 'Can I find a ride and offer one with the same account?', a: 'Yes. One account does both. Take a seat this weekend and offer yours the next.' },
-  { q: 'Where can I get Fluxgo?', a: 'On the App Store for iPhone. On any other phone or computer, open app.fluxgo.in in your browser. The Android app is coming soon.' }
+  { q: 'Where can I get Fluxgo?', a: 'On the App Store for iPhone and on Google Play for Android. On a computer, open app.fluxgo.in in your browser.' }
 ];
 
 export default function Home() {
@@ -234,13 +233,9 @@ export default function Home() {
               <div className="fx-arrive-copy">
                 <p className="fx-mono fx-arrive-kicker">You have arrived</p>
                 <h2 className="fx-h2">Your seat is waiting.</h2>
-                <p className="fx-lede">Get Fluxgo on iPhone, or use it in any browser.</p>
+                <p className="fx-lede">Get Fluxgo on iPhone or Android.</p>
                 <StoreButtons tone="dark" />
               </div>
-              <a className="fx-arrive-web" href={WEB_APP_URL} target="_blank" rel="noopener noreferrer">
-                <span><span className="fx-mono">Open in browser</span><strong>app.fluxgo.in</strong></span>
-                <IconArrow width={20} height={20} />
-              </a>
             </div>
           </div>
         </Journey>
