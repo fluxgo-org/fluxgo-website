@@ -104,6 +104,7 @@ function dateParams(filters, fromKey, toKey, apiFrom, apiTo) {
 const internalToggle = { type: 'toggle', key: 'internal', label: 'Show internal', value: 'include', primary: true, sticky: true, chipLabel: 'Internal', chipLabels: { include: 'Shown', only: 'Only internal' } };
 
 /** A small tag next to a member name when the row involves an internal member. */
+/** Shows "Internal" next to one member. Pass that member's own flag, not the row's isInternal (a booking or review is internal when either member is). */
 export function InternalTag({ show }) {
   return show ? <span className="ax-internal-tag" title="Fluxgo team or test account">Internal</span> : null;
 }
@@ -267,7 +268,7 @@ export const RECORD_SECTIONS = {
       { key: 'tripPublicId', label: 'Ride', width: 190, render: (row) => <span className="ax-ref-cell"><RecordLink onOpen={() => open('trip', row.tripId)} title="Open ride"><span className="ax-mono">{row.tripPublicId}</span></RecordLink><RideLinkActions publicId={row.tripPublicId} /></span>, csv: (row) => row.tripPublicId },
       { key: 'rideLink', label: 'Ride link', width: 260, defaultHidden: true, render: (row) => <span className="ax-truncate ax-small">{rideLink(row.tripPublicId)}</span>, csv: (row) => rideLink(row.tripPublicId) },
       { key: 'route', label: 'Pickup → drop', width: 230, render: (row) => <span className="ax-truncate" title={row.route}>{row.route.replace(' to ', ' → ')}</span> },
-      { key: 'bookedByName', label: 'Booker', width: 170, verified: (row) => row.bookedByVerified, render: (row) => <span className="ax-name-cell"><RecordLink onOpen={() => open('member', row.bookedByUserId)}>{display(row.bookedByName)}</RecordLink><VerifiedMark show={row.bookedByVerified} /><InternalTag show={row.isInternal} /></span>, csv: (row) => row.bookedByName },
+      { key: 'bookedByName', label: 'Booker', width: 170, verified: (row) => row.bookedByVerified, render: (row) => <span className="ax-name-cell"><RecordLink onOpen={() => open('member', row.bookedByUserId)}>{display(row.bookedByName)}</RecordLink><VerifiedMark show={row.bookedByVerified} /><InternalTag show={row.bookedByIsInternal} /></span>, csv: (row) => row.bookedByName },
       { key: 'passengerCount', label: 'Seats', width: 80, align: 'end', sortKey: 'passengerCount', render: (row) => formatNumber(row.passengerCount) },
       { key: 'status', label: 'Status', width: 170, render: (row) => <Badge value={row.status} /> },
       { key: 'totalPrice', label: 'Total', width: 100, align: 'end', sortKey: 'totalPrice', render: (row) => formatMoney(row.totalPrice), text: (row) => formatMoney(row.totalPrice) },
@@ -317,8 +318,8 @@ export const RECORD_SECTIONS = {
       { key: 'submittedAt', label: 'Submitted', width: 170, sortKey: 'submittedAt', render: (row) => <When value={row.submittedAt} now={now} />, csv: (row) => row.submittedAt },
       { key: 'rating', label: 'Rating', width: 90, sortKey: 'rating', defaultOrder: 'asc', render: (row) => <Stars rating={row.rating} /> },
       { key: 'issueCodes', label: 'Issues', width: 330, render: (row) => <IssueChips codes={row.issueCodes} />, csv: (row) => row.issueCodes.map(issueLabel).join('; ') },
-      { key: 'reviewerName', label: 'From', width: 160, verified: (row) => row.reviewerVerified, render: (row) => <span className="ax-name-cell"><RecordLink onOpen={() => open('member', row.reviewerUserId)}>{display(row.reviewerName)}</RecordLink><VerifiedMark show={row.reviewerVerified} /><InternalTag show={row.isInternal} /></span>, csv: (row) => row.reviewerName },
-      { key: 'revieweeName', label: 'About', width: 160, verified: (row) => row.revieweeVerified, render: (row) => <span className="ax-name-cell"><RecordLink onOpen={() => open('member', row.revieweeUserId)}>{display(row.revieweeName)}</RecordLink><VerifiedMark show={row.revieweeVerified} /></span> },
+      { key: 'reviewerName', label: 'From', width: 160, verified: (row) => row.reviewerVerified, render: (row) => <span className="ax-name-cell"><RecordLink onOpen={() => open('member', row.reviewerUserId)}>{display(row.reviewerName)}</RecordLink><VerifiedMark show={row.reviewerVerified} /><InternalTag show={row.reviewerIsInternal} /></span>, csv: (row) => row.reviewerName },
+      { key: 'revieweeName', label: 'About', width: 160, verified: (row) => row.revieweeVerified, render: (row) => <span className="ax-name-cell"><RecordLink onOpen={() => open('member', row.revieweeUserId)}>{display(row.revieweeName)}</RecordLink><VerifiedMark show={row.revieweeVerified} /><InternalTag show={row.revieweeIsInternal} /></span> },
       { key: 'direction', label: 'Direction', width: 170, defaultHidden: true, render: (row) => statusLabel(row.direction) },
       { key: 'comment', label: 'Comment', width: 280, render: (row) => row.comment ? <span className="ax-truncate" title={row.comment}>{row.comment}</span> : <span className="ax-muted">No comment</span> },
       { key: 'tripPublicId', label: 'Ride', width: 150, render: (row) => <RecordLink onOpen={() => open('trip', row.tripId)}><span className="ax-mono">{row.tripPublicId}</span></RecordLink> },
