@@ -632,7 +632,7 @@ function route(method, path, params, body, authed, admin) {
     if (params.get('tripId')) list = list.filter((booking) => booking.tripId === params.get('tripId'));
     list = list.filter((booking) => within(booking.createdAt, params.get('createdFrom'), params.get('createdTo')) && within(booking.tripDepartureAt, params.get('departureFrom'), params.get('departureTo')));
     const ids = internalIds();
-    const rows = list.map(({ pickup, drop, passengers, events, ...row }) => ({ ...row, isInternal: bookingInternal(row, ids) }));
+    const rows = list.map(({ pickup, drop, passengers, events, ...row }) => ({ ...row, isInternal: bookingInternal(row, ids), bookedByIsInternal: ids.has(row.bookedByUserId) }));
     return [200, page(params.get('sort') === 'departureAt' ? rows.map((row) => ({ ...row, departureAt: row.tripDepartureAt })) : rows, params, 'createdAt')];
   }
   match = path.match(/^\/v1\/admin\/bookings\/([^/]+)$/);
@@ -685,7 +685,7 @@ function route(method, path, params, body, authed, admin) {
   if (path === '/v1/admin/reviews') {
     const reviewInternal = (review, ids) => ids.has(review.reviewerUserId) || ids.has(review.revieweeUserId);
     const ids = internalIds();
-    let list = scoped(reviews, params, reviewInternal).map((review) => ({ ...review, isInternal: reviewInternal(review, ids) }));
+    let list = scoped(reviews, params, reviewInternal).map((review) => ({ ...review, isInternal: reviewInternal(review, ids), reviewerIsInternal: ids.has(review.reviewerUserId), revieweeIsInternal: ids.has(review.revieweeUserId) }));
     if (params.get('issues') === 'ANY') list = list.filter((review) => review.issueCodes.length);
     if (params.get('issues') === 'SAFETY') list = list.filter((review) => review.hasSafetyIssue);
     if (params.get('issueCode')) list = list.filter((review) => review.issueCodes.includes(params.get('issueCode')));

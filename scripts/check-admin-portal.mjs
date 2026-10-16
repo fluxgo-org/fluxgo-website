@@ -113,6 +113,9 @@ const requiredMarkers = [
   'reviewerId: filters.reviewerId',
   'revieweeId: filters.revieweeId',
   'className="ax-name-cell"',
+  '<InternalTag show={row.bookedByIsInternal} />',
+  '<InternalTag show={row.reviewerIsInternal} />',
+  '<InternalTag show={row.revieweeIsInternal} />',
 ];
 
 // Removed code: the browser-side loop that collected every active member before a send.
