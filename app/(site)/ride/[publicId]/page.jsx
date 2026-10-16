@@ -2,15 +2,12 @@ import Link from 'next/link';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import Wordmark from '../../_components/Wordmark';
-import { AppleGlyph } from '../../_components/StoreButtons';
 import { IconArrow, IconBag, IconCalendar, IconClock, IconSeat, IconShield, IconStar } from '../../_components/Icons';
 import { colorizedCarSvg, vehicleColorToHex } from '../../../../lib/vehicle-color';
 import {
   ANDROID_PACKAGE,
-  ANDROID_STORE_PUBLIC,
   APP_STORE_ID,
   APP_STORE_URL,
-  IOS_APP_LINKS_LIVE,
   OPEN_HOST_URL,
   PLAY_STORE_URL,
   SITE_URL,
@@ -49,8 +46,8 @@ export async function generateMetadata({ params }) {
     alternates: { canonical: url },
     openGraph: { title, description, url, siteName: 'Fluxgo', type: 'website' },
     twitter: { card: 'summary_large_image', title, description },
-    // Show the Safari App Store banner only when the live app can open shared links.
-    itunes: IOS_APP_LINKS_LIVE ? { appId: APP_STORE_ID, appArgument: url } : null
+    // The Safari banner opens this ride in the app, like the page button.
+    itunes: { appId: APP_STORE_ID, appArgument: url }
   };
 }
 
@@ -82,51 +79,43 @@ function Avatar({ host }) {
   return <span className="fx-share-avatar" aria-hidden="true">{host.displayName.charAt(0)}</span>;
 }
 
-const COMING_SOON_NOTE = 'The Fluxgo app is coming soon. Book on the web for now.';
-
-function actionsFor(kind, trip) {
-  const id = trip.publicId;
-  const web = `${WEB_APP_URL}/trip/${id}`;
-  const webAction = { href: web, label: 'Continue on the web' };
-  if (trip.state !== 'OPEN') {
-    return { primary: { href: WEB_APP_URL, label: 'Find another ride' }, secondary: null };
-  }
+/**
+ * One button for every ride state. The phone opens Fluxgo when it is installed.
+ * If not, the store opens. A computer has no app, so it goes to the web app.
+ */
+function appAction(kind, id) {
   if (kind === 'ios') {
-    if (!IOS_APP_LINKS_LIVE) return { primary: webAction, secondary: null, note: COMING_SOON_NOTE };
     return {
-      primary: { href: `${OPEN_HOST_URL}/open/ride/${id}`, label: 'Book in the Fluxgo app' },
-      secondary: { href: web, label: 'Continue in browser' },
+      href: id ? `${OPEN_HOST_URL}/open/ride/${id}` : APP_STORE_URL,
+      label: 'Open in the Fluxgo app',
       note: 'Opens Fluxgo if you have it. If not, the App Store opens.'
     };
   }
   if (kind === 'android') {
-    // Closed testers who have the app open shared links in the app before this page loads.
-    if (!ANDROID_STORE_PUBLIC) return { primary: webAction, secondary: null, note: COMING_SOON_NOTE };
     return {
-      primary: {
-        href: `intent://trip/${id}#Intent;scheme=fluxgo;package=${ANDROID_PACKAGE};S.browser_fallback_url=${encodeURIComponent(PLAY_STORE_URL)};end`,
-        label: 'Book in the Fluxgo app'
-      },
-      secondary: { href: web, label: 'Continue in browser' },
+      href: id
+        ? `intent://trip/${id}#Intent;scheme=fluxgo;package=${ANDROID_PACKAGE};S.browser_fallback_url=${encodeURIComponent(PLAY_STORE_URL)};end`
+        : PLAY_STORE_URL,
+      label: 'Open in the Fluxgo app',
       note: 'Opens Fluxgo if you have it. If not, Google Play opens.'
     };
   }
-  if (!IOS_APP_LINKS_LIVE) return { primary: { href: web, label: 'Book on the web' }, secondary: null, note: COMING_SOON_NOTE };
   return {
-    primary: { href: web, label: 'Book on the web' },
-    secondary: { href: APP_STORE_URL, label: 'Get the iPhone app', apple: true },
-    note: 'Book in your browser, or on your phone with the Fluxgo app.'
+    href: id ? `${WEB_APP_URL}/trip/${id}` : WEB_APP_URL,
+    label: 'Continue on the web',
+    note: 'On a phone, open this link to use the Fluxgo app.'
   };
 }
 
-function Unavailable({ id }) {
+function Unavailable({ id, kind }) {
+  const action = appAction(kind, id);
   return (
     <main className="fx-share fx-share-empty">
       <header className="fx-share-top"><Link href="/" aria-label="Fluxgo home"><Wordmark /></Link></header>
       <section className="fx-share-sheet">
         <h1>We could not load this ride</h1>
-        <p>Try again in a minute, or open it in the Fluxgo web app.</p>
-        <a className="fx-share-btn" href={id ? `${WEB_APP_URL}/trip/${id}` : WEB_APP_URL}>Open in browser</a>
+        <p>Try again in a minute, or open it in the Fluxgo app.</p>
+        <a className="fx-share-btn" href={action.href}>{action.label}</a>
       </section>
     </main>
   );
@@ -136,11 +125,11 @@ export default async function RidePage({ params }) {
   const { publicId } = await params;
   const result = await loadRide(publicId);
   if (result.notFound) notFound();
-  if (!result.trip) return <Unavailable id={result.id} />;
+  const kind = deviceKind((await headers()).get('user-agent') ?? '');
+  if (!result.trip) return <Unavailable id={result.id} kind={kind} />;
 
   const { trip } = result;
-  const kind = deviceKind((await headers()).get('user-agent') ?? '');
-  const actions = actionsFor(kind, trip);
+  const action = appAction(kind, trip.publicId);
   const share = rideShareMessage(trip, `${SITE_URL}/ride/${trip.publicId}`);
   const closed = STATE_COPY[trip.state];
   const routeTime = duration(trip.routeDurationSeconds);
@@ -258,15 +247,9 @@ export default async function RidePage({ params }) {
 
       <footer className="fx-share-bar">
         <div className="fx-share-bar-inner">
-          {actions.note ? <p className="fx-share-bar-note">{actions.note}</p> : null}
-          <div className={`fx-share-bar-actions${actions.secondary ? '' : ' is-single'}`}>
-            <a className="fx-share-btn" href={actions.primary.href}>{actions.primary.label}</a>
-            {actions.secondary ? (
-              <a className="fx-share-btn fx-share-btn-ghost" href={actions.secondary.href}>
-                {actions.secondary.apple ? <AppleGlyph /> : null}
-                {actions.secondary.label}
-              </a>
-            ) : null}
+          <p className="fx-share-bar-note">{action.note}</p>
+          <div className="fx-share-bar-actions is-single">
+            <a className="fx-share-btn" href={action.href}>{action.label}</a>
           </div>
         </div>
       </footer>
