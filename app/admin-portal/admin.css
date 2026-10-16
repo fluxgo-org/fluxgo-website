@@ -489,7 +489,7 @@ body.ax-resizing, body.ax-resizing * { cursor: col-resize !important; user-selec
 .ax-panel-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .ax-panel-body { flex: 1; overflow-y: auto; padding: 18px 20px 28px; display: grid; align-content: start; gap: 22px; }
 .ax-panel-loading { display: grid; gap: 14px; }
-.ax-panel-actions { display: flex; gap: 8px; padding-top: 4px; }
+.ax-panel-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
 .ax-panel-support { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .ax-contact-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
 .ax-contact { display: inline-flex; align-items: center; gap: 6px; color: var(--ink2); text-decoration: none; font-size: 13px; padding: 4px 8px; border-radius: 8px; background: var(--fill); }
@@ -939,3 +939,9 @@ button.ax-mini-item:hover { background: var(--surface-2); }
   .ax-metric-grid { grid-template-columns: minmax(0, 1fr); }
   .ax-analytics-zone { margin-left: 0; }
 }
+
+/* Booking outcome: who cancelled or declined, the reason, and the host's note */
+.admin-root .ax-outcome { display: grid; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line-soft); }
+.admin-root .ax-outcome-title { margin: 0; font-size: 13.5px; }
+.admin-root .ax-cancel-line { display: block; margin-top: 2px; font-size: 12px; color: var(--ink2); }
+.admin-root .ax-prewrap { white-space: pre-wrap; overflow-wrap: anywhere; }

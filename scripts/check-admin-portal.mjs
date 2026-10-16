@@ -116,6 +116,12 @@ const requiredMarkers = [
   '<InternalTag show={row.bookedByIsInternal} />',
   '<InternalTag show={row.reviewerIsInternal} />',
   '<InternalTag show={row.revieweeIsInternal} />',
+  '`/admin/bookings/${encodeURIComponent(booking.id)}/actions`',
+  '`/admin/trips/${encodeURIComponent(trip.id)}/complete`',
+  'reasonCode }',
+  'function BookingOutcome',
+  'export function cancellationReasonLabel',
+  'data.rideNote',
 ];
 
 // Removed code: the browser-side loop that collected every active member before a send.
