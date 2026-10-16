@@ -55,6 +55,10 @@ const members = Array.from({ length: 64 }, (_, index) => {
   };
 });
 members.forEach((member) => { member.onboardingCompleted = member.onboardingStep === 'COMPLETE'; });
+// Long real-world names, to check that the verified badge stays visible when a name is cut.
+[[1, 'Venkata Satya Sai', 'Lakshminarasimha Reddy'], [4, 'Naga Venkata Sri', 'Durga Prasad Varma']].forEach(([index, first, last]) => {
+  Object.assign(members[index], { firstName: first, lastName: last, name: `${first} ${last}`, workEmailStatus: 'VERIFIED' });
+});
 // Most members who finished onboarding added a trusted contact. The detail sends only the last 4 digits.
 members.forEach((member, index) => {
   member.trustedContactFull = member.onboardingStep === 'COMPLETE' && index % 6 !== 1

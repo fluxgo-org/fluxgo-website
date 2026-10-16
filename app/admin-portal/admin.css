@@ -374,6 +374,11 @@ body.ax-resizing, body.ax-resizing * { cursor: col-resize !important; user-selec
 .ax-table-empty-cell { height: auto !important; white-space: normal !important; }
 .ax-person { display: inline-flex; align-items: center; gap: 9px; min-width: 0; max-width: 100%; }
 .ax-person strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+/* A long name is cut with an ellipsis. The verified badge and the internal tag after it stay visible. */
+.ax-person > span:last-child, .ax-name-cell { display: inline-flex; align-items: center; min-width: 0; max-width: 100%; vertical-align: middle; }
+.ax-person > span:last-child > strong, .ax-name-cell > .ax-link, .ax-name-cell > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ax-name-cell > .ax-verified, .ax-person .ax-verified, .ax-internal-tag { flex: none; }
+.ax-name-cell > .ax-link { display: block; text-align: left; }
 .ax-when { display: grid; line-height: 1.25; }
 .ax-when span { overflow: hidden; text-overflow: ellipsis; }
 .ax-when small { color: var(--ink3); font-size: 11.5px; }
