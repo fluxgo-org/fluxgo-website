@@ -106,7 +106,7 @@ const trips = Array.from({ length: 46 }, (_, index) => {
     bookingMode: rand() > 0.5 ? 'INSTANT' : 'REQUEST', pricePerSeat: pick([180, 220, 250, 320, 450, 650, 850]), bookingCount: 0,
     createdAt: iso(departure - minutes(60 * 24 * int(1, 4))), updatedAt: iso(departure - minutes(600)),
     vehicleId: driver.vehicles[0]?.id, vehicle: driver.vehicles[0] ? { registrationNumber: driver.vehicles[0].registrationNumber, make: driver.vehicles[0].make, model: driver.vehicles[0].model, status: 'ACTIVE', verificationStatus: driver.vehicles[0].verificationStatus } : null,
-    cancellationReason: status === 'CANCELLED' ? 'DRIVER_PLAN_CHANGED' : null, completedAt: status === 'COMPLETED' ? iso(departure + minutes(180)) : null,
+    cancellationReason: status === 'CANCELLED' ? 'VEHICLE_ISSUE' : null, rideNote: index % 4 === 0 ? 'No smoking. One short tea stop on the way.' : null, completedAt: status === 'COMPLETED' ? iso(departure + minutes(180)) : null,
   };
 });
 
@@ -131,6 +131,30 @@ trips.forEach((trip) => {
       events: [{ id: randomUUID(), fromStatus: null, toStatus: 'REQUESTED', actorUserId: booker.id, actorRole: 'PASSENGER', occurredAt: iso(created) }, ...(status !== 'REQUESTED' ? [{ id: randomUUID(), fromStatus: 'REQUESTED', toStatus: status === 'IN_RIDE' || status === 'COMPLETED' ? 'CONFIRMED' : status, actorUserId: trip.driverUserId, actorRole: 'DRIVER', occurredAt: iso(created + minutes(12)) }] : [])],
     });
   }
+});
+
+// Cancellation facts, set without the random sequence so the other mock data stays the same.
+const mockEvent = (fromStatus, toStatus, actorUserId, actorRole, occurredAt, extra = {}) => ({
+  id: randomUUID(), fromStatus, toStatus, actorUserId, actorRole, occurredAt, cancellationReason: null, lateCancellation: false, onBehalfOf: null, ...extra,
+});
+bookings.forEach((booking) => {
+  Object.assign(booking, { cancellationReason: null, cancellationNote: null, hostRemovedAt: null });
+  booking.events = booking.events.map((event) => ({ cancellationReason: null, lateCancellation: false, onBehalfOf: null, ...event }));
+  const trip = trips.find((item) => item.id === booking.tripId);
+  if (booking.status === 'CANCELLED_BY_DRIVER') {
+    booking.cancellationReason = trip.cancellationReason;
+    booking.events.push(mockEvent('CONFIRMED', 'CANCELLED_BY_DRIVER', trip.driverUserId, 'DRIVER', booking.updatedAt, { cancellationReason: trip.cancellationReason }));
+  }
+});
+// A few cancellations on upcoming rides: by the co-traveller, late, and a host removal with a note.
+[['CANCELLED_BY_PASSENGER', 'DRIVER_ASKED_EXTRA_MONEY', null, false], ['CANCELLED_BY_PASSENGER', 'PLANS_CHANGED', null, true], ['CANCELLED_BY_DRIVER', 'PASSENGER_NOT_RESPONDING', 'Could not reach you by phone twice.', false]].forEach(([status, reason, note, late], index) => {
+  const booking = bookings.filter((item) => item.status === 'CONFIRMED' && Date.parse(item.tripDepartureAt) > now + minutes(60 * 24))[index];
+  if (!booking) return;
+  const trip = trips.find((item) => item.id === booking.tripId);
+  trip.seatsAvailable += booking.passengerCount;
+  const at = iso(Date.parse(booking.createdAt) - now + minutes(90));
+  Object.assign(booking, { status, cancellationReason: reason, cancellationNote: note, hostRemovedAt: status === 'CANCELLED_BY_DRIVER' ? at : null, updatedAt: at });
+  booking.events.push(mockEvent('CONFIRMED', status, status === 'CANCELLED_BY_DRIVER' ? trip.driverUserId : booking.bookedByUserId, status === 'CANCELLED_BY_DRIVER' ? 'DRIVER' : 'PASSENGER', at, { cancellationReason: reason, lateCancellation: late }));
 });
 
 // Audience fields for notification filters. A separate random sequence keeps the other mock data the same.
@@ -578,12 +602,59 @@ function route(method, path, params, body, authed, admin) {
     if (trip.status === 'CANCELLED') return [201, { tripId: trip.id, status: 'CANCELLED', affectedBookings: 0, alreadyCancelled: true }];
     if (trip.status !== 'PUBLISHED') return [409, { error: { code: 'TRIP_NOT_CANCELLABLE', message: 'Only a published ride that has not started can be cancelled' } }];
     const affected = bookings.filter((booking) => booking.tripId === trip.id && ['REQUESTED', 'CONFIRMED'].includes(booking.status));
-    affected.forEach((booking) => { booking.status = 'CANCELLED_BY_DRIVER'; booking.updatedAt = new Date().toISOString(); });
+    const reasonCode = body.reasonCode || 'OTHER';
+    affected.forEach((booking) => {
+      booking.events.push(mockEvent(booking.status, 'CANCELLED_BY_DRIVER', trip.driverUserId, 'DRIVER', new Date().toISOString(), { cancellationReason: reasonCode }));
+      Object.assign(booking, { status: 'CANCELLED_BY_DRIVER', cancellationReason: reasonCode, updatedAt: new Date().toISOString() });
+    });
     trip.status = 'CANCELLED';
-    trip.cancellationReason = 'OTHER';
+    trip.cancellationReason = reasonCode;
     trip.updatedAt = new Date().toISOString();
-    addAudit(admin, 'TRIP_CANCELLED_BY_ADMIN', 'trip', trip.id, Date.now() - now, { reason: body.reason, metadata: { affectedBookings: affected.length } });
+    addAudit(admin, 'TRIP_CANCELLED_BY_ADMIN', 'trip', trip.id, Date.now() - now, { reason: body.reason, metadata: { affectedBookings: affected.length, cancellationReason: reasonCode } });
     return [201, { tripId: trip.id, status: 'CANCELLED', affectedBookings: affected.length, alreadyCancelled: false }];
+  }
+  match = path.match(/^\/v1\/admin\/trips\/([^/]+)\/complete$/);
+  if (match && method === 'POST') {
+    const trip = trips.find((item) => item.id === match[1]);
+    if (!trip) return [404, { error: { code: 'NOT_FOUND', message: 'Trip not found' } }];
+    if (String(body.note || '').trim().length < 3) return [400, { error: { code: 'INVALID_REQUEST', message: 'Enter a note for the audit log', field: 'note' } }];
+    if (trip.status === 'COMPLETED') return [201, { trip, alreadyCompleted: true }];
+    if (trip.status !== 'IN_PROGRESS') return [409, { error: { code: 'TRIP_NOT_COMPLETABLE', message: 'Only a ride in progress can be marked completed' } }];
+    Object.assign(trip, { status: 'COMPLETED', completedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    bookings.filter((booking) => booking.tripId === trip.id && booking.status === 'IN_RIDE').forEach((booking) => {
+      booking.events.push(mockEvent('IN_RIDE', 'COMPLETED', trip.driverUserId, 'DRIVER', new Date().toISOString()));
+      booking.status = 'COMPLETED';
+    });
+    addAudit(admin, 'TRIP_COMPLETED_BY_ADMIN', 'trip', trip.id, Date.now() - now, { reason: body.note });
+    return [201, { trip, alreadyCompleted: false }];
+  }
+  match = path.match(/^\/v1\/admin\/bookings\/([^/]+)\/actions$/);
+  if (match && method === 'POST') {
+    const booking = bookings.find((item) => item.id === match[1]);
+    if (!booking) return [404, { error: { code: 'NOT_FOUND', message: 'Booking not found' } }];
+    const trip = trips.find((item) => item.id === booking.tripId);
+    const { action, reason } = body;
+    if (String(body.note || '').trim().length < 3) return [400, { error: { code: 'INVALID_REQUEST', message: 'Enter a note for the audit log', field: 'note' } }];
+    const cancelling = action === 'CANCEL_FOR_PASSENGER' || action === 'REMOVE_FOR_DRIVER';
+    if (cancelling && !reason) return [400, { error: { code: 'INVALID_REQUEST', message: 'Choose a cancellation reason', field: 'reason' } }];
+    const target = { ACCEPT: 'CONFIRMED', REJECT: 'REJECTED', CANCEL_FOR_PASSENGER: 'CANCELLED_BY_PASSENGER', REMOVE_FOR_DRIVER: 'CANCELLED_BY_DRIVER' }[action];
+    if (!target) return [400, { error: { code: 'INVALID_REQUEST', message: 'Unknown action', field: 'action' } }];
+    if (booking.status === target) return [201, { booking, changed: false }];
+    const allowed = { ACCEPT: ['REQUESTED'], REJECT: ['REQUESTED'], CANCEL_FOR_PASSENGER: ['REQUESTED', 'CONFIRMED'], REMOVE_FOR_DRIVER: ['CONFIRMED'] }[action];
+    if (!allowed.includes(booking.status)) return [409, { error: { code: 'BOOKING_INVALID_TRANSITION', message: 'This booking cannot change that way now' } }];
+    if (action === 'ACCEPT') {
+      if (trip.seatsAvailable < booking.passengerCount) return [409, { error: { code: 'INSUFFICIENT_SEATS', message: 'Not enough seats are left on this ride' } }];
+      trip.seatsAvailable -= booking.passengerCount;
+    }
+    if (cancelling && booking.status === 'CONFIRMED') trip.seatsAvailable += booking.passengerCount;
+    const at = new Date().toISOString();
+    booking.events.push(mockEvent(booking.status, target, action === 'CANCEL_FOR_PASSENGER' ? booking.bookedByUserId : trip.driverUserId, 'ADMIN', at, {
+      cancellationReason: cancelling ? reason : null, onBehalfOf: action === 'CANCEL_FOR_PASSENGER' ? 'PASSENGER' : 'DRIVER',
+    }));
+    Object.assign(booking, { status: target, updatedAt: at, ...(cancelling ? { cancellationReason: reason } : {}), ...(action === 'REMOVE_FOR_DRIVER' ? { hostRemovedAt: at, cancellationNote: null } : {}) });
+    addAudit(admin, { ACCEPT: 'BOOKING_ACCEPTED_BY_ADMIN', REJECT: 'BOOKING_REJECTED_BY_ADMIN', CANCEL_FOR_PASSENGER: 'BOOKING_CANCELLED_BY_ADMIN', REMOVE_FOR_DRIVER: 'BOOKING_REMOVED_BY_ADMIN' }[action], 'booking', booking.id, Date.now() - now, { reason: body.note });
+    audit.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+    return [201, { booking, changed: true }];
   }
   match = path.match(/^\/v1\/admin\/members\/([^/]+)$/);
   if (match) {
@@ -623,7 +694,7 @@ function route(method, path, params, body, authed, admin) {
   if (match) {
     const trip = trips.find((item) => item.id === match[1] || item.publicId === match[1]);
     if (!trip) return [404, { error: { code: 'NOT_FOUND', message: 'Trip not found' } }];
-    return [200, { trip: { ...trip, bookings: bookings.filter((booking) => booking.tripId === trip.id).map((booking) => ({ id: booking.id, publicId: booking.publicId, bookedByUserId: booking.bookedByUserId, bookedByName: booking.bookedByName, passengerCount: booking.passengerCount, status: booking.status, totalPrice: booking.totalPrice, createdAt: booking.createdAt })) } }];
+    return [200, { trip: { ...trip, bookings: bookings.filter((booking) => booking.tripId === trip.id).map((booking) => ({ id: booking.id, publicId: booking.publicId, bookedByUserId: booking.bookedByUserId, bookedByName: booking.bookedByName, passengerCount: booking.passengerCount, status: booking.status, totalPrice: booking.totalPrice, createdAt: booking.createdAt, cancellationReason: booking.cancellationReason, cancellationNote: booking.cancellationNote, hostRemovedAt: booking.hostRemovedAt })) } }];
   }
   if (path === '/v1/admin/bookings') {
     let list = scoped(bookings, params, bookingInternal).filter((booking) => text(params.get('query'), booking.publicId, booking.tripPublicId, booking.bookedByName));

@@ -3,6 +3,7 @@
 import {
   auditActionLabel,
   AUDIT_ACTION_LABELS,
+  cancellationReasonLabel,
   dayEndIso,
   dayStartIso,
   display,
@@ -271,6 +272,8 @@ export const RECORD_SECTIONS = {
       { key: 'bookedByName', label: 'Booker', width: 170, verified: (row) => row.bookedByVerified, render: (row) => <span className="ax-name-cell"><RecordLink onOpen={() => open('member', row.bookedByUserId)}>{display(row.bookedByName)}</RecordLink><VerifiedMark show={row.bookedByVerified} /><InternalTag show={row.bookedByIsInternal} /></span>, csv: (row) => row.bookedByName },
       { key: 'passengerCount', label: 'Seats', width: 80, align: 'end', sortKey: 'passengerCount', render: (row) => formatNumber(row.passengerCount) },
       { key: 'status', label: 'Status', width: 170, render: (row) => <Badge value={row.status} /> },
+      { key: 'cancellationReason', label: 'Cancel reason', width: 220, defaultHidden: true, render: (row) => row.cancellationReason ? <span className="ax-truncate" title={row.cancellationNote ? `Host note: ${row.cancellationNote}` : undefined}>{cancellationReasonLabel(row.cancellationReason)}</span> : <span className="ax-muted">—</span>, text: (row) => cancellationReasonLabel(row.cancellationReason), csv: (row) => row.cancellationReason },
+      { key: 'cancellationNote', label: 'Host note', width: 220, defaultHidden: true, render: (row) => row.cancellationNote ? <span className="ax-truncate" title={row.cancellationNote}>{row.cancellationNote}</span> : <span className="ax-muted">—</span> },
       { key: 'totalPrice', label: 'Total', width: 100, align: 'end', sortKey: 'totalPrice', render: (row) => formatMoney(row.totalPrice), text: (row) => formatMoney(row.totalPrice) },
       { key: 'tripDepartureAt', label: 'Departure', width: 180, sortKey: 'departureAt', render: (row) => <When value={row.tripDepartureAt} now={now} />, csv: (row) => row.tripDepartureAt },
       { key: 'createdAt', label: 'Booked', width: 170, sortKey: 'createdAt', render: (row) => <When value={row.createdAt} now={now} />, csv: (row) => row.createdAt },

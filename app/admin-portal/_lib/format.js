@@ -112,7 +112,53 @@ export const AUDIT_ACTION_LABELS = {
   MEMBER_MARKED_INTERNAL: 'Marked a member as internal',
   MEMBER_MARKED_EXTERNAL: 'Marked a member as external',
   MEMBER_TRUSTED_CONTACT_VIEWED: "Viewed a trusted contact's number",
+  BOOKING_ACCEPTED_BY_ADMIN: 'Accepted a booking request for the host',
+  BOOKING_REJECTED_BY_ADMIN: 'Declined a booking request for the host',
+  BOOKING_CANCELLED_BY_ADMIN: 'Cancelled a booking for the co-traveller',
+  BOOKING_REMOVED_BY_ADMIN: 'Removed a co-traveller for the host',
+  TRIP_COMPLETED_BY_ADMIN: 'Marked a ride completed',
 };
+
+/** Cancellation reason codes, worded for an admin. The app uses the same codes. */
+export const CANCELLATION_REASON_LABELS = {
+  PLANS_CHANGED: 'Plans changed',
+  FOUND_ANOTHER_RIDE: 'Found another ride',
+  TIME_NO_LONGER_WORKS: "Departure time doesn't work",
+  PICKUP_NO_LONGER_WORKS: 'Pickup or drop does not work',
+  DRIVER_ASKED_TO_CANCEL: 'Host asked the co-traveller to cancel',
+  DRIVER_ASKED_EXTRA_MONEY: 'Host asked for extra money',
+  DRIVER_NOT_RESPONDING: 'Host not responding',
+  NOT_COMFORTABLE: 'Not comfortable',
+  NOT_ENOUGH_BOOKINGS: 'Not enough bookings',
+  ROUTE_OR_TIME_CHANGED: 'Route or time changed',
+  VEHICLE_ISSUE: 'Vehicle issue',
+  HEALTH_OR_EMERGENCY: 'Health or emergency',
+  WEATHER_OR_ROAD: 'Weather or road issue',
+  PASSENGER_TIMING_CHANGED: 'Co-traveller timing changed',
+  PASSENGER_NOT_RESPONDING: 'Co-traveller not responding',
+  PASSENGER_ASKED_TO_CANCEL: 'Co-traveller asked to cancel',
+  CONFIRMED_OVERLAPPING_RIDE: 'Confirmed another ride at the same time',
+  OTHER: 'Other',
+};
+
+export function cancellationReasonLabel(code) {
+  return code ? CANCELLATION_REASON_LABELS[code] || statusLabel(code) : null;
+}
+
+/** The reason lists the app shows, in the same order. */
+export const PASSENGER_CANCEL_REASONS = ['PLANS_CHANGED', 'FOUND_ANOTHER_RIDE', 'TIME_NO_LONGER_WORKS', 'PICKUP_NO_LONGER_WORKS', 'DRIVER_ASKED_TO_CANCEL', 'DRIVER_ASKED_EXTRA_MONEY', 'DRIVER_NOT_RESPONDING', 'NOT_COMFORTABLE', 'OTHER'];
+export const HOST_REMOVAL_REASONS = ['PASSENGER_NOT_RESPONDING', 'PASSENGER_ASKED_TO_CANCEL', 'PICKUP_NO_LONGER_WORKS', 'NOT_COMFORTABLE', 'VEHICLE_ISSUE', 'OTHER'];
+export const RIDE_CANCEL_REASONS = ['NOT_ENOUGH_BOOKINGS', 'ROUTE_OR_TIME_CHANGED', 'VEHICLE_ISSUE', 'HEALTH_OR_EMERGENCY', 'WEATHER_OR_ROAD', 'OTHER'];
+
+/** Who changed a booking, from a booking event. */
+export function bookingActorLabel(event) {
+  if (!event) return null;
+  if (event.actorRole === 'ADMIN') return event.onBehalfOf === 'PASSENGER' ? 'Support, for the co-traveller' : 'Support, for the host';
+  if (event.actorRole === 'DRIVER') return 'Host';
+  if (event.actorRole === 'PASSENGER') return 'Co-traveller';
+  if (event.actorRole === 'SYSTEM') return 'Fluxgo (automatic)';
+  return statusLabel(event.actorRole);
+}
 
 /** The verified badge from the app (assets/fluxgo-work-email-verified-3d.png), 96 px. color is its green, for fallbacks. */
 export const VERIFIED_BADGE = { src: '/admin/verified.png', color: '#16C25A' };

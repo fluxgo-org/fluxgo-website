@@ -7,6 +7,11 @@ import { errorText, isSessionExpired, queryString, requestApi } from '../_lib/ap
 import {
   ageFromDob,
   auditActionLabel,
+  bookingActorLabel,
+  cancellationReasonLabel,
+  HOST_REMOVAL_REASONS,
+  PASSENGER_CANCEL_REASONS,
+  RIDE_CANCEL_REASONS,
   display,
   formatDate,
   formatDateTime,
@@ -258,7 +263,8 @@ function TripPanel({ id, seed, onClose, onBack, open, navigate }) {
                 <Detail label="Vehicle check">{data.vehicle ? <Badge value={data.vehicle.verificationStatus} /> : null}</Detail>
                 <Detail label="Departure">{formatDateTime(data.departureAt)}</Detail>
                 <Detail label="Completed">{data.completedAt ? formatDateTime(data.completedAt) : null}</Detail>
-                <Detail label="Cancellation reason">{data.cancellationReason ? statusLabel(data.cancellationReason) : null}</Detail>
+                <Detail label="Cancellation reason">{cancellationReasonLabel(data.cancellationReason)}</Detail>
+                <Detail label="Ride note" full>{data.rideNote ? <span className="ax-prewrap">{data.rideNote}</span> : null}</Detail>
                 <Detail label="Published">{formatDateTime(data.createdAt)}</Detail>
                 <Detail label="Ride ID"><Mono value={data.id} /></Detail>
                 <Detail label="Public ride page" full><span className="ax-ride-url"><a href={rideLink(data.publicId)} target="_blank" rel="noopener noreferrer">{rideLink(data.publicId)}</a><CopyButton value={rideLink(data.publicId)} label="Copy ride link" icon="link" /></span></Detail>
@@ -267,12 +273,13 @@ function TripPanel({ id, seed, onClose, onBack, open, navigate }) {
             <Section title="Bookings" count={data.bookings?.length || 0}>
               <MiniList items={data.bookings} empty="No bookings yet." render={(booking) => (
                 <li key={booking.id}><button type="button" className="ax-mini-item" onClick={() => open('booking', booking.id)}>
-                  <span className="ax-mini-main"><strong>{display(booking.bookedByName)}<VerifiedMark show={booking.bookedByVerified} /></strong><span className="ax-muted">{booking.publicId} · {plural(booking.passengerCount, 'seat')} · {formatMoney(booking.totalPrice)} · {relativeTime(booking.createdAt, now)}</span></span>
+                  <span className="ax-mini-main"><strong>{display(booking.bookedByName)}<VerifiedMark show={booking.bookedByVerified} /></strong><span className="ax-muted">{booking.publicId} · {plural(booking.passengerCount, 'seat')} · {formatMoney(booking.totalPrice)} · {relativeTime(booking.createdAt, now)}</span>{booking.cancellationReason ? <span className="ax-cancel-line">{cancellationReasonLabel(booking.cancellationReason)}{booking.cancellationNote ? <> · “{booking.cancellationNote}”</> : null}</span> : null}</span>
                   <span className="ax-mini-side"><Badge value={booking.status} /><Icon name="chevronRight" size={14} /></span>
                 </button></li>
               )} />
             </Section>
             {data.status === 'PUBLISHED' ? <div className="ax-panel-actions"><TripCancelAction trip={data} onDone={reload} /></div> : null}
+            {data.status === 'IN_PROGRESS' ? <div className="ax-panel-actions"><TripCompleteAction trip={data} onDone={reload} /></div> : null}
           </div>
         ) : null}
       </PanelState>
@@ -293,6 +300,7 @@ function BookingPanel({ id, seed, onClose, onBack, open }) {
       <PanelState loading={loading} error={error} data={data} onRetry={reload}>
         {data ? (
           <div className="ax-panel-body">
+            <BookingOutcome booking={data} />
             <div className="ax-stat-grid is-3">
               <StatTile label="Seats" value={formatNumber(data.passengerCount)} />
               <StatTile label="Total" value={formatMoney(data.totalPrice, data.currency)} />
@@ -328,12 +336,13 @@ function BookingPanel({ id, seed, onClose, onBack, open }) {
                   {data.events.map((event) => (
                     <li key={event.id}>
                       <span className="ax-timeline-dot" aria-hidden="true" />
-                      <div><strong>{event.fromStatus ? `${statusLabel(event.fromStatus)} → ${statusLabel(event.toStatus)}` : statusLabel(event.toStatus)}</strong><span className="ax-muted">{formatDateTime(event.occurredAt)} · by {statusLabel(event.actorRole).toLowerCase()}</span></div>
+                      <div><strong>{event.fromStatus ? `${statusLabel(event.fromStatus)} → ${statusLabel(event.toStatus)}` : statusLabel(event.toStatus)}</strong><span className="ax-muted">{[formatDateTime(event.occurredAt), `by ${bookingActorLabel(event).toLowerCase()}`, cancellationReasonLabel(event.cancellationReason)].filter(Boolean).join(' · ')}</span></div>
                     </li>
                   ))}
                 </ol>
               ) : <p className="ax-muted ax-mini-empty">No events.</p>}
             </Section>
+            <BookingActions booking={data} onDone={reload} />
           </div>
         ) : null}
       </PanelState>
@@ -529,15 +538,16 @@ function TripCancelAction({ trip, onDone }) {
   const notify = useToast();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState('');
+  const [reasonCode, setReasonCode] = useState('OTHER');
   const [busy, setBusy] = useState(false);
   const affected = (trip.bookings || []).filter((booking) => ACTIVE_BOOKING_STATUSES.has(booking.status));
   const seats = affected.reduce((sum, booking) => sum + Number(booking.passengerCount || 0), 0);
-  const close = () => { setOpen(false); setReason(''); };
+  const close = () => { setOpen(false); setReason(''); setReasonCode('OTHER'); };
   const submit = async () => {
     if (reason.trim().length < 3) return;
     setBusy(true);
     try {
-      const result = await requestApi(`/admin/trips/${encodeURIComponent(trip.id)}/cancel`, { method: 'POST', body: JSON.stringify({ reason: reason.trim() }) });
+      const result = await requestApi(`/admin/trips/${encodeURIComponent(trip.id)}/cancel`, { method: 'POST', body: JSON.stringify({ reason: reason.trim(), reasonCode }) });
       notify(result?.alreadyCancelled ? 'This ride was already cancelled.' : `Ride cancelled. ${plural(result?.affectedBookings ?? 0, 'booking')} ended and notified.`);
       close();
       await onDone?.();
@@ -552,11 +562,139 @@ function TripCancelAction({ trip, onDone }) {
       <Button variant="ghost" className="is-danger-text" onClick={() => setOpen(true)}>Cancel this ride</Button>
       <ConfirmDialog open={open} busy={busy} tone="danger" title="Cancel this ride?" confirmLabel="Cancel ride" onCancel={close} onConfirm={submit}
         description={<>{affected.length ? <><strong>{plural(affected.length, 'booking')}</strong> ({plural(seats, 'seat')}) end now. </> : 'No bookings are affected. '}The driver and passengers get a notification that Fluxgo support cancelled the ride. You cannot undo this.</>}>
-        <Field label="Reason (required, goes to the audit log; members do not see it)" htmlFor="trip-cancel-reason" hint="At least 3 characters.">
-          <textarea id="trip-cancel-reason" rows={3} value={reason} onChange={(event) => setReason(event.target.value)} maxLength={500} placeholder="For example: driver reported an unsafe vehicle" data-autofocus />
+        <div className="ax-form-stack">
+          <Field label="Cancellation reason (stored on the ride and its bookings)" htmlFor="trip-cancel-code">
+            <ReasonSelect id="trip-cancel-code" codes={RIDE_CANCEL_REASONS} value={reasonCode} onChange={setReasonCode} />
+          </Field>
+          <Field label="Note for the audit log (required; members do not see it)" htmlFor="trip-cancel-reason" hint="At least 3 characters.">
+            <textarea id="trip-cancel-reason" rows={3} value={reason} onChange={(event) => setReason(event.target.value)} maxLength={500} placeholder="For example: driver reported an unsafe vehicle" data-autofocus />
+          </Field>
+        </div>
+      </ConfirmDialog>
+    </>
+  );
+}
+
+function ReasonSelect({ id, codes, value, onChange }) {
+  return (
+    <select id={id} value={value} onChange={(event) => onChange(event.target.value)}>
+      {codes.map((code) => <option key={code} value={code}>{cancellationReasonLabel(code)}</option>)}
+    </select>
+  );
+}
+
+/** Mark a ride in progress as completed, for the host. */
+function TripCompleteAction({ trip, onDone }) {
+  const notify = useToast();
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const close = () => { setOpen(false); setNote(''); };
+  const submit = async () => {
+    if (note.trim().length < 3) return;
+    setBusy(true);
+    try {
+      const result = await requestApi(`/admin/trips/${encodeURIComponent(trip.id)}/complete`, { method: 'POST', body: JSON.stringify({ note: note.trim() }) });
+      notify(result?.alreadyCompleted ? 'This ride was already completed.' : 'Ride marked completed. The host and co-travellers were notified.');
+      close();
+      await onDone?.();
+    } catch (requestError) {
+      if (!isSessionExpired(requestError)) notify(errorText(requestError), 'danger');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <>
+      <Button onClick={() => setOpen(true)}>Mark completed</Button>
+      <ConfirmDialog open={open} busy={busy} tone="primary" title="Mark this ride completed?" confirmLabel="Mark completed" onCancel={close} onConfirm={submit}
+        description="Use this when the host forgot to end the ride. Confirmed co-travellers move to completed and can leave reviews. Members get the normal ride completed message.">
+        <Field label="Note for the audit log (required)" htmlFor="trip-complete-note" hint="At least 3 characters.">
+          <textarea id="trip-complete-note" rows={3} value={note} onChange={(event) => setNote(event.target.value)} maxLength={500} placeholder="For example: host called, ride ended at 6:40 pm" data-autofocus />
         </Field>
       </ConfirmDialog>
     </>
+  );
+}
+
+const CANCELLED_BOOKING_STATUSES = new Set(['CANCELLED_BY_PASSENGER', 'CANCELLED_BY_DRIVER', 'REJECTED']);
+
+/** Who cancelled or declined the booking, the reason, and the host's note. */
+function BookingOutcome({ booking }) {
+  if (!CANCELLED_BOOKING_STATUSES.has(booking.status)) return null;
+  const event = [...(booking.events || [])].reverse().find((item) => item.toStatus === booking.status);
+  const title = booking.status === 'REJECTED' ? 'Declined' : booking.hostRemovedAt ? 'Removed by the host' : 'Cancelled';
+  return (
+    <section className="ax-outcome" aria-label="Cancellation">
+      <p className="ax-outcome-title"><strong>{title}</strong>{event ? <span className="ax-muted"> · {bookingActorLabel(event)} · {formatDateTime(event.occurredAt)}</span> : null}</p>
+      <dl className="ax-detail-grid">
+        <Detail label="Reason">{cancellationReasonLabel(booking.cancellationReason || event?.cancellationReason)}</Detail>
+        <Detail label="Close to departure">{event ? (event.lateCancellation ? <Badge tone="warning">Late cancellation</Badge> : 'No') : null}</Detail>
+        {booking.hostRemovedAt || booking.cancellationNote ? <Detail label="Host note to the co-traveller" full>{booking.cancellationNote ? <span className="ax-prewrap">“{booking.cancellationNote}”</span> : 'No note'}</Detail> : null}
+      </dl>
+    </section>
+  );
+}
+
+const BOOKING_ACTION_COPY = {
+  ACCEPT: { button: 'Accept for host', title: 'Accept this request for the host?', confirm: 'Accept request', tone: 'primary', text: 'The seats are taken now. The host and the co-traveller each get a message that Fluxgo support confirmed the booking.' },
+  REJECT: { button: 'Decline for host', title: 'Decline this request for the host?', confirm: 'Decline request', tone: 'danger', text: 'The host and the co-traveller each get a message that Fluxgo support declined the request.' },
+  CANCEL_FOR_PASSENGER: { button: 'Cancel for co-traveller', title: 'Cancel this booking for the co-traveller?', confirm: 'Cancel booking', tone: 'danger', text: 'The booking shows as cancelled by the co-traveller, and the seats open again. Both members get a message that Fluxgo support cancelled it.' },
+  REMOVE_FOR_DRIVER: { button: 'Remove for host', title: 'Remove this co-traveller for the host?', confirm: 'Remove co-traveller', tone: 'danger', text: 'The booking shows as cancelled by the host, and the seats open again. The 6-hour limit for hosts does not apply. The co-traveller cannot book this ride again with instant booking. Both members get a message that Fluxgo support cancelled it.' },
+};
+
+/** Act on a booking for the host or the co-traveller. */
+function BookingActions({ booking, onDone }) {
+  const notify = useToast();
+  const [action, setAction] = useState(null);
+  const [reason, setReason] = useState('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const departed = new Date(booking.tripDepartureAt).getTime() <= Date.now();
+  const available = departed ? [] : booking.status === 'REQUESTED'
+    ? ['ACCEPT', 'REJECT', 'CANCEL_FOR_PASSENGER']
+    : booking.status === 'CONFIRMED' ? ['CANCEL_FOR_PASSENGER', 'REMOVE_FOR_DRIVER'] : [];
+  if (!available.length) return null;
+  const reasons = action === 'REMOVE_FOR_DRIVER' ? HOST_REMOVAL_REASONS : PASSENGER_CANCEL_REASONS;
+  const start = (next) => { setAction(next); setReason(next === 'REMOVE_FOR_DRIVER' ? HOST_REMOVAL_REASONS[0] : PASSENGER_CANCEL_REASONS[0]); setNote(''); };
+  const close = () => setAction(null);
+  const submit = async () => {
+    if (note.trim().length < 3) return;
+    setBusy(true);
+    try {
+      const needsReason = action === 'CANCEL_FOR_PASSENGER' || action === 'REMOVE_FOR_DRIVER';
+      const result = await requestApi(`/admin/bookings/${encodeURIComponent(booking.id)}/actions`, {
+        method: 'POST',
+        body: JSON.stringify({ action, note: note.trim(), ...(needsReason ? { reason } : {}) }),
+      });
+      notify(result?.changed === false ? 'Nothing changed. The booking was already in that state.' : `Done. The booking is now ${statusLabel(result?.booking?.status).toLowerCase()}, and both members were notified.`);
+      close();
+      await onDone?.();
+    } catch (requestError) {
+      if (!isSessionExpired(requestError)) notify(errorText(requestError), 'danger');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const copy = action ? BOOKING_ACTION_COPY[action] : null;
+  return (
+    <div className="ax-panel-actions">
+      {available.map((item) => (
+        <Button key={item} variant={BOOKING_ACTION_COPY[item].tone === 'danger' ? 'ghost' : 'secondary'} className={BOOKING_ACTION_COPY[item].tone === 'danger' ? 'is-danger-text' : ''} onClick={() => start(item)}>{BOOKING_ACTION_COPY[item].button}</Button>
+      ))}
+      <ConfirmDialog open={Boolean(action)} busy={busy} tone={copy?.tone || 'primary'} title={copy?.title || ''} confirmLabel={copy?.confirm || 'Confirm'} onCancel={close} onConfirm={submit} description={copy?.text}>
+        <div className="ax-form-stack">
+          {action === 'CANCEL_FOR_PASSENGER' || action === 'REMOVE_FOR_DRIVER' ? (
+            <Field label={action === 'REMOVE_FOR_DRIVER' ? 'Host reason (members do not see it)' : 'Co-traveller reason'} htmlFor="booking-action-reason">
+              <ReasonSelect id="booking-action-reason" codes={reasons} value={reason} onChange={setReason} />
+            </Field>
+          ) : null}
+          <Field label="Note for the audit log (required; members do not see it)" htmlFor="booking-action-note" hint="At least 3 characters.">
+            <textarea id="booking-action-note" rows={3} value={note} onChange={(event) => setNote(event.target.value)} maxLength={500} placeholder="For example: co-traveller called support and asked to cancel" data-autofocus />
+          </Field>
+        </div>
+      </ConfirmDialog>
+    </div>
   );
 }
 
