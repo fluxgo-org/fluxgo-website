@@ -5,8 +5,10 @@ import { auditDetails, InternalTag, IssueChips, RecordLink, Stars } from '../_co
 import { filterSummary } from '../_lib/audience';
 import { errorText, isSessionExpired, queryString, requestApi } from '../_lib/api';
 import {
+  ageFromDob,
   auditActionLabel,
   display,
+  formatDate,
   formatDateTime,
   formatMoney,
   formatNumber,
@@ -15,6 +17,8 @@ import {
   onboardingProgress,
   plural,
   relativeTime,
+  RELATIONSHIP_LABELS,
+  rideLink,
   RESOURCE_LABELS,
   SAFETY_ISSUES,
   statusLabel,
@@ -23,7 +27,7 @@ import { useDebounced, useNow } from '../_lib/hooks';
 import { useLiveRefresh } from '../_lib/live';
 import { DataTable } from './DataTable';
 import { SupportConversation } from './Support';
-import { Avatar, Badge, Button, ConfirmDialog, CopyButton, Detail, EmptyState, Field, Icon, IconButton, Mono, Section, Skeleton, useToast, VerifiedMark } from './ui';
+import { Avatar, Badge, Button, ConfirmDialog, CopyButton, Detail, EmptyState, Field, Icon, IconButton, Mono, RideLinkActions, Section, Skeleton, useToast, VerifiedMark } from './ui';
 
 
 const KIND_LABELS = { member: 'Member', trip: 'Ride', booking: 'Booking', support: 'Support ticket', review: 'Review', audit: 'Audit entry', send: 'Notification' };
@@ -66,7 +70,7 @@ export function RecordPanel(props) {
   return null;
 }
 
-function PanelHeader({ kind, title, subtitle, badges, onClose, onBack, linkParams, avatar, avatarSrc }) {
+function PanelHeader({ kind, title, subtitle, badges, onClose, onBack, linkParams, avatar, avatarSrc, actions }) {
   const [copied, setCopied] = useState(false);
   const copyLink = async () => {
     const url = new URL(window.location.href);
@@ -78,6 +82,7 @@ function PanelHeader({ kind, title, subtitle, badges, onClose, onBack, linkParam
       <div className="ax-panel-head-bar">
         {onBack ? <Button size="sm" variant="ghost" icon="arrowLeft" onClick={onBack}>Back</Button> : <span className="ax-panel-kind">{KIND_LABELS[kind]}</span>}
         <div className="ax-panel-head-actions">
+          {actions}
           {linkParams ? <IconButton icon={copied ? 'check' : 'external'} label={copied ? 'Link copied' : 'Copy link to this record'} onClick={copyLink} /> : null}
           <IconButton icon="close" label="Close panel (Esc)" onClick={onClose} />
         </div>
@@ -140,8 +145,14 @@ function MemberPanel({ id, seed, onClose, onBack, open, navigate }) {
               {data.personalEmail ? <a className="ax-contact" href={`mailto:${data.personalEmail}`}><Icon name="mail" size={14} /><span>{data.personalEmail}</span></a> : null}
             </div>
             <div className="ax-stat-grid">
-              <StatTile label="Rides as driver" value={formatNumber(data.tripCount)} onClick={data.tripCount ? () => navigate('trips', { driverUserId: data.id, driverName: data.name || 'Member', ...internalScope }) : undefined} />
-              <StatTile label="Bookings" value={formatNumber(data.bookingCount)} onClick={data.bookingCount ? () => navigate('bookings', { memberId: data.id, memberName: data.name || 'Member', ...internalScope }) : undefined} />
+              {/* An older API has no ridesCompleted. Then show the published and booked counts as before. */}
+              {data.ridesCompleted ? <>
+                <StatTile label="Rides completed as driver" value={formatNumber(data.ridesCompleted.asDriver)} onClick={data.ridesCompleted.asDriver ? () => navigate('trips', { status: 'COMPLETED', driverUserId: data.id, driverName: data.name || 'Member', ...internalScope }) : undefined} />
+                <StatTile label="Rides completed as passenger" value={formatNumber(data.ridesCompleted.asPassenger)} onClick={data.ridesCompleted.asPassenger ? () => navigate('bookings', { status: 'COMPLETED', memberId: data.id, memberName: data.name || 'Member', ...internalScope }) : undefined} />
+              </> : <>
+                <StatTile label="Rides as driver" value={formatNumber(data.tripCount)} onClick={data.tripCount ? () => navigate('trips', { driverUserId: data.id, driverName: data.name || 'Member', ...internalScope }) : undefined} />
+                <StatTile label="Bookings" value={formatNumber(data.bookingCount)} onClick={data.bookingCount ? () => navigate('bookings', { memberId: data.id, memberName: data.name || 'Member', ...internalScope }) : undefined} />
+              </>}
               <StatTile label={reviews?.count ? `Rating · ${plural(reviews.count, 'review')}` : 'No reviews yet'} value={reviews?.averageRating ? reviews.averageRating.toFixed(1) : '—'} onClick={reviews?.count ? () => navigate('safety', { memberId: data.id, memberName: data.name || 'Member', ...internalScope }) : undefined} />
               <StatTile label="Safety reports" value={formatNumber(reviews?.safetyReports ?? 0)} tone={reviews?.safetyReports ? 'danger' : undefined} onClick={reviews?.safetyReports ? () => navigate('safety', { issues: 'SAFETY', memberId: data.id, memberName: data.name || 'Member', ...internalScope }) : undefined} />
               <StatTile label="Blocked by members" value={formatNumber(data.blocks?.blockedByOthers ?? 0)} tone={data.blocks?.blockedByOthers ? 'warning' : undefined} />
@@ -152,12 +163,24 @@ function MemberPanel({ id, seed, onClose, onBack, open, navigate }) {
                 <Detail label="Member ID"><Mono value={data.id} /></Detail>
                 <Detail label="Sign-in">{statusLabel(data.authProvider)}</Detail>
                 <Detail label="Gender">{data.gender ? statusLabel(data.gender) : null}</Detail>
-                <Detail label="Date of birth">{data.dob}</Detail>
+                <Detail label="Age">{data.dob ? <AgeDetail dob={data.dob} /> : null}</Detail>
                 <Detail label="Personal email">{data.personalEmailStatus ? <Badge value={data.personalEmailStatus} /> : 'Not added'}</Detail>
                 <Detail label="Onboarding"><OnboardingDetail member={data} /></Detail>
                 <Detail label="Updated">{formatDateTime(data.updatedAt)}</Detail>
               </dl>
             </Section>
+            {data.trustedContact !== undefined ? <TrustedContactSection memberId={data.id} contact={data.trustedContact} /> : null}
+            {reviews?.recent ? (
+              <Section title="Reviews about this member" count={reviews.count} action={reviews.count > reviews.recent.length ? <Button size="sm" variant="ghost" iconRight="arrowRight" onClick={() => navigate('safety', { revieweeId: data.id, revieweeName: data.name || 'Member', ...internalScope })}>All reviews</Button> : null}>
+                <ReviewMiniList items={reviews.recent} side="reviewer" empty="No reviews yet." open={open} now={now} />
+              </Section>
+            ) : null}
+            {data.reviewsGiven ? (
+              <Section title="Reviews written by this member" count={data.reviewsGiven.count} action={data.reviewsGiven.count > data.reviewsGiven.recent.length ? <Button size="sm" variant="ghost" iconRight="arrowRight" onClick={() => navigate('safety', { reviewerId: data.id, reviewerName: data.name || 'Member', ...internalScope })}>All reviews</Button> : null}>
+                {data.reviewsGiven.averageRating ? <p className="ax-muted ax-small ax-section-note">Average rating given: {data.reviewsGiven.averageRating.toFixed(1)}</p> : null}
+                <ReviewMiniList items={data.reviewsGiven.recent} side="reviewee" empty="No reviews written." open={open} now={now} />
+              </Section>
+            ) : null}
             <Section title="Vehicles" count={data.vehicles?.length || 0}>
               <MiniList items={data.vehicles} empty="No vehicles." render={(vehicle) => (
                 <li key={vehicle.id} className="ax-mini-item is-static">
@@ -168,18 +191,18 @@ function MemberPanel({ id, seed, onClose, onBack, open, navigate }) {
             </Section>
             <Section title="Recent rides as driver" count={data.tripCount} action={data.tripCount > (data.recentTrips?.length || 0) ? <Button size="sm" variant="ghost" iconRight="arrowRight" onClick={() => navigate('trips', { driverUserId: data.id, driverName: data.name || 'Member', ...internalScope })}>All rides</Button> : null}>
               <MiniList items={data.recentTrips} empty="No rides published." render={(trip) => (
-                <li key={trip.id}><button type="button" className="ax-mini-item" onClick={() => open('trip', trip.id)}>
+                <li key={trip.id} className="ax-mini-row"><button type="button" className="ax-mini-item" onClick={() => open('trip', trip.id)}>
                   <span className="ax-mini-main"><strong>{trip.origin} → {trip.destination}</strong><span className="ax-muted">{formatDateTime(trip.departureAt)} · {trip.seatsTotal - trip.seatsAvailable}/{trip.seatsTotal} booked</span></span>
                   <span className="ax-mini-side"><Badge value={trip.status} /><Icon name="chevronRight" size={14} /></span>
-                </button></li>
+                </button><RideLinkActions publicId={trip.publicId} /></li>
               )} />
             </Section>
             <Section title="Recent bookings" count={data.bookingCount} action={data.bookingCount > (data.recentBookings?.length || 0) ? <Button size="sm" variant="ghost" iconRight="arrowRight" onClick={() => navigate('bookings', { memberId: data.id, memberName: data.name || 'Member', ...internalScope })}>All bookings</Button> : null}>
               <MiniList items={data.recentBookings} empty="No bookings." render={(booking) => (
-                <li key={booking.id}><button type="button" className="ax-mini-item" onClick={() => open('booking', booking.id)}>
+                <li key={booking.id} className="ax-mini-row"><button type="button" className="ax-mini-item" onClick={() => open('booking', booking.id)}>
                   <span className="ax-mini-main"><strong>{booking.route.replace(' to ', ' → ')}</strong><span className="ax-muted">{formatDateTime(booking.departureAt)} · {plural(booking.passengerCount, 'seat')} · {formatMoney(booking.totalPrice)}</span></span>
                   <span className="ax-mini-side"><Badge value={booking.status} /><Icon name="chevronRight" size={14} /></span>
-                </button></li>
+                </button><RideLinkActions publicId={booking.tripPublicId} /></li>
               )} />
             </Section>
             <Section title="Support tickets" count={data.supportTickets?.length || 0}>
@@ -212,6 +235,7 @@ function TripPanel({ id, seed, onClose, onBack, open, navigate }) {
       <PanelHeader kind="trip" title={head ? `${head.origin} → ${head.destination}` : 'Ride'}
         subtitle={data ? <>{data.publicId} · departs {formatDateTime(data.departureAt)} <span className="ax-muted">({relativeTime(data.departureAt, now)})</span></> : null}
         badges={data ? <><Badge value={data.status} /><Badge value={data.bookingMode} tone="neutral" dot={false} /></> : null}
+        actions={<RideLinkActions publicId={head?.publicId} text="Copy ride link" openLink={false} />}
         onClose={onClose} onBack={onBack} linkParams={{ open: `trip:${id}` }} />
       <PanelState loading={loading} error={error} data={data} onRetry={reload}>
         {data ? (
@@ -237,6 +261,7 @@ function TripPanel({ id, seed, onClose, onBack, open, navigate }) {
                 <Detail label="Cancellation reason">{data.cancellationReason ? statusLabel(data.cancellationReason) : null}</Detail>
                 <Detail label="Published">{formatDateTime(data.createdAt)}</Detail>
                 <Detail label="Ride ID"><Mono value={data.id} /></Detail>
+                <Detail label="Public ride page" full><span className="ax-ride-url"><a href={rideLink(data.publicId)} target="_blank" rel="noopener noreferrer">{rideLink(data.publicId)}</a><CopyButton value={rideLink(data.publicId)} label="Copy ride link" icon="link" /></span></Detail>
               </dl>
             </Section>
             <Section title="Bookings" count={data.bookings?.length || 0}>
@@ -263,6 +288,7 @@ function BookingPanel({ id, seed, onClose, onBack, open }) {
       <PanelHeader kind="booking" title={data ? `${data.pickup?.city || ''} → ${data.drop?.city || ''}`.trim() : 'Booking'}
         subtitle={data ? <>{data.publicId} · booked {relativeTime(data.createdAt, now)} by {display(data.bookedByName)}</> : null}
         badges={data ? <><Badge value={data.status} />{data.paymentStatus && data.paymentStatus !== 'NOT_REQUIRED' ? <Badge value={data.paymentStatus} /> : null}</> : null}
+        actions={<RideLinkActions publicId={data?.tripPublicId || seed?.tripPublicId} text="Copy ride link" openLink={false} />}
         onClose={onClose} onBack={onBack} linkParams={{ open: `booking:${id}` }} />
       <PanelState loading={loading} error={error} data={data} onRetry={reload}>
         {data ? (
@@ -278,7 +304,7 @@ function BookingPanel({ id, seed, onClose, onBack, open }) {
                 <li><span className="ax-route-dot is-end" aria-hidden="true" /><div><strong>{data.drop.label}</strong><span className="ax-muted">{data.drop.address || data.drop.city}</span></div></li>
               </ol>
               <dl className="ax-detail-grid">
-                <Detail label="Ride"><RecordLink onOpen={() => open('trip', data.tripId)}><span className="ax-mono">{data.tripPublicId}</span></RecordLink></Detail>
+                <Detail label="Ride"><RecordLink onOpen={() => open('trip', data.tripId)}><span className="ax-mono">{data.tripPublicId}</span></RecordLink><RideLinkActions publicId={data.tripPublicId} /></Detail>
                 <Detail label="Driver"><RecordLink onOpen={() => open('member', data.driverUserId)}>Open driver</RecordLink></Detail>
                 <Detail label="Booker"><RecordLink onOpen={() => open('member', data.bookedByUserId)}>{display(data.bookedByName)}</RecordLink><VerifiedMark show={data.bookedByVerified} /></Detail>
                 <Detail label="Booker travels">{data.bookerTravels ? 'Yes' : 'No'}</Detail>
@@ -316,6 +342,81 @@ function BookingPanel({ id, seed, onClose, onBack, open }) {
 }
 
 const ACTIVE_BOOKING_STATUSES = new Set(['REQUESTED', 'CONFIRMED']);
+
+/** Age in full years, then the date of birth. */
+function AgeDetail({ dob }) {
+  const age = ageFromDob(dob);
+  return <span>{age === null ? '' : `${age} yrs `}<span className="ax-muted">({formatDate(`${dob.slice(0, 10)}T00:00:00`)})</span></span>;
+}
+
+/**
+ * The member's trusted contact. The detail has the last 4 digits only.
+ * "Show number" reads the full number from a route that writes an audit entry.
+ */
+function TrustedContactSection({ memberId, contact }) {
+  const [phone, setPhone] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  useEffect(() => { setPhone(null); setError(''); }, [memberId, contact?.updatedAt]);
+  const reveal = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const result = await requestApi(`/admin/members/${encodeURIComponent(memberId)}/trusted-contact`);
+      setPhone(result?.trustedContact?.phone || '');
+    } catch (requestError) {
+      if (!isSessionExpired(requestError)) setError(errorText(requestError));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Section title="Trusted contact">
+      {contact ? (
+        <dl className="ax-detail-grid">
+          <Detail label="Name">{contact.name}</Detail>
+          <Detail label="Relationship">{RELATIONSHIP_LABELS[contact.relationship] || statusLabel(contact.relationship)}</Detail>
+          <Detail label="Phone" full>
+            {phone ? (
+              <span className="ax-contact-row">
+                <a className="ax-contact" href={`tel:${phone}`}><Icon name="phone" size={14} /><span className="ax-mono">{phone}</span></a>
+                <CopyButton value={phone} label="Copy number" />
+              </span>
+            ) : (
+              <span className="ax-contact-row">
+                <span className="ax-mono">•••• {contact.phoneLast4}</span>
+                <Button size="sm" variant="ghost" icon="eye" busy={busy} onClick={reveal}>Show number</Button>
+              </span>
+            )}
+            {error ? <span className="ax-field-error" role="alert">{error}</span> : null}
+          </Detail>
+          <Detail label="Updated">{formatDateTime(contact.updatedAt)}</Detail>
+        </dl>
+      ) : <p className="ax-muted ax-mini-empty">Not added.</p>}
+      {contact && !phone ? <p className="ax-muted ax-small ax-section-note">The audit log records who shows the number.</p> : null}
+    </Section>
+  );
+}
+
+/** Recent reviews in the member panel. side is the other member to name: the reviewer or the reviewee. */
+function ReviewMiniList({ items, side, empty, open, now }) {
+  return (
+    <MiniList items={items} empty={empty} render={(review) => {
+      const name = side === 'reviewer' ? review.reviewerName : review.revieweeName;
+      const verified = side === 'reviewer' ? review.reviewerVerified : review.revieweeVerified;
+      return (
+        <li key={review.id}><button type="button" className="ax-mini-item" onClick={() => open('review', review.id, review)}>
+          <span className="ax-mini-main">
+            <strong className="ax-review-line"><Stars rating={review.rating} /><span>{side === 'reviewer' ? 'From' : 'About'} {display(name)}</span><VerifiedMark show={verified} /></strong>
+            <span className="ax-muted ax-truncate">{[review.comment ? `“${review.comment}”` : null, review.tripPublicId, relativeTime(review.submittedAt, now)].filter(Boolean).join(' · ')}</span>
+            {review.issueCodes.length ? <IssueChips codes={review.issueCodes} limit={2} /> : null}
+          </span>
+          <span className="ax-mini-side">{review.isVisible ? null : <Badge tone="warning">Hidden</Badge>}<Icon name="chevronRight" size={14} /></span>
+        </button></li>
+      );
+    }} />
+  );
+}
 
 function OnboardingDetail({ member }) {
   if (member.status === 'DELETED') return null;

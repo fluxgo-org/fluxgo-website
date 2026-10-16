@@ -55,6 +55,12 @@ const members = Array.from({ length: 64 }, (_, index) => {
   };
 });
 members.forEach((member) => { member.onboardingCompleted = member.onboardingStep === 'COMPLETE'; });
+// Most members who finished onboarding added a trusted contact. The detail sends only the last 4 digits.
+members.forEach((member, index) => {
+  member.trustedContactFull = member.onboardingStep === 'COMPLETE' && index % 6 !== 1
+    ? { name: `${pick(FIRST)} ${member.lastName}`, relationship: pick(['PARENT', 'PARTNER', 'SIBLING', 'FRIEND', 'OTHER']), phone: `+91 ${int(70000, 99999)} ${int(10000, 99999)}`, updatedAt: member.createdAt }
+    : null;
+});
 // About 1 in 3 members have a profile photo. The mock serves them itself. Member 3 has a broken URL to test the initials fallback.
 members.forEach((member, index) => {
   member.profilePhotoUrl = index === 3 ? `http://localhost:${PORT}/mock-photos/missing-${index}.svg` : index % 3 === 0 ? `http://localhost:${PORT}/mock-photos/${index}.svg` : null;
@@ -404,7 +410,7 @@ function supportRow(ticket) {
   return { ...row, lastMessageAt: last.createdAt, awaitingReply: ticket.status === 'OPEN' && last.senderRole === 'REQUESTER', isInternal: internalIds().has(ticket.requesterUserId) };
 }
 function memberRow(member) {
-  const { vehicles, authProvider, onboardingIntent, gender, dob, audienceGender, acquisitionSource, driverRidesCompleted, passengerRidesCompleted, rideCities, ...row } = member;
+  const { vehicles, authProvider, onboardingIntent, gender, dob, audienceGender, acquisitionSource, driverRidesCompleted, passengerRidesCompleted, rideCities, trustedContactFull, ...row } = member;
   return row;
 }
 function tripRow(trip) {
@@ -537,6 +543,16 @@ function route(method, path, params, body, authed, admin) {
     }
     return [200, { member: memberRow(member) }];
   }
+  match = path.match(/^\/v1\/admin\/members\/([^/]+)\/trusted-contact$/);
+  if (match) {
+    const member = members.find((item) => item.id === match[1]);
+    if (!member) return [404, { error: { code: 'NOT_FOUND', message: 'Member not found' } }];
+    if (member.trustedContactFull) {
+      addAudit(admin, 'MEMBER_TRUSTED_CONTACT_VIEWED', 'user', member.id, Date.now() - now);
+      audit.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+    }
+    return [200, { trustedContact: member.trustedContactFull }];
+  }
   match = path.match(/^\/v1\/admin\/members\/([^/]+)\/status$/);
   if (match && method === 'PATCH') {
     const member = members.find((item) => item.id === match[1]);
@@ -569,15 +585,22 @@ function route(method, path, params, body, authed, admin) {
   if (match) {
     const member = members.find((item) => item.id === match[1]);
     if (!member) return [404, { error: { code: 'NOT_FOUND', message: 'Member not found' } }];
-    const received = reviews.filter((review) => review.revieweeUserId === member.id);
+    const newest = (left, right) => right.submittedAt.localeCompare(left.submittedAt);
+    const received = reviews.filter((review) => review.revieweeUserId === member.id).sort(newest);
+    const given = reviews.filter((review) => review.reviewerUserId === member.id).sort(newest);
+    const average = (list) => (list.length ? Math.round((list.reduce((sum, review) => sum + review.rating, 0) / list.length) * 100) / 100 : null);
     const memberBookings = bookings.filter((booking) => booking.bookedByUserId === member.id);
+    const { trustedContactFull: contact, ...detail } = member;
     return [200, { member: {
-      ...member,
+      ...detail,
+      ridesCompleted: { asDriver: member.driverRidesCompleted ?? 0, asPassenger: member.passengerRidesCompleted ?? 0 },
+      trustedContact: contact ? { name: contact.name, relationship: contact.relationship, phoneLast4: contact.phone.replace(/\D/g, '').slice(-4), updatedAt: contact.updatedAt } : null,
+      reviewsGiven: { count: given.length, averageRating: average(given), recent: given.slice(0, 5) },
       bookingCount: memberBookings.length,
       recentTrips: trips.filter((trip) => trip.driverUserId === member.id).sort((a, b) => b.departureAt.localeCompare(a.departureAt)).slice(0, 10).map((trip) => ({ id: trip.id, publicId: trip.publicId, origin: trip.origin, destination: trip.destination, departureAt: trip.departureAt, status: trip.status, seatsTotal: trip.seatsTotal, seatsAvailable: trip.seatsAvailable })),
       recentBookings: memberBookings.slice(0, 10).map((booking) => ({ id: booking.id, publicId: booking.publicId, tripId: booking.tripId, tripPublicId: booking.tripPublicId, route: booking.route, status: booking.status, passengerCount: booking.passengerCount, totalPrice: booking.totalPrice, createdAt: booking.createdAt, departureAt: booking.tripDepartureAt })),
       supportTickets: tickets.filter((ticket) => ticket.requesterUserId === member.id).map((ticket) => ({ id: ticket.id, publicId: ticket.publicId, subject: ticket.subject, status: ticket.status, updatedAt: ticket.updatedAt })),
-      reviewsReceived: { count: received.length, averageRating: received.length ? Math.round((received.reduce((sum, review) => sum + review.rating, 0) / received.length) * 100) / 100 : null, issueReports: received.filter((review) => review.issueCodes.length).length, safetyReports: received.filter((review) => review.hasSafetyIssue).length },
+      reviewsReceived: { count: received.length, averageRating: average(received), issueReports: received.filter((review) => review.issueCodes.length).length, safetyReports: received.filter((review) => review.hasSafetyIssue).length, recent: received.slice(0, 5) },
       blocks: { blockedByOthers: member.status === 'SUSPENDED' ? 2 : 0, blockingOthers: 0 },
     } }];
   }
@@ -663,6 +686,8 @@ function route(method, path, params, body, authed, admin) {
     if (params.get('issues') === 'SAFETY') list = list.filter((review) => review.hasSafetyIssue);
     if (params.get('issueCode')) list = list.filter((review) => review.issueCodes.includes(params.get('issueCode')));
     if (params.get('memberId')) list = list.filter((review) => review.reviewerUserId === params.get('memberId') || review.revieweeUserId === params.get('memberId'));
+    if (params.get('reviewerId')) list = list.filter((review) => review.reviewerUserId === params.get('reviewerId'));
+    if (params.get('revieweeId')) list = list.filter((review) => review.revieweeUserId === params.get('revieweeId'));
     if (params.get('maxRating')) list = list.filter((review) => review.rating <= Number(params.get('maxRating')));
     if (params.get('direction')) list = list.filter((review) => review.direction === params.get('direction'));
     list = list.filter((review) => within(review.submittedAt, params.get('submittedFrom'), params.get('submittedTo')));

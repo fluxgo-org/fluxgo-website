@@ -100,10 +100,23 @@ const requiredMarkers = [
   '<VerifiedMark show={row.driverVerified} />',
   '<VerifiedMark show={row.bookedByVerified} />',
   '<VerifiedMark show={ticket.requesterVerified}',
+  "src: '/admin/verified.png'",
+  'badgeImage = await loadImage(VERIFIED_BADGE.src)',
+  'https://www.fluxgo.in/ride/',
+  'export function RideLinkActions',
+  '<RideLinkActions publicId={row.publicId} />',
+  '<RideLinkActions publicId={row.tripPublicId} />',
+  '`/admin/members/${encodeURIComponent(memberId)}/trusted-contact`',
+  'function ageFromDob',
+  'data.ridesCompleted',
+  'reviewsGiven',
+  'reviewerId: filters.reviewerId',
+  'revieweeId: filters.revieweeId',
 ];
 
 // Removed code: the browser-side loop that collected every active member before a send.
-const removedMarkers = ['collectAllActive', "value: 'all', label: 'All active members'", "'Export CSV'"];
+// Old verified mark: an SVG circle. The app badge image replaced it.
+const removedMarkers = ['collectAllActive', "value: 'all', label: 'All active members'", "'Export CSV'", 'M4.6 8.2l2.2 2.2 4.6-4.8'];
 
 const missing = requiredMarkers.filter((marker) => !text.includes(marker));
 if (missing.length) {

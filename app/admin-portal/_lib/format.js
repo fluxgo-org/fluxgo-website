@@ -111,7 +111,29 @@ export const AUDIT_ACTION_LABELS = {
   SUPPORT_TICKET_NOTE_ADDED: 'Added an internal note',
   MEMBER_MARKED_INTERNAL: 'Marked a member as internal',
   MEMBER_MARKED_EXTERNAL: 'Marked a member as external',
+  MEMBER_TRUSTED_CONTACT_VIEWED: "Viewed a trusted contact's number",
 };
+
+/** The verified badge from the app (assets/fluxgo-work-email-verified-3d.png), 96 px. color is its green, for fallbacks. */
+export const VERIFIED_BADGE = { src: '/admin/verified.png', color: '#16C25A' };
+
+export const RELATIONSHIP_LABELS = { PARENT: 'Parent', PARTNER: 'Partner', SIBLING: 'Sibling', FRIEND: 'Friend', OTHER: 'Other' };
+
+/** Public ride page on the website. The app opens it when installed. */
+export function rideLink(publicId) {
+  return publicId ? `https://www.fluxgo.in/ride/${encodeURIComponent(publicId)}` : null;
+}
+
+/** Full years from a YYYY-MM-DD date of birth to today in India. Returns null for a missing or bad date. */
+export function ageFromDob(dob, now = new Date()) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(dob || '');
+  if (!match) return null;
+  const [year, month, day] = match.slice(1).map(Number);
+  const [todayYear, todayMonth, todayDay] = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' })
+    .format(now).split('-').map(Number);
+  const age = todayYear - year - (todayMonth < month || (todayMonth === month && todayDay < day) ? 1 : 0);
+  return age >= 0 && age < 130 ? age : null;
+}
 
 /**
  * Onboarding steps in app order. The API returns the next step to finish.
