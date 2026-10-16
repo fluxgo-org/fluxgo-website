@@ -129,6 +129,22 @@ body.ax-resizing, body.ax-resizing * { cursor: col-resize !important; user-selec
 .ax-copy { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; color: var(--ink3); opacity: 0.7; transition: opacity 0.15s, background 0.15s; }
 .ax-copy:hover { opacity: 1; background: var(--fill); color: var(--ink); }
 .ax-copy.is-copied { color: var(--success); opacity: 1; }
+.ax-copy.has-text { display: inline-flex; gap: 5px; width: auto; padding: 0 7px; font-size: 12px; font-weight: 600; }
+.ax-ride-link { display: inline-flex; align-items: center; gap: 2px; vertical-align: middle; }
+.ax-ref-cell { display: inline-flex; align-items: center; gap: 2px; min-width: 0; max-width: 100%; }
+.ax-ref-cell > .ax-mono-value, .ax-ref-cell > .ax-link { min-width: 0; overflow: hidden; }
+.ax-ride-url { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.ax-ride-url a { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); font-size: 13px; }
+.ax-mini-row { display: flex; align-items: center; }
+.ax-mini-row > .ax-mini-item { flex: 1; min-width: 0; }
+.ax-mini-row > .ax-ride-link { flex: none; padding-right: 8px; }
+.ax-section-note { margin: 0 0 8px; }
+.ax-review-line { display: inline-flex; align-items: center; gap: 8px; }
+.ax-review-line .ax-verified { margin-left: -4px; }
+.ax-mini-main .ax-issue-list { margin-top: 4px; }
+@media (hover: hover) {
+  .ax-table tr:not(:hover):not(:focus-within) .ax-ride-link { opacity: 0; }
+}
 .ax-mono-value { display: inline-flex; align-items: center; gap: 2px; min-width: 0; max-width: 100%; }
 .ax-mono-value .ax-mono { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .ax-detail dd { min-width: 0; }
@@ -834,9 +850,7 @@ button.ax-mini-item:hover { background: var(--surface-2); }
 /* Internal members and onboarding progress */
 .ax-filter-toggle { align-self: center; align-items: center; height: 34px; padding: 0 4px; white-space: nowrap; }
 .ax-filter-toggle input { margin-top: 0; }
-.ax-verified { display: inline-flex; flex: none; margin-left: 5px; vertical-align: -2px; color: var(--brand); }
-.ax-verified circle { fill: currentColor; }
-.ax-verified path { fill: none; stroke: var(--brand-ink); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.ax-verified { display: inline-block; flex: none; margin-left: 5px; vertical-align: -3px; object-fit: contain; user-select: none; }
 .ax-person .ax-verified, .ax-ticket-top .ax-verified, .ax-thread-requester .ax-verified { margin-left: 4px; }
 .ax-panel-title h2 .ax-verified { margin-left: 7px; vertical-align: -1px; }
 .ax-internal-tag { display: inline-flex; align-items: center; height: 18px; padding: 0 6px; margin-left: 6px; border-radius: 999px; background: var(--tint); color: var(--ink2); font-size: 11px; font-weight: 600; vertical-align: middle; }

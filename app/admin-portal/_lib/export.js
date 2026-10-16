@@ -1,6 +1,6 @@
 'use client';
 
-import { formatDateTime, formatNumber, plural, statusLabel } from './format';
+import { formatDateTime, formatNumber, plural, statusLabel, VERIFIED_BADGE } from './format';
 
 /**
  * Table exports. Every format runs in the browser with no extra package.
@@ -59,6 +59,7 @@ export async function exportTable({ format, filename, title, columns, allColumns
     download(`${filename}.md`, new Blob([toMarkdown({ title, columns: shown, rows, stamp, total })], { type: 'text/markdown;charset=utf-8' }));
     return limitNote(rows.length, total, limit);
   }
+  badgeImage = await loadImage(VERIFIED_BADGE.src);
   const table = { title, columns: shown.map((column) => ({ label: column.label, align: column.align, width: widthOf(column), verified: column.verified })), stamp, total };
   if (format === 'pdf') {
     download(`${filename}.pdf`, await toPdf({ ...table, rows: tableRows(shown, rows) }));
@@ -138,10 +139,27 @@ function fit(ctx, text, width) {
 }
 
 /** A filled circle with a check, the same mark as the portal. */
+/** The app's verified badge. exportTable loads it before it draws. */
+let badgeImage = null;
+
+function loadImage(src) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = src;
+  });
+}
+
 function drawVerified(ctx, x, y, size) {
+  if (badgeImage) {
+    ctx.drawImage(badgeImage, x, y - size / 2, size, size);
+    return;
+  }
+  // The badge did not load. Draw a plain green check mark instead.
   const radius = size / 2;
   ctx.save();
-  ctx.fillStyle = COLORS.brand;
+  ctx.fillStyle = VERIFIED_BADGE.color;
   ctx.beginPath();
   ctx.arc(x + radius, y, radius, 0, Math.PI * 2);
   ctx.fill();

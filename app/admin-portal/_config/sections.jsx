@@ -14,12 +14,13 @@ import {
   localDay,
   onboardingProgress,
   ONBOARDING_STEPS,
+  rideLink,
   relativeTime,
   RESOURCE_LABELS,
   SAFETY_ISSUES,
   statusLabel,
 } from '../_lib/format';
-import { Avatar, Badge, Icon, Mono, VerifiedMark } from '../_components/ui';
+import { Avatar, Badge, Icon, Mono, RideLinkActions, VerifiedMark } from '../_components/ui';
 import { filterSummary } from '../_lib/audience';
 
 export const NAV_GROUPS = [
@@ -218,7 +219,8 @@ export const RECORD_SECTIONS = {
       ...dateParams(filters, 'departFrom', 'departTo', 'departureFrom', 'departureTo'),
     }),
     columns: ({ now, open }) => [
-      { key: 'publicId', label: 'Reference', width: 150, locked: true, render: (row) => <Mono value={row.publicId} /> },
+      { key: 'publicId', label: 'Reference', width: 190, locked: true, render: (row) => <span className="ax-ref-cell"><Mono value={row.publicId} /><RideLinkActions publicId={row.publicId} /></span>, csv: (row) => row.publicId },
+      { key: 'rideLink', label: 'Ride link', width: 260, defaultHidden: true, render: (row) => <span className="ax-truncate ax-small">{rideLink(row.publicId)}</span>, csv: (row) => rideLink(row.publicId) },
       { key: 'route', label: 'Route', width: 280, render: (row) => <span className="ax-route" title={`${row.origin} → ${row.destination}`}><span>{row.origin}</span><Icon name="arrowRight" size={12} /><span>{row.destination}</span></span>, csv: (row) => `${row.origin} → ${row.destination}` },
       { key: 'driverName', label: 'Driver', width: 170, verified: (row) => row.driverVerified, render: (row) => <><RecordLink onOpen={() => open('member', row.driverUserId)}>{display(row.driverName)}</RecordLink><VerifiedMark show={row.driverVerified} /><InternalTag show={row.isInternal} /></>, csv: (row) => row.driverName },
       { key: 'departureAt', label: 'Departure', width: 180, sortKey: 'departureAt', render: (row) => <When value={row.departureAt} now={now} />, csv: (row) => row.departureAt },
@@ -262,7 +264,8 @@ export const RECORD_SECTIONS = {
     }),
     columns: ({ now, open }) => [
       { key: 'publicId', label: 'Reference', width: 150, locked: true, render: (row) => <Mono value={row.publicId} /> },
-      { key: 'tripPublicId', label: 'Ride', width: 150, render: (row) => <RecordLink onOpen={() => open('trip', row.tripId)} title="Open ride"><span className="ax-mono">{row.tripPublicId}</span></RecordLink> },
+      { key: 'tripPublicId', label: 'Ride', width: 190, render: (row) => <span className="ax-ref-cell"><RecordLink onOpen={() => open('trip', row.tripId)} title="Open ride"><span className="ax-mono">{row.tripPublicId}</span></RecordLink><RideLinkActions publicId={row.tripPublicId} /></span>, csv: (row) => row.tripPublicId },
+      { key: 'rideLink', label: 'Ride link', width: 260, defaultHidden: true, render: (row) => <span className="ax-truncate ax-small">{rideLink(row.tripPublicId)}</span>, csv: (row) => rideLink(row.tripPublicId) },
       { key: 'route', label: 'Pickup → drop', width: 230, render: (row) => <span className="ax-truncate" title={row.route}>{row.route.replace(' to ', ' → ')}</span> },
       { key: 'bookedByName', label: 'Booker', width: 170, verified: (row) => row.bookedByVerified, render: (row) => <><RecordLink onOpen={() => open('member', row.bookedByUserId)}>{display(row.bookedByName)}</RecordLink><VerifiedMark show={row.bookedByVerified} /><InternalTag show={row.isInternal} /></>, csv: (row) => row.bookedByName },
       { key: 'passengerCount', label: 'Seats', width: 80, align: 'end', sortKey: 'passengerCount', render: (row) => formatNumber(row.passengerCount) },
@@ -289,6 +292,8 @@ export const RECORD_SECTIONS = {
       { type: 'select', key: 'direction', label: 'Written by', options: [{ value: 'PASSENGER_TO_DRIVER', label: 'Passengers about drivers' }, { value: 'DRIVER_TO_PASSENGER', label: 'Drivers about passengers' }] },
       { type: 'dateRange', key: 'submitted', label: 'Submitted', fromKey: 'submittedFrom', toKey: 'submittedTo' },
       { type: 'entity', key: 'memberId', label: 'Member', labelKey: 'memberName' },
+      { type: 'entity', key: 'reviewerId', label: 'Written by', labelKey: 'reviewerName' },
+      { type: 'entity', key: 'revieweeId', label: 'About', labelKey: 'revieweeName' },
     ],
     presets: [
       { label: 'Safety, this week', filters: { issues: 'SAFETY', submittedFrom: weekAgo } },
@@ -303,6 +308,8 @@ export const RECORD_SECTIONS = {
       maxRating: filters.maxRating,
       direction: filters.direction,
       memberId: filters.memberId,
+      reviewerId: filters.reviewerId,
+      revieweeId: filters.revieweeId,
       internal: filters.internal,
       ...dateParams(filters, 'submittedFrom', 'submittedTo', 'submittedFrom', 'submittedTo'),
     }),

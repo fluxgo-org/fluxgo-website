@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { initials, statusLabel, statusTone } from '../_lib/format';
+import { initials, rideLink, statusLabel, statusTone, VERIFIED_BADGE } from '../_lib/format';
 import { useFocusTrap } from '../_lib/hooks';
 
 const ICON_PATHS = {
@@ -20,6 +20,7 @@ const ICON_PATHS = {
   close: 'M6 6l12 12M18 6L6 18',
   refresh: 'M20 11a8 8 0 0 0-14.9-3.5M4 4v4h4M4 13a8 8 0 0 0 14.9 3.5M20 20v-4h-4',
   copy: 'M9 9h10v10H9zM5 15V5h10',
+  link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
   check: 'M5 12l5 5 9-10',
   phone: 'M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z',
   mail: 'M4 6h16v12H4zM4 7l8 6 8-6',
@@ -109,20 +110,16 @@ export function Avatar({ name, size = 'md', src }) {
 }
 
 /**
- * The verified mark next to a member name. A member is verified when the work email is verified,
- * the same rule as the verified badge in the app.
+ * The verified mark next to a member name: the same badge image as the app.
+ * A member is verified when the work email is verified, the same rule as the app.
  */
-export function VerifiedMark({ show, size = 14 }) {
+export function VerifiedMark({ show, size = 15 }) {
   if (!show) return null;
-  return (
-    <span className="ax-verified" role="img" aria-label="Verified" title="Verified: work email confirmed">
-      <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="8" /><path d="M4.6 8.2l2.2 2.2 4.6-4.8" /></svg>
-    </span>
-  );
+  return <img className="ax-verified" src={VERIFIED_BADGE.src} width={size} height={size} alt="Verified" title="Verified: work email confirmed" draggable={false} />;
 }
 
 /** Copy one value to the clipboard and confirm with a short check mark. */
-export function CopyButton({ value, label = 'Copy' }) {
+export function CopyButton({ value, label = 'Copy', icon = 'copy', text }) {
   const [copied, setCopied] = useState(false);
   if (!value) return null;
   const copy = async (event) => {
@@ -133,7 +130,26 @@ export function CopyButton({ value, label = 'Copy' }) {
       setTimeout(() => setCopied(false), 1400);
     } catch { /* clipboard blocked */ }
   };
-  return <button type="button" className={`ax-copy${copied ? ' is-copied' : ''}`} onClick={copy} aria-label={`${label}: ${value}`} title={copied ? 'Copied' : label}><Icon name={copied ? 'check' : 'copy'} size={13} /></button>;
+  return (
+    <button type="button" className={`ax-copy${text ? ' has-text' : ''}${copied ? ' is-copied' : ''}`} onClick={copy} aria-label={`${label}: ${value}`} title={copied ? 'Copied' : label}>
+      <Icon name={copied ? 'check' : icon} size={13} />{text ? <span>{copied ? 'Copied' : text}</span> : null}
+    </button>
+  );
+}
+
+/**
+ * Copy or open the public ride page (www.fluxgo.in/ride/<ride ID>). Bookings share the link of their ride.
+ * With text, the copy button shows a label. openLink adds a small icon that opens the page.
+ */
+export function RideLinkActions({ publicId, text, openLink = true }) {
+  const url = rideLink(publicId);
+  if (!url) return null;
+  return (
+    <span className="ax-ride-link">
+      <CopyButton value={url} label="Copy ride link" icon="link" text={text} />
+      {openLink ? <a className="ax-copy" href={url} target="_blank" rel="noopener noreferrer" aria-label="Open the public ride page" title="Open the public ride page" onClick={(event) => event.stopPropagation()}><Icon name="external" size={13} /></a> : null}
+    </span>
+  );
 }
 
 /** An ID or reference in mono type with a copy control. */
