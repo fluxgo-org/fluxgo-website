@@ -104,6 +104,7 @@ const trips = Array.from({ length: 46 }, (_, index) => {
     origin: from[0], destination: to[0], originLabel: from[0], originCity: from[1], destinationLabel: to[0], destinationCity: to[1],
     departureAt: iso(departure), departureDate: iso(departure).slice(0, 10), status, seatsTotal, seatsAvailable: seatsTotal,
     bookingMode: rand() > 0.5 ? 'INSTANT' : 'REQUEST', pricePerSeat: pick([180, 220, 250, 320, 450, 650, 850]), bookingCount: 0,
+    ...mockViews(index),
     createdAt: iso(departure - minutes(60 * 24 * int(1, 4))), updatedAt: iso(departure - minutes(600)),
     vehicleId: driver.vehicles[0]?.id, vehicle: driver.vehicles[0] ? { registrationNumber: driver.vehicles[0].registrationNumber, make: driver.vehicles[0].make, model: driver.vehicles[0].model, status: 'ACTIVE', verificationStatus: driver.vehicles[0].verificationStatus } : null,
     cancellationReason: status === 'CANCELLED' ? 'VEHICLE_ISSUE' : null, rideNote: index % 4 === 0 ? 'No smoking. One short tea stop on the way.' : null, completedAt: status === 'COMPLETED' ? iso(departure + minutes(180)) : null,
@@ -441,8 +442,15 @@ function memberRow(member) {
   const { vehicles, authProvider, onboardingIntent, gender, dob, audienceGender, acquisitionSource, driverRidesCompleted, passengerRidesCompleted, rideCities, trustedContactFull, ...row } = member;
   return row;
 }
+function mockViews(index) {
+  // The first ride has no views, so the preview shows the zero state.
+  const searchCard = index === 0 ? 0 : int(0, 120);
+  const rideDetails = index === 0 ? 0 : int(0, Math.max(1, Math.floor(searchCard / 3)));
+  return { viewCount: searchCard + rideDetails, viewSources: { searchCard, rideDetails } };
+}
+
 function tripRow(trip) {
-  const { vehicleId, vehicle, cancellationReason, completedAt, originLabel, destinationLabel, originCity, destinationCity, ...row } = trip;
+  const { vehicleId, vehicle, cancellationReason, completedAt, originLabel, destinationLabel, originCity, destinationCity, viewSources, ...row } = trip;
   return { ...row, isInternal: internalIds().has(trip.driverUserId) };
 }
 
