@@ -117,8 +117,8 @@ function PanelState({ loading, error, data, onRetry, children }) {
   return children;
 }
 
-function StatTile({ label, value, tone, onClick }) {
-  const content = <><strong>{value}</strong><span>{label}</span></>;
+function StatTile({ label, value, tone, onClick, hint }) {
+  const content = <><strong>{value}</strong><span>{label}</span>{hint ? <span className="ax-stat-hint">{hint}</span> : null}</>;
   return onClick
     ? <button type="button" className={`ax-stat-tile is-link${tone ? ` is-${tone}` : ''}`} onClick={onClick}>{content}</button>
     : <div className={`ax-stat-tile${tone ? ` is-${tone}` : ''}`}>{content}</div>;
@@ -245,10 +245,12 @@ function TripPanel({ id, seed, onClose, onBack, open, navigate }) {
       <PanelState loading={loading} error={error} data={data} onRetry={reload}>
         {data ? (
           <div className="ax-panel-body">
-            <div className="ax-stat-grid is-3">
+            <div className="ax-stat-grid is-four">
               <StatTile label="Seats booked" value={`${booked}/${data.seatsTotal}`} />
               <StatTile label="Fare per seat" value={formatMoney(data.pricePerSeat)} />
               <StatTile label="Bookings" value={formatNumber(data.bookingCount)} onClick={data.bookingCount ? () => navigate('bookings', { tripId: data.id, tripRef: data.publicId }) : undefined} />
+              <StatTile label="Views" value={data.viewCount == null ? '–' : formatNumber(data.viewCount)}
+                hint={data.viewSources && data.viewCount ? `${formatNumber(data.viewSources.searchCard)} in search · ${formatNumber(data.viewSources.rideDetails)} opened` : null} />
             </div>
             <Section title="Route">
               <ol className="ax-route-steps">

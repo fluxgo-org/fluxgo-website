@@ -229,6 +229,8 @@ export const RECORD_SECTIONS = {
       { key: 'status', label: 'Status', width: 130, render: (row) => <Badge value={row.status} /> },
       { key: 'seats', label: 'Seats booked', width: 140, sortKey: 'seatsAvailable', defaultOrder: 'asc', render: (row) => <Seats total={row.seatsTotal} available={row.seatsAvailable} />, csv: (row) => `${row.seatsTotal - row.seatsAvailable}/${row.seatsTotal}` },
       { key: 'bookingCount', label: 'Bookings', width: 100, align: 'end', sortKey: 'bookingCount', render: (row) => formatNumber(row.bookingCount) },
+      // Search card and ride details views from members. The host's own views do not count. An older API sends no count.
+      { key: 'viewCount', label: 'Views', width: 90, align: 'end', sortKey: 'viewCount', defaultOrder: 'desc', render: (row) => row.viewCount == null ? '–' : formatNumber(row.viewCount), csv: (row) => row.viewCount ?? '' },
       { key: 'pricePerSeat', label: 'Fare / seat', width: 110, align: 'end', sortKey: 'pricePerSeat', render: (row) => formatMoney(row.pricePerSeat), text: (row) => formatMoney(row.pricePerSeat) },
       { key: 'bookingMode', label: 'Mode', width: 110, render: (row) => <Badge value={row.bookingMode} tone="neutral" dot={false} /> },
       { key: 'createdAt', label: 'Published', width: 170, sortKey: 'createdAt', defaultHidden: true, render: (row) => <When value={row.createdAt} now={now} />, csv: (row) => row.createdAt },
