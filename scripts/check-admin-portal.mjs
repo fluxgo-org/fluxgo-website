@@ -85,7 +85,7 @@ const requiredMarkers = [
   "if (kind === 'send') return <SendPanel",
   'fluxgo-notification-',
   'requestApi(`/admin/analytics${key}`)',
-  "items: ['today', 'analytics', 'support', 'safety']",
+  "items: ['today', 'analytics', 'support', 'safety', 'cab']",
   'This chart only',
   'Use the page filters',
   'function bucketize(daily, by)',

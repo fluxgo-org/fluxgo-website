@@ -25,7 +25,7 @@ import { Avatar, Badge, Icon, Mono, RideLinkActions, VerifiedMark } from '../_co
 import { filterSummary } from '../_lib/audience';
 
 export const NAV_GROUPS = [
-  { label: 'Workspace', items: ['today', 'analytics', 'support', 'safety'] },
+  { label: 'Workspace', items: ['today', 'analytics', 'support', 'safety', 'cab'] },
   { label: 'Records', items: ['members', 'trips', 'bookings', 'vehicles'] },
   { label: 'Outreach', items: ['notify', 'sends'] },
   { label: 'Administration', items: ['admins', 'audit'] },
@@ -36,6 +36,7 @@ export const SECTION_META = {
   analytics: { label: 'Analytics', icon: 'analytics', description: 'Active members and key metrics' },
   support: { label: 'Support', icon: 'support', description: 'Member conversations' },
   safety: { label: 'Safety reports', icon: 'shield', description: 'Reviews with issues' },
+  cab: { label: 'Cab', icon: 'route', description: 'Cab slots, routes, and operators' },
   members: { label: 'Members', icon: 'members', description: 'Accounts and verification' },
   trips: { label: 'Rides', icon: 'rides', description: 'Published rides' },
   bookings: { label: 'Bookings', icon: 'bookings', description: 'Seat bookings' },

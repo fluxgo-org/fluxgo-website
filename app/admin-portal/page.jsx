@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AdminsView } from './_components/Admins';
 import { AnalyticsView } from './_components/Analytics';
+import { CabView } from './_components/Cab';
 import { CommandPalette } from './_components/CommandPalette';
 import { RecordPanel } from './_components/Details';
 import { LoginScreen } from './_components/Login';
@@ -269,6 +270,7 @@ function Console({ admin, onLogout, onSessionExpired }) {
         <main className={`ax-content is-${section}`}>
           {section === 'today' ? <TodayView admin={admin} openRecord={openRecord} navigate={navigate} onAttention={onAttention} /> : null}
           {section === 'analytics' ? <AnalyticsView params={params} setParams={setParams} /> : null}
+          {section === 'cab' ? <CabView params={params} setParams={setParams} /> : null}
           {section === 'support' ? <SupportInbox params={params} setParams={setParams} openRecord={openRecord} waitingCount={attention?.support.awaitingReply} /> : null}
           {RECORD_SECTIONS[section] ? <RecordsView key={section} section={section} params={params} setParams={setParams} openRecord={openRecord} selected={selected} admins={admins} /> : null}
           {section === 'notify' ? <NotifyView params={params} setParams={setParams} navigate={navigate} openRecord={openRecord} /> : null}
