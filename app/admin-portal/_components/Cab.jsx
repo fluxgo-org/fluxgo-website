@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { errorText, isSessionExpired, queryString, requestApi } from '../_lib/api';
 import { display, formatMoney } from '../_lib/format';
 import { Badge, Button, ConfirmDialog, CopyButton, Dialog, EmptyState, Field, Icon, Segmented, useToast } from './ui';
+import { InternalTag } from '../_config/sections';
+import { useStoredState } from '../_lib/hooks';
 
 const VEHICLES = [
   { value: 'SEDAN', label: 'Sedan', seats: 4 },
@@ -62,6 +64,16 @@ export function CabView({ params, setParams, overview, onOverviewChanged }) {
   const [corridors, setCorridors] = useState([]);
   const [operators, setOperators] = useState([]);
   const [error, setError] = useState('');
+  // Same rule as the other admin lists: rows of internal members (Fluxgo team or test accounts) are hidden unless shown.
+  const [showInternal, setShowInternal] = useStoredState('cab:showInternal', false);
+  const internal = showInternal ? 'include' : undefined;
+  const [internalOverview, setInternalOverview] = useState(null);
+  const loadInternalOverview = useCallback(async () => {
+    try { setInternalOverview(await requestApi(`/admin/cab/overview${queryString({ internal: 'include' })}`)); } catch { setInternalOverview(null); }
+  }, []);
+  useEffect(() => { if (showInternal) void loadInternalOverview(); }, [loadInternalOverview, showInternal]);
+  const shownOverview = showInternal ? internalOverview : overview;
+  const refreshOverview = useCallback(() => { onOverviewChanged?.(); if (showInternal) void loadInternalOverview(); }, [loadInternalOverview, onOverviewChanged, showInternal]);
 
   const loadCorridors = useCallback(async () => {
     try {
@@ -80,14 +92,15 @@ export function CabView({ params, setParams, overview, onOverviewChanged }) {
     <div className="ax-view">
       <div className="ax-section-head">
         <Segmented label="Cab view" value={tab} onChange={(value) => setParams({ cab: value === 'overview' ? undefined : value, ...(value === 'overview' ? { route: undefined, date: undefined } : {}) })}
-          options={[{ value: 'overview', label: 'Overview', count: overview?.waitingSlots.length || null }, { value: 'board', label: 'Slot board' }, { value: 'routes', label: 'Routes and prices' }, { value: 'operators', label: 'Operators' }, { value: 'demand', label: 'Demand' }]} />
+          options={[{ value: 'overview', label: 'Overview', count: shownOverview?.waitingSlots.length || null }, { value: 'board', label: 'Slot board' }, { value: 'routes', label: 'Routes and prices' }, { value: 'operators', label: 'Operators' }, { value: 'demand', label: 'Demand' }]} />
+        {tab === 'overview' || tab === 'board' || tab === 'demand' ? <label className="ax-check"><input type="checkbox" checked={Boolean(showInternal)} onChange={(event) => setShowInternal(event.target.checked)} /> Show internal</label> : null}
       </div>
       {error ? <div className="ax-inline-error" role="alert"><span>{error}</span><Button size="sm" onClick={loadCorridors}>Try again</Button></div> : null}
-      {tab === 'overview' ? <CabOverview overview={overview} onRefresh={onOverviewChanged} openBoard={(route, date) => setParams({ cab: 'board', route, date })} /> : null}
-      {tab === 'board' ? <CabBoard corridors={corridors} operators={operators} params={params} setParams={setParams} onChanged={onOverviewChanged} /> : null}
+      {tab === 'overview' ? <CabOverview overview={shownOverview} onRefresh={refreshOverview} openBoard={(route, date) => setParams({ cab: 'board', route, date })} /> : null}
+      {tab === 'board' ? <CabBoard corridors={corridors} operators={operators} params={params} setParams={setParams} onChanged={refreshOverview} internal={internal} /> : null}
       {tab === 'routes' ? <CabRoutes corridors={corridors} onChanged={loadCorridors} /> : null}
       {tab === 'operators' ? <CabOperators operators={operators} onChanged={loadOperators} /> : null}
-      {tab === 'demand' ? <CabDemand /> : null}
+      {tab === 'demand' ? <CabDemand internal={internal} /> : null}
     </div>
   );
 }
@@ -168,7 +181,7 @@ function CabOverview({ overview, onRefresh, openBoard }) {
   );
 }
 
-function CabBoard({ corridors, operators, params, setParams, onChanged }) {
+function CabBoard({ corridors, operators, params, setParams, onChanged, internal }) {
   const corridorId = corridors.some((corridor) => corridor.id === params.route) ? params.route : corridors[0]?.id;
   const date = /^\d{4}-\d{2}-\d{2}$/.test(params.date || '') ? params.date : indiaToday();
   const [board, setBoard] = useState(null);
@@ -184,8 +197,8 @@ function CabBoard({ corridors, operators, params, setParams, onChanged }) {
     setLoading(true);
     try {
       const [boardResult, callResult] = await Promise.all([
-        requestApi(`/admin/cab/board${queryString({ corridorId, date })}`),
-        requestApi(`/admin/cab/call-list${queryString({ date })}`),
+        requestApi(`/admin/cab/board${queryString({ corridorId, date, internal })}`),
+        requestApi(`/admin/cab/call-list${queryString({ date, internal })}`),
       ]);
       setBoard(boardResult);
       setCalls(callResult?.members || []);
@@ -195,7 +208,7 @@ function CabBoard({ corridors, operators, params, setParams, onChanged }) {
     } finally {
       setLoading(false);
     }
-  }, [corridorId, date]);
+  }, [corridorId, date, internal]);
   useEffect(() => { void load(); }, [load]);
 
   const act = async (key, path, body, done) => {
@@ -220,7 +233,7 @@ function CabBoard({ corridors, operators, params, setParams, onChanged }) {
 
       {calls.length ? <section className="ax-card ax-card-pad">
         <strong>Call list · no answer to “Are you coming?”</strong>
-        {calls.map((call) => <div className="ax-cab-line" key={call.interestId}><span>{call.member?.firstName} · {call.seatCount} seats · cab {clock(call.departureAt)}</span><CopyButton value={call.member?.phone || ''} text={call.member?.phone} /></div>)}
+        {calls.map((call) => <div className="ax-cab-line" key={call.interestId}><span>{call.member?.firstName} <InternalTag show={call.member?.isInternal} /> · {call.seatCount} seats · cab {clock(call.departureAt)}</span><CopyButton value={call.member?.phone || ''} text={call.member?.phone} /></div>)}
       </section> : null}
 
       {board?.suggestions?.length ? <section className="ax-card ax-card-pad">
@@ -256,7 +269,7 @@ function CabBoard({ corridors, operators, params, setParams, onChanged }) {
             <thead><tr><th>Member</th><th>Travellers</th><th>Pickup</th><th>Flex</th><th>Status</th><th /></tr></thead>
             <tbody>
               {slot.interests.map((interest) => <tr key={interest.id} className={OPEN.includes(interest.status) ? '' : 'is-closed'}>
-                <td><strong>{interest.member?.firstName || '—'}</strong><div className="ax-muted ax-small">{interest.member?.phone}{interest.member?.cabNoShowCount ? ` · ${interest.member.cabNoShowCount} no-show` : ''}{interest.late ? ' · late' : ''}</div></td>
+                <td><strong>{interest.member?.firstName || '—'}</strong> <InternalTag show={interest.member?.isInternal} /><div className="ax-muted ax-small">{interest.member?.phone}{interest.member?.cabNoShowCount ? ` · ${interest.member.cabNoShowCount} no-show` : ''}{interest.late ? ' · late' : ''}</div></td>
                 <td>{interest.travellers.map((traveller) => <div key={traveller.id}>{travellerText(traveller)}</div>)}<div className="ax-muted ax-small">{interest.seatPreferences.join(' > ').toLowerCase()} · {interest.luggage.cabin} cabin, {interest.luggage.large} large{interest.womenPreference ? ' · wants another woman' : ''}</div></td>
                 <td>{display(interest.pickupPoint)}</td>
                 <td>{flexText(interest.flexibility)}</td>
@@ -300,7 +313,7 @@ function CabRunCard({ run, slot, operators, points, interests, busy, onAction, o
     <div className={`ax-cab-run is-${run.status.toLowerCase()}`}>
       <div className="ax-cab-run-head">
         <strong>{vehicleLabel(run.vehicleType)} · {clock(run.departureAt)}</strong>
-        <span className="ax-muted">{run.seatsTaken}/{run.seatCapacity} seats{run.pricePerSeat ? ` · ${formatMoney(run.pricePerSeat)} a seat for new travellers` : ''}</span>
+        <span className="ax-muted">{run.seatsTaken}/{run.seatCapacity} seats{run.internalSeats ? ` (${run.internalSeats} internal)` : ''}{run.pricePerSeat ? ` · ${formatMoney(run.pricePerSeat)} a seat for new travellers` : ''}</span>
         <Badge tone={run.status === 'CONFIRMED' ? 'success' : run.status === 'CANCELLED' ? 'neutral' : 'info'}>{run.status.toLowerCase()}</Badge>
         {run.womenPreferenceUnmet?.length ? <Badge tone="warn">Women preference not met</Badge> : null}
       </div>
@@ -521,12 +534,12 @@ function CabOperators({ operators, onChanged }) {
   );
 }
 
-function CabDemand() {
+function CabDemand({ internal }) {
   const [rows, setRows] = useState(null);
   const [error, setError] = useState('');
   useEffect(() => {
-    requestApi('/admin/cab/demand').then((result) => setRows(result?.demand || [])).catch((requestError) => { if (!isSessionExpired(requestError)) setError(errorText(requestError)); });
-  }, []);
+    requestApi(`/admin/cab/demand${queryString({ internal })}`).then((result) => setRows(result?.demand || [])).catch((requestError) => { if (!isSessionExpired(requestError)) setError(errorText(requestError)); });
+  }, [internal]);
   if (error) return <div className="ax-inline-error" role="alert"><span>{error}</span></div>;
   if (!rows) return null;
   if (!rows.length) return <EmptyState icon="rides" title="No requests yet">Members on routes with no cab can tap “Tell us you want it”.</EmptyState>;
