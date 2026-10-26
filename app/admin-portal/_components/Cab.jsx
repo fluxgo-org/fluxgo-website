@@ -56,8 +56,9 @@ function useAction() {
 }
 
 /** Fluxgo Cab ops: slot board, routes and prices, operators, and demand. */
-export function CabView({ params, setParams }) {
-  const tab = ['board', 'routes', 'operators', 'demand'].includes(params.cab) ? params.cab : 'board';
+export function CabView({ params, setParams, overview, onOverviewChanged }) {
+  // A link with a route or date (from a push or Today) opens the slot board.
+  const tab = ['overview', 'board', 'routes', 'operators', 'demand'].includes(params.cab) ? params.cab : params.route || params.date ? 'board' : 'overview';
   const [corridors, setCorridors] = useState([]);
   const [operators, setOperators] = useState([]);
   const [error, setError] = useState('');
@@ -78,11 +79,12 @@ export function CabView({ params, setParams }) {
   return (
     <div className="ax-view">
       <div className="ax-section-head">
-        <Segmented label="Cab view" value={tab} onChange={(value) => setParams({ cab: value === 'board' ? undefined : value })}
-          options={[{ value: 'board', label: 'Slot board' }, { value: 'routes', label: 'Routes and prices' }, { value: 'operators', label: 'Operators' }, { value: 'demand', label: 'Demand' }]} />
+        <Segmented label="Cab view" value={tab} onChange={(value) => setParams({ cab: value === 'overview' ? undefined : value, ...(value === 'overview' ? { route: undefined, date: undefined } : {}) })}
+          options={[{ value: 'overview', label: 'Overview', count: overview?.waitingSlots.length || null }, { value: 'board', label: 'Slot board' }, { value: 'routes', label: 'Routes and prices' }, { value: 'operators', label: 'Operators' }, { value: 'demand', label: 'Demand' }]} />
       </div>
       {error ? <div className="ax-inline-error" role="alert"><span>{error}</span><Button size="sm" onClick={loadCorridors}>Try again</Button></div> : null}
-      {tab === 'board' ? <CabBoard corridors={corridors} operators={operators} params={params} setParams={setParams} /> : null}
+      {tab === 'overview' ? <CabOverview overview={overview} onRefresh={onOverviewChanged} openBoard={(route, date) => setParams({ cab: 'board', route, date })} /> : null}
+      {tab === 'board' ? <CabBoard corridors={corridors} operators={operators} params={params} setParams={setParams} onChanged={onOverviewChanged} /> : null}
       {tab === 'routes' ? <CabRoutes corridors={corridors} onChanged={loadCorridors} /> : null}
       {tab === 'operators' ? <CabOperators operators={operators} onChanged={loadOperators} /> : null}
       {tab === 'demand' ? <CabDemand /> : null}
@@ -90,7 +92,83 @@ export function CabView({ params, setParams }) {
   );
 }
 
-function CabBoard({ corridors, operators, params, setParams }) {
+function Kpi({ label, value, detail, tone, onClick }) {
+  return (
+    <button type="button" className={`ax-kpi${tone ? ` is-${tone}` : ''}`} onClick={onClick} disabled={!onClick}>
+      <span className="ax-kpi-label">{label}</span>
+      <strong className="ax-kpi-value">{value ?? '—'}</strong>
+      <span className="ax-kpi-detail">{detail || ' '}</span>
+    </button>
+  );
+}
+
+function dayLabel(date) {
+  return new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00.000Z`));
+}
+
+/** Cab work across all dates: what to decide, cabs coming up, the next 7 days, and the last 7 days. */
+function CabOverview({ overview, onRefresh, openBoard }) {
+  if (!overview) return <EmptyState icon="route" title="Loading Cab overview">If this stays, the server may not have the Cab overview yet.</EmptyState>;
+  const m = overview.metrics;
+  const week = m.last7Days;
+  return (
+    <>
+      {overview.alerts.map((alert) => <p className="ax-note is-danger" key={`${alert.interestId}${alert.createdAt}`}><Icon name="alert" size={14} />A member reported “The cab is not here” on {alert.corridorName || 'a cab'} at {clock(alert.createdAt)}. <button type="button" className="ax-link" onClick={() => openBoard(alert.corridorId, alert.serviceDate)}>Open the slot</button></p>)}
+      <div className="ax-kpis">
+        <Kpi label="Travellers waiting" value={m.waitingTravellers} detail={`${m.waitingInterests} interest${m.waitingInterests === 1 ? '' : 's'} in ${overview.waitingSlots.length} slot${overview.waitingSlots.length === 1 ? '' : 's'}`} />
+        <Kpi label="Slots to decide now" value={m.slotsToDecide} detail="Decision time within 2 hours" tone={m.slotsToDecide ? 'warning' : undefined} />
+        <Kpi label="Confirmed cabs coming up" value={m.upcomingCabs} detail={`${m.confirmedSeats} seats confirmed`} />
+        <Kpi label="Cabs today" value={m.cabsToday} detail={m.cabsWithoutDriver ? `${m.cabsWithoutDriver} cab${m.cabsWithoutDriver === 1 ? '' : 's'} without a driver` : 'All cabs have a driver'} tone={m.cabsWithoutDriver ? 'warning' : undefined} />
+      </div>
+      <div className="ax-kpis">
+        <Kpi label="New interests, 7 days" value={week.newInterests} detail={`${week.travellers} travellers`} />
+        <Kpi label="Completed, 7 days" value={week.completed} detail={`${week.declinedOrExpired} declined or no cab`} />
+        <Kpi label="No-shows, 7 days" value={week.noShows} detail={`${week.lateCancellations} late cancellations`} tone={week.noShows ? 'warning' : undefined} />
+        <Kpi label="Requests for new routes, 7 days" value={week.demandRequests} detail="From “Tell us you want it”" />
+      </div>
+
+      <section className="ax-card ax-card-pad">
+        <div className="ax-section-head"><strong>Waiting for a decision</strong><Button size="sm" icon="refresh" onClick={onRefresh}>Refresh</Button></div>
+        {overview.waitingSlots.length ? <table className="ax-cab-table">
+          <thead><tr><th>Route</th><th>Slot</th><th>Travellers</th><th>Suggested</th><th>Decide by</th></tr></thead>
+          <tbody>{overview.waitingSlots.map((slot) => <tr key={slot.slotId} className="ax-cab-click" onClick={() => openBoard(slot.corridorId, slot.serviceDate)}>
+            <td><strong>{slot.corridorName}</strong></td>
+            <td>{dayLabel(slot.serviceDate)} · {clock(slot.startAt)}</td>
+            <td>{slot.travellers} <span className="ax-muted">({slot.interests} interest{slot.interests === 1 ? '' : 's'}{slot.moveOffers ? `, ${slot.moveOffers} offer open` : ''})</span></td>
+            <td>{slot.suggestedVehicleType ? vehicleLabel(slot.suggestedVehicleType) : <span className="ax-muted">Below minimum</span>}</td>
+            <td>{slot.decisionDue ? <Badge tone="warn">Decide now</Badge> : null} {dayLabel(slot.decisionAt.slice(0, 10))} · {clock(slot.decisionAt)}</td>
+          </tr>)}</tbody>
+        </table> : <p className="ax-muted">No cab interests wait for a decision.</p>}
+      </section>
+
+      <section className="ax-card ax-card-pad">
+        <strong>Cabs coming up</strong>
+        {overview.upcomingCabs.length ? <table className="ax-cab-table">
+          <thead><tr><th>Route</th><th>Leaves</th><th>Vehicle</th><th>Seats</th><th>Driver</th><th>Trip sheet</th></tr></thead>
+          <tbody>{overview.upcomingCabs.map((cab) => <tr key={cab.runId} className="ax-cab-click" onClick={() => openBoard(cab.corridorId, cab.serviceDate)}>
+            <td><strong>{cab.corridorName}</strong> {cab.status === 'PLANNED' ? <Badge tone="info">planned</Badge> : null}</td>
+            <td>{dayLabel(cab.serviceDate)} · {clock(cab.departureAt)}</td>
+            <td>{vehicleLabel(cab.vehicleType)}</td>
+            <td>{cab.seatsTaken}/{cab.seatCapacity}</td>
+            <td>{cab.driverAssigned ? 'Assigned' : <Badge tone="warn">No driver</Badge>}{cab.notAnswered ? <div className="ax-muted ax-small">{cab.notAnswered} not answered</div> : null}</td>
+            <td>{cab.tripSheetSent ? 'Sent' : <span className="ax-muted">Not sent</span>}</td>
+          </tr>)}</tbody>
+        </table> : <p className="ax-muted">No cabs are planned.</p>}
+      </section>
+
+      <section className="ax-card ax-card-pad">
+        <strong>Next 7 days</strong>
+        <div className="ax-cab-days">{overview.days.map((day) => <div key={day.date} className="ax-cab-day">
+          <span className="ax-muted ax-small">{dayLabel(day.date)}</span>
+          <strong>{day.waitingTravellers}</strong><span className="ax-small">waiting</span>
+          <span className="ax-small">{day.confirmedSeats} confirmed · {day.cabs} cab{day.cabs === 1 ? '' : 's'}</span>
+        </div>)}</div>
+      </section>
+    </>
+  );
+}
+
+function CabBoard({ corridors, operators, params, setParams, onChanged }) {
   const corridorId = corridors.some((corridor) => corridor.id === params.route) ? params.route : corridors[0]?.id;
   const date = /^\d{4}-\d{2}-\d{2}$/.test(params.date || '') ? params.date : indiaToday();
   const [board, setBoard] = useState(null);
@@ -122,7 +200,7 @@ function CabBoard({ corridors, operators, params, setParams }) {
 
   const act = async (key, path, body, done) => {
     const result = await run(key, () => requestApi(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined }), done);
-    if (result) { setDialog(null); await load(); }
+    if (result) { setDialog(null); await load(); onChanged?.(); }
     return result;
   };
 
