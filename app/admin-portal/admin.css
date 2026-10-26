@@ -967,3 +967,9 @@ button.ax-mini-item:hover { background: var(--surface-2); }
 .ax-cab-table tr.is-closed td { color: var(--ink3, var(--ink2)); }
 .ax-cab-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 .ax-cab-row .ax-field.is-wide { min-width: 230px; }
+.ax-cab-click { cursor: pointer; }
+.ax-cab-click:hover td { background: var(--fill); }
+.ax-cab-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.ax-cab-day { display: grid; gap: 2px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; }
+.ax-cab-day strong { font-size: 20px; }
+@media (max-width: 900px) { .ax-cab-days { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

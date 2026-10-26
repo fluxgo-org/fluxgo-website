@@ -10,9 +10,10 @@ const CATEGORIES = [
   { key: 'safety', title: 'Safety reports', text: 'A review with a safety issue, for example rash driving.' },
   { key: 'bookings', title: 'Stuck booking requests', text: 'A request that waits more than 30 min for the driver.' },
   { key: 'adminActions', title: 'Admin actions', text: 'Another admin suspends a member or cancels a ride.' },
+  { key: 'cab', title: 'Cab', text: 'New cab interests, a slot to decide, a cancelled seat, members to call, and “cab is not here”.' },
 ];
 
-const DEFAULTS = { support: true, safety: true, bookings: true, adminActions: true };
+const DEFAULTS = { support: true, safety: true, bookings: true, adminActions: true, cab: true };
 
 export function NotificationsDialog({ open, onClose }) {
   const notify = useToast();

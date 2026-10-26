@@ -2,14 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { errorText, isSessionExpired, queryString, requestApi } from '../_lib/api';
-import { auditActionLabel, display, formatDateTime, formatNumber, formatTime, plural, relativeTime, waitingFor } from '../_lib/format';
+import { auditActionLabel, display, formatDate, formatDateTime, formatNumber, formatTime, plural, relativeTime, waitingFor } from '../_lib/format';
 import { useNow, useStoredState } from '../_lib/hooks';
 import { LIVE_KEYS, useLiveRefresh } from '../_lib/live';
 import { Badge, Button, EmptyState, Icon, Skeleton } from './ui';
 import { addDays, dayText, kolkataDay, PeriodPicker, presetRange, rangeLabel } from './PeriodPicker';
 
 
-export function TodayView({ admin, openRecord, navigate, onAttention }) {
+export function TodayView({ admin, openRecord, navigate, onAttention, cabOverview }) {
   const now = useNow();
   const [state, setState] = useState({ attention: null, summary: null, audit: [], rangeKey: '' });
   const [error, setError] = useState('');
@@ -75,7 +75,7 @@ export function TodayView({ admin, openRecord, navigate, onAttention }) {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const name = String(admin?.email || admin?.username || '').split('@')[0];
   const waiting = attention?.support.awaitingReply ?? 0;
-  const tasks = attention ? waiting + attention.bookings.awaitingDriver + attention.vehicles.awaitingRecheck + (legacy ? attention.reviews.safetyReportsLast7Days : 0) : 0;
+  const tasks = attention ? waiting + attention.bookings.awaitingDriver + attention.vehicles.awaitingRecheck + (legacy ? attention.reviews.safetyReportsLast7Days : 0) + (cabOverview?.waitingSlots.length ?? 0) + (cabOverview?.alerts.length ?? 0) : 0;
   const totals = period?.totals;
   const dates = (fromKey, toKey) => ({ [fromKey]: range.from, [toKey]: range.to });
   const subtitle = legacy
@@ -156,6 +156,24 @@ export function TodayView({ admin, openRecord, navigate, onAttention }) {
             side: <Badge value="IN_PROGRESS" />,
             onClick: () => openRecord('trip', trip.id),
           }))} />
+        {cabOverview ? <AttentionCard icon="route" title="Cab slots waiting for a decision" count={cabOverview.waitingSlots.length} tone={cabOverview.metrics.slotsToDecide || cabOverview.metrics.notHereAlerts ? 'warning' : undefined}
+          empty="No cab interests wait for a decision." onAll={() => navigate('cab')}
+          items={[
+            ...cabOverview.alerts.map((alert) => ({
+              key: `alert-${alert.interestId}-${alert.createdAt}`,
+              title: 'Cab is not here',
+              meta: `${alert.corridorName || 'Cab'} · reported ${relativeTime(alert.createdAt, now)}`,
+              side: <Badge tone="danger">Call now</Badge>,
+              onClick: () => navigate('cab', { cab: 'board', route: alert.corridorId, date: alert.serviceDate }),
+            })),
+            ...cabOverview.waitingSlots.slice(0, 6).map((slot) => ({
+              key: slot.slotId,
+              title: slot.corridorName,
+              meta: `${formatDate(slot.startAt)} ${formatTime(slot.startAt)} · ${plural(slot.travellers, 'traveller')}`,
+              side: <Badge tone={slot.decisionDue ? 'warning' : undefined}>{slot.decisionDue ? 'Decide now' : `Decide ${relativeTime(slot.decisionAt, now)}`}</Badge>,
+              onClick: () => navigate('cab', { cab: 'board', route: slot.corridorId, date: slot.serviceDate }),
+            })),
+          ]} /> : null}
         <AttentionCard icon="bookings" title="Requests waiting for the driver" count={attention?.bookings.awaitingDriver} loading={!attention}
           empty="No booking requests wait for a driver." onAll={() => go('bookings', { status: 'REQUESTED' })}
           items={attention?.bookings.items.map((booking) => ({
