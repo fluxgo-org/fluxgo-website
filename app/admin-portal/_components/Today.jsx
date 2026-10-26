@@ -9,12 +9,19 @@ import { Badge, Button, EmptyState, Icon, Skeleton } from './ui';
 import { addDays, dayText, kolkataDay, PeriodPicker, presetRange, rangeLabel } from './PeriodPicker';
 
 
-export function TodayView({ admin, openRecord, navigate, onAttention, cabOverview }) {
+export function TodayView({ admin, openRecord, navigate, onAttention, cabOverview: sharedCabOverview }) {
   const now = useNow();
   const [state, setState] = useState({ attention: null, summary: null, audit: [], rangeKey: '' });
   const [error, setError] = useState('');
   // Counts and queues hide internal (team and test) members unless the admin turns this on.
   const [showInternal, setShowInternal] = useStoredState('today:showInternal', false);
+  // The shared Cab overview hides internal members. With Show internal on, Today loads its own.
+  const [internalCabOverview, setInternalCabOverview] = useState(null);
+  useEffect(() => {
+    if (!showInternal) return;
+    requestApi('/admin/cab/overview?internal=include').then(setInternalCabOverview).catch(() => setInternalCabOverview(null));
+  }, [showInternal, sharedCabOverview]);
+  const cabOverview = showInternal ? internalCabOverview : sharedCabOverview;
   // The screen always opens on today. The range is not stored.
   const [range, setRange] = useState(() => presetRange('today'));
   // An older API rejects from and to. Then the screen keeps the 7-day view.
