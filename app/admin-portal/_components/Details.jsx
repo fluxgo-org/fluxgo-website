@@ -169,6 +169,12 @@ function MemberPanel({ id, seed, onClose, onBack, open, navigate }) {
                 <Detail label="Sign-in">{statusLabel(data.authProvider)}</Detail>
                 <Detail label="Gender">{data.gender ? statusLabel(data.gender) : null}</Detail>
                 <Detail label="Age">{data.dob ? <AgeDetail dob={data.dob} /> : null}</Detail>
+                {/* The address and domain exist from backend migration 0069. An older server or an older verification has none. */}
+                <Detail label="Work email">{data.workEmail
+                  ? <span className="ax-inline"><a href={`mailto:${data.workEmail}`}>{data.workEmail}</a><CopyButton value={data.workEmail} label="Copy work email" /></span>
+                  : data.workEmailStatus === 'VERIFIED' ? <span className="ax-muted">Verified before the address was stored</span>
+                  : data.workEmailStatus ? <Badge value={data.workEmailStatus} /> : 'Not added'}</Detail>
+                {data.workEmailDomain ? <Detail label="Company domain"><span className="ax-mono">{data.workEmailDomain}</span></Detail> : null}
                 <Detail label="Personal email">{data.personalEmailStatus ? <Badge value={data.personalEmailStatus} /> : 'Not added'}</Detail>
                 <Detail label="Onboarding"><OnboardingDetail member={data} /></Detail>
                 <Detail label="Updated">{formatDateTime(data.updatedAt)}</Detail>
