@@ -295,6 +295,7 @@ body.ax-resizing, body.ax-resizing * { cursor: col-resize !important; user-selec
 .ax-note { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--warn-tint); color: var(--warn); font-size: 13px; }
 .ax-note .ax-icon { margin-top: 2px; }
 .ax-note.is-danger { background: var(--danger-tint); color: var(--danger); }
+.ax-inline { display: inline-flex; align-items: center; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
 .ax-inline-error { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 10px; background: var(--danger-tint); color: var(--danger); font-size: 13px; }
 .ax-empty { display: grid; justify-items: center; gap: 6px; padding: 40px 20px; text-align: center; color: var(--ink2); }
 .ax-empty strong { color: var(--ink); font-weight: 600; }
