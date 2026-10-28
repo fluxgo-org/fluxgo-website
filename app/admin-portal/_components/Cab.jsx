@@ -20,6 +20,8 @@ const VEHICLES = [
   { value: 'TEMPO_TRAVELLER', label: 'Tempo Traveller', seats: 12 },
 ];
 const vehicleLabel = (value) => VEHICLES.find((vehicle) => vehicle.value === value)?.label || value || '—';
+const FUELS = [{ value: 'PETROL', label: 'Petrol' }, { value: 'DIESEL', label: 'Diesel' }, { value: 'CNG', label: 'CNG' }, { value: 'ELECTRIC', label: 'Electric' }];
+const fuelLabel = (value) => FUELS.find((fuel) => fuel.value === value)?.label || null;
 const AGE = { UNDER_12: '<12', '12_17': '12–17', '18_24': '18–24', '25_34': '25–34', '35_44': '35–44', '45_59': '45–59', '60_PLUS': '60+' };
 const GENDER = { WOMAN: 'F', MAN: 'M', NON_BINARY: 'Other' };
 const DOCS = { DRIVER_PHOTO: 'Driver photo', LICENCE: 'Driving licence', RC: 'Vehicle RC', VEHICLE_PHOTO: 'Vehicle photo', INSURANCE: 'Insurance' };
@@ -259,7 +261,7 @@ function ApprovalDialog({ owner, partners, onClose, onDone, openPartners }) {
         </dl> : owner.kind === 'DRIVER' ? <dl className="ax-cab-facts">
           <dt>Operator</dt><dd>{operator.businessName || operator.name}</dd><dt>Name</dt><dd>{record.firstName}</dd><dt>Phone</dt><dd>{record.phone}</dd><dt>Licence</dt><dd>{display(record.licenceNumber)}</dd><dt>Valid until</dt><dd>{display(record.licenceExpiresOn)}</dd>
         </dl> : <dl className="ax-cab-facts">
-          <dt>Operator</dt><dd>{operator.businessName || operator.name}</dd><dt>Number</dt><dd>{record.registrationNumber}</dd><dt>Vehicle</dt><dd>{[record.colour, record.model].filter(Boolean).join(' ')} · {vehicleLabel(record.vehicleType)} · {record.seatCapacity} seats</dd><dt>Insurance until</dt><dd>{display(record.insuranceExpiresOn)}</dd>
+          <dt>Operator</dt><dd>{operator.businessName || operator.name}</dd><dt>Number</dt><dd>{record.registrationNumber}</dd><dt>Vehicle</dt><dd>{[record.colour, record.model].filter(Boolean).join(' ')} · {vehicleLabel(record.vehicleType)} · {record.seatCapacity} seats</dd><dt>Fuel</dt><dd>{fuelLabel(record.fuelType) || <Badge tone="warning">Not set (needed to approve)</Badge>}</dd><dt>Insurance until</dt><dd>{display(record.insuranceExpiresOn)}</dd>
         </dl>}
         {record.documents ? <DocumentLinks documents={record.documents} /> : null}
         <Field label="Reason (needed to reject; the operator sees it)" htmlFor="approve-reason"><input id="approve-reason" maxLength={300} value={reason} onChange={(event) => setReason(event.target.value)} placeholder="For example: the RC photo is not clear" /></Field>
@@ -482,7 +484,7 @@ function CabTripPanel({ runId, partners, onClose, onChanged }) {
         {cab.cancelReason ? <p className="ax-note">{cab.cancelReason}</p> : null}
         <dl className="ax-cab-facts">
           <dt>Operator</dt><dd>{data.operator ? `${data.operator.name} · ${data.operator.phone}` : 'Fluxgo'}</dd>
-          <dt>Vehicle</dt><dd>{data.vehicle ? `${data.vehicle.registrationNumber} · ${[data.vehicle.colour, data.vehicle.model].filter(Boolean).join(' ')}` : <Badge tone="warning">None yet · {vehicleLabel(cab.vehicleType)}</Badge>}</dd>
+          <dt>Vehicle</dt><dd>{data.vehicle ? `${data.vehicle.registrationNumber} · ${[data.vehicle.colour, data.vehicle.model, fuelLabel(data.vehicle.fuelType)].filter(Boolean).join(' ')}` : <Badge tone="warning">None yet · {vehicleLabel(cab.vehicleType)}</Badge>}</dd>
           <dt>Driver</dt><dd>{data.driver ? `${data.driver.firstName} · ${data.driver.phone}` : <Badge tone="warning">None yet</Badge>}</dd>
         </dl>
         {open ? <div className="ax-cab-actions is-left">
@@ -578,7 +580,7 @@ function CabTripPanel({ runId, partners, onClose, onChanged }) {
 const EMPTY_PARTNER = {
   operator: { name: '', businessName: '', phone: '', note: '' },
   driver: { firstName: '', phone: '', licenceNumber: '', licenceExpiresOn: '' },
-  vehicle: { vehicleType: 'SEDAN', registrationNumber: '', colour: '', model: '', seatCapacity: '', insuranceExpiresOn: '' },
+  vehicle: { vehicleType: 'SEDAN', fuelType: '', registrationNumber: '', colour: '', model: '', seatCapacity: '', insuranceExpiresOn: '' },
 };
 
 function approvalBadge(row) {
@@ -604,7 +606,7 @@ function CabPartners({ partners, corridors, onChanged }) {
     const path = { operator: '/admin/cab/operators', driver: '/admin/cab/drivers', vehicle: '/admin/cab/vehicles' }[kind];
     const body = kind === 'operator' ? { ...values, businessName: values.businessName || null, note: values.note || null }
       : kind === 'driver' ? { ...values, operatorId, licenceNumber: values.licenceNumber || null, licenceExpiresOn: values.licenceExpiresOn || null }
-        : { ...values, operatorId, model: values.model || null, insuranceExpiresOn: values.insuranceExpiresOn || null, seatCapacity: values.seatCapacity ? Number(values.seatCapacity) : undefined };
+        : { ...values, operatorId, model: values.model || null, fuelType: values.fuelType || undefined, insuranceExpiresOn: values.insuranceExpiresOn || null, seatCapacity: values.seatCapacity ? Number(values.seatCapacity) : undefined };
     const result = await run('save', () => requestApi(id ? `${path}/${id}` : path, { method: id ? 'PATCH' : 'POST', body: JSON.stringify(body) }), 'Saved.');
     if (result) { setForm(null); onChanged(); }
   };
@@ -641,11 +643,11 @@ function CabPartners({ partners, corridors, onChanged }) {
             </span>
           </div>)}
           {operator.vehicles.map((vehicle) => <div className="ax-cab-line" key={vehicle.id}>
-            <span><strong>{vehicle.registrationNumber}</strong> <span className="ax-muted">{[vehicle.colour, vehicle.model].filter(Boolean).join(' ')} · {vehicleLabel(vehicle.vehicleType)} · {vehicle.seatCapacity} seats · insurance to {display(vehicle.insuranceExpiresOn)}</span></span>
+            <span><strong>{vehicle.registrationNumber}</strong> <span className="ax-muted">{[vehicle.colour, vehicle.model].filter(Boolean).join(' ')} · {fuelLabel(vehicle.fuelType) || 'fuel not set'} · {vehicleLabel(vehicle.vehicleType)} · {vehicle.seatCapacity} seats · insurance to {display(vehicle.insuranceExpiresOn)}</span></span>
             <span className="ax-cab-actions">{approvalBadge(vehicle)}
               {vehicle.approvalStatus !== 'APPROVED' || vehicle.expired ? <Button size="sm" variant="primary" onClick={() => setReview({ kind: 'VEHICLE', id: vehicle.id })}>Review</Button> : null}
               <Button size="sm" variant="ghost" onClick={() => setUpload({ operatorId: operator.id, ownerKind: 'VEHICLE', owner: vehicle })}>Documents</Button>
-              <Button size="sm" variant="ghost" onClick={() => setForm({ kind: 'vehicle', id: vehicle.id, operatorId: operator.id, vehicleType: vehicle.vehicleType, registrationNumber: vehicle.registrationNumber, colour: vehicle.colour, model: vehicle.model || '', seatCapacity: String(vehicle.seatCapacity), insuranceExpiresOn: vehicle.insuranceExpiresOn || '', status: vehicle.status })}>Edit</Button>
+              <Button size="sm" variant="ghost" onClick={() => setForm({ kind: 'vehicle', id: vehicle.id, operatorId: operator.id, vehicleType: vehicle.vehicleType, fuelType: vehicle.fuelType || '', registrationNumber: vehicle.registrationNumber, colour: vehicle.colour, model: vehicle.model || '', seatCapacity: String(vehicle.seatCapacity), insuranceExpiresOn: vehicle.insuranceExpiresOn || '', status: vehicle.status })}>Edit</Button>
             </span>
           </div>)}
           <div className="ax-cab-actions is-left">
@@ -658,7 +660,10 @@ function CabPartners({ partners, corridors, onChanged }) {
       <Dialog open={Boolean(form)} title={form ? `${form.id ? 'Edit' : 'Add'} ${form.kind}` : ''} onClose={() => setForm(null)} busy={busy === 'save'}
         footer={<><Button onClick={() => setForm(null)}>Cancel</Button><Button variant="primary" busy={busy === 'save'} onClick={save}>Save</Button></>}>
         {form ? <div className="ax-form-stack">
-          {form.kind === 'vehicle' ? <Field label="Vehicle type" htmlFor="op-type"><select id="op-type" value={form.vehicleType} onChange={(event) => setForm({ ...form, vehicleType: event.target.value })}>{VEHICLES.map((vehicle) => <option key={vehicle.value} value={vehicle.value}>{vehicle.label}</option>)}</select></Field> : null}
+          {form.kind === 'vehicle' ? <div className="ax-cab-row">
+            <Field label="Vehicle type" htmlFor="op-type"><select id="op-type" value={form.vehicleType} onChange={(event) => setForm({ ...form, vehicleType: event.target.value })}>{VEHICLES.map((vehicle) => <option key={vehicle.value} value={vehicle.value}>{vehicle.label}</option>)}</select></Field>
+            <Field label="Fuel" htmlFor="op-fuel"><select id="op-fuel" value={form.fuelType} onChange={(event) => setForm({ ...form, fuelType: event.target.value })}><option value="" disabled>Choose</option>{FUELS.map((fuel) => <option key={fuel.value} value={fuel.value}>{fuel.label}</option>)}</select></Field>
+          </div> : null}
           {({
             operator: [['name', 'Name'], ['businessName', 'Business name'], ['phone', 'Phone'], ['note', 'Note (admins only)']],
             driver: [['firstName', 'First name'], ['phone', 'Mobile number (the driver signs in with it)'], ['licenceNumber', 'Licence number'], ['licenceExpiresOn', 'Licence valid until (YYYY-MM-DD)']],
