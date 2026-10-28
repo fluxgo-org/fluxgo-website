@@ -149,16 +149,16 @@ function Console({ admin, onLogout, onSessionExpired }) {
   useEffect(() => { if (!onToday) void loadBadges(); }, [loadBadges, onToday]);
   useLiveRefresh(['support', 'bookings', 'reviews', 'vehicles', 'trips'], () => { void loadBadges(); }, !onToday);
   useEffect(() => { requestApi('/admin/users').then((result) => setAdmins(result?.users || [])).catch(() => {}); }, []);
-  // Cab work across all dates: the Cab badge, the Today card, and the Cab overview. Older servers return 404.
-  const [cabOverview, setCabOverview] = useState(null);
-  const loadCabOverview = useCallback(async () => {
-    try { setCabOverview(await requestApi('/admin/cab/overview')); } catch { /* the Cab card is optional */ }
+  // Cab To do across all dates: the Cab badge, the Today card, and the Cab To do section. Older servers return 404.
+  const [cabTodo, setCabTodo] = useState(null);
+  const loadCabTodo = useCallback(async () => {
+    try { setCabTodo(await requestApi('/admin/cab/todo')); } catch { /* the Cab card is optional */ }
   }, []);
   useEffect(() => {
-    void loadCabOverview();
-    const timer = setInterval(() => { void loadCabOverview(); }, 60_000);
+    void loadCabTodo();
+    const timer = setInterval(() => { void loadCabTodo(); }, 60_000);
     return () => clearInterval(timer);
-  }, [loadCabOverview, section]);
+  }, [loadCabTodo, section]);
   const onAttention = useCallback((next) => { setAttention(next); }, []);
 
   useEffect(() => {
@@ -190,7 +190,7 @@ function Console({ admin, onLogout, onSessionExpired }) {
     safety: attention?.reviews.safetyReportsLast7Days,
     vehicles: attention?.vehicles.awaitingRecheck,
     bookings: attention?.bookings.awaitingDriver,
-    cab: cabOverview ? cabOverview.waitingSlots.length + cabOverview.alerts.length : undefined,
+    cab: cabTodo ? cabTodo.count : undefined,
   };
   /** Hover and focus handlers that show a name next to an icon in the collapsed rail. */
   function railTip(label, extra = null) {
@@ -279,9 +279,9 @@ function Console({ admin, onLogout, onSessionExpired }) {
         </header>
 
         <main className={`ax-content is-${section}`}>
-          {section === 'today' ? <TodayView admin={admin} openRecord={openRecord} navigate={navigate} onAttention={onAttention} cabOverview={cabOverview} /> : null}
+          {section === 'today' ? <TodayView admin={admin} openRecord={openRecord} navigate={navigate} onAttention={onAttention} cabTodo={cabTodo} /> : null}
           {section === 'analytics' ? <AnalyticsView params={params} setParams={setParams} /> : null}
-          {section === 'cab' ? <CabView params={params} setParams={setParams} overview={cabOverview} onOverviewChanged={loadCabOverview} /> : null}
+          {section === 'cab' ? <CabView params={params} setParams={setParams} todo={cabTodo} onTodoChanged={loadCabTodo} /> : null}
           {section === 'support' ? <SupportInbox params={params} setParams={setParams} openRecord={openRecord} waitingCount={attention?.support.awaitingReply} /> : null}
           {RECORD_SECTIONS[section] ? <RecordsView key={section} section={section} params={params} setParams={setParams} openRecord={openRecord} selected={selected} admins={admins} /> : null}
           {section === 'notify' ? <NotifyView params={params} setParams={setParams} navigate={navigate} openRecord={openRecord} /> : null}

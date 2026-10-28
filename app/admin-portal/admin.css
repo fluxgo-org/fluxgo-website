@@ -974,3 +974,66 @@ button.ax-mini-item:hover { background: var(--surface-2); }
 .ax-cab-day { display: grid; gap: 2px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; }
 .ax-cab-day strong { font-size: 20px; }
 @media (max-width: 900px) { .ax-cab-days { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Fluxgo Cab v4: To do, Today, Planner, Partners, Insights, and the trip panel */
+.ax-cab-head { flex-wrap: wrap; gap: 10px; }
+.ax-cab-search { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; border: 1px solid var(--line-hard); border-radius: 10px; background: var(--surface); color: var(--ink3); flex: 1 1 220px; max-width: 320px; }
+.admin-root .ax-cab-search input { border: 0; background: transparent; height: 30px; min-height: 30px; padding: 0; flex: 1; min-width: 0; box-shadow: none; }
+.ax-cab-grow { flex: 1 1 auto; }
+.ax-cab-daybar { align-items: center; margin-bottom: 4px; }
+.ax-cab-todo { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ax-cab-todo-row { display: grid; grid-template-columns: 150px minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-lg, 12px); background: var(--surface); }
+.ax-cab-todo-text { display: grid; gap: 2px; min-width: 0; }
+.ax-cab-todo-text strong { font-size: 14px; }
+.ax-cab-todo-text .ax-muted { font-size: 13px; }
+.ax-cab-due { white-space: nowrap; }
+.ax-cab-actions.is-left { justify-content: flex-start; }
+.ax-seats { display: inline-flex; gap: 2px; vertical-align: middle; }
+.ax-seat { width: 10px; height: 10px; border-radius: 3px; background: var(--fill); }
+.ax-seat.is-fluxgo { background: var(--brand); }
+.ax-seat.is-elsewhere { background: var(--ink3); }
+.ax-seat.is-min { box-shadow: inset 0 0 0 1px var(--warn, #a36a00); }
+.ax-cab-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ax-cab-key { display: inline-block; width: 12px; height: 12px; border-radius: 4px; margin-left: 8px; }
+.ax-cab-key.is-going, .ax-cab-chip.is-going { background: color-mix(in srgb, var(--brand) 22%, var(--surface)); border-color: var(--brand); }
+.ax-cab-key.is-forming, .ax-cab-chip.is-forming { background: color-mix(in srgb, var(--warn, #a36a00) 14%, var(--surface)); border-color: var(--warn, #a36a00); }
+.ax-cab-key.is-demand, .ax-cab-chip.is-demand { background: color-mix(in srgb, var(--info, #2563eb) 12%, var(--surface)); border-color: var(--info, #2563eb); }
+.ax-cab-key.is-waiting, .ax-cab-chip.is-waiting { background: repeating-linear-gradient(135deg, var(--fill) 0 3px, var(--surface) 3px 6px); border-color: var(--line-hard); }
+.ax-cab-chip.is-not_fulfilled, .ax-cab-chip.is-cancelled { background: var(--fill); border-color: var(--line); color: var(--ink3); text-decoration: line-through; }
+.ax-cab-planner { display: grid; gap: 2px; overflow-x: auto; }
+.ax-cab-planner-row { display: grid; grid-template-columns: 56px repeat(7, minmax(92px, 1fr)); gap: 2px; }
+.ax-cab-planner-row.is-head span { font-size: 12px; font-weight: 600; color: var(--ink2); padding: 4px 6px; }
+.ax-cab-planner-row [role="rowheader"] { padding: 6px 4px; }
+.ax-cab-cell { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 3px; min-height: 30px; padding: 3px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-soft, var(--line)); cursor: pointer; }
+.ax-cab-cell:hover { border-color: var(--line-hard); }
+.ax-cab-cell.is-past { background: transparent; cursor: default; opacity: 0.55; }
+.ax-cab-cell.is-chosen { border-color: var(--brand); box-shadow: inset 0 0 0 1px var(--brand); background: color-mix(in srgb, var(--brand) 8%, var(--surface)); }
+.ax-cab-chip { font: inherit; font-size: 11.5px; font-weight: 600; line-height: 1; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--line); color: var(--ink); cursor: pointer; }
+span.ax-cab-chip { cursor: inherit; }
+.ax-cab-panel { display: grid; gap: 16px; }
+.ax-cab-panel-head { display: flex; align-items: flex-start; gap: 10px; }
+.ax-cab-panel-head > div { flex: 1; }
+.ax-cab-panel-head h2 { font-size: 18px; font-weight: 650; }
+.ax-cab-panel-block { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.ax-cab-panel-block h3, .ax-card h3 { font-size: 14px; font-weight: 650; }
+.ax-cab-facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; font-size: 13px; margin: 0; }
+.ax-cab-facts dt { color: var(--ink3); }
+.ax-cab-facts dd { margin: 0; }
+.ax-cab-docs { display: flex; flex-wrap: wrap; gap: 6px; }
+.ax-cab-history { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; }
+.ax-cab-plain { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+.ax-cab-partner { display: grid; gap: 10px; }
+.ax-cab-stats { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--ink2); }
+.ax-cab-stats strong { color: var(--ink); }
+.ax-cab-stats .is-bad strong { color: var(--danger); }
+.ax-cab-fleet { display: grid; gap: 6px; padding-top: 8px; border-top: 1px solid var(--line-soft, var(--line)); }
+.ax-cab-heat { display: grid; gap: 2px; overflow-x: auto; }
+.ax-cab-heat-row { display: grid; grid-template-columns: 40px repeat(24, minmax(14px, 1fr)); gap: 2px; align-items: center; }
+.ax-cab-heat-cell { height: 18px; border-radius: 3px; background: color-mix(in srgb, var(--brand) calc(var(--heat, 0) * 85%), var(--fill)); }
+.ax-cab-heat-cell.is-short { box-shadow: inset 0 0 0 2px var(--danger); }
+@media (max-width: 760px) {
+  .ax-cab-todo-row { grid-template-columns: minmax(0, 1fr); }
+  .ax-cab-search { max-width: none; }
+}
+.ax-cab-panel { padding: 16px 20px 32px; overflow-y: auto; height: 100%; align-content: start; }
+.ax-cab-todo-row > .ax-badge { justify-self: start; }
