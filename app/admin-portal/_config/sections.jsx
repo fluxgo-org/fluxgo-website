@@ -36,7 +36,7 @@ export const SECTION_META = {
   analytics: { label: 'Analytics', icon: 'analytics', description: 'Active members and key metrics' },
   support: { label: 'Support', icon: 'support', description: 'Member conversations' },
   safety: { label: 'Safety reports', icon: 'shield', description: 'Reviews with issues' },
-  cab: { label: 'Cab', icon: 'route', description: 'Cab slots, routes, and operators' },
+  cab: { label: 'Cab', icon: 'route', description: 'What needs you, cabs, partners, and demand' },
   members: { label: 'Members', icon: 'members', description: 'Accounts and verification' },
   trips: { label: 'Rides', icon: 'rides', description: 'Published rides' },
   bookings: { label: 'Bookings', icon: 'bookings', description: 'Seat bookings' },

@@ -1,8 +1,6 @@
-import { TripSheet } from './TripSheet';
+import PartnerHome from '../../page';
 
-export const metadata = { title: 'Trip | Fluxgo Partner' };
-
-export default async function TripSheetPage({ params }) {
-  const { token } = await params;
-  return <TripSheet token={token} />;
+/** Cab v4 removed the driver trip sheet link. Old links show the partner app notice. */
+export default function PartnerTripLink() {
+  return <PartnerHome />;
 }

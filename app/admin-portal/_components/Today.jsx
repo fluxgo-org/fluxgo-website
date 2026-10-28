@@ -2,26 +2,26 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { errorText, isSessionExpired, queryString, requestApi } from '../_lib/api';
-import { auditActionLabel, display, formatDate, formatDateTime, formatNumber, formatTime, plural, relativeTime, waitingFor } from '../_lib/format';
+import { auditActionLabel, display, formatDateTime, formatNumber, formatTime, plural, relativeTime, waitingFor } from '../_lib/format';
 import { useNow, useStoredState } from '../_lib/hooks';
 import { LIVE_KEYS, useLiveRefresh } from '../_lib/live';
 import { Badge, Button, EmptyState, Icon, Skeleton } from './ui';
 import { addDays, dayText, kolkataDay, PeriodPicker, presetRange, rangeLabel } from './PeriodPicker';
 
 
-export function TodayView({ admin, openRecord, navigate, onAttention, cabOverview: sharedCabOverview }) {
+export function TodayView({ admin, openRecord, navigate, onAttention, cabTodo: sharedCabTodo }) {
   const now = useNow();
   const [state, setState] = useState({ attention: null, summary: null, audit: [], rangeKey: '' });
   const [error, setError] = useState('');
   // Counts and queues hide internal (team and test) members unless the admin turns this on.
   const [showInternal, setShowInternal] = useStoredState('today:showInternal', false);
-  // The shared Cab overview hides internal members. With Show internal on, Today loads its own.
-  const [internalCabOverview, setInternalCabOverview] = useState(null);
+  // The shared Cab To do hides internal members. With Show internal on, Today loads its own.
+  const [internalCabTodo, setInternalCabTodo] = useState(null);
   useEffect(() => {
     if (!showInternal) return;
-    requestApi('/admin/cab/overview?internal=include').then(setInternalCabOverview).catch(() => setInternalCabOverview(null));
-  }, [showInternal, sharedCabOverview]);
-  const cabOverview = showInternal ? internalCabOverview : sharedCabOverview;
+    requestApi('/admin/cab/todo?internal=include').then(setInternalCabTodo).catch(() => setInternalCabTodo(null));
+  }, [showInternal, sharedCabTodo]);
+  const cabTodo = showInternal ? internalCabTodo : sharedCabTodo;
   // The screen always opens on today. The range is not stored.
   const [range, setRange] = useState(() => presetRange('today'));
   // An older API rejects from and to. Then the screen keeps the 7-day view.
@@ -82,7 +82,7 @@ export function TodayView({ admin, openRecord, navigate, onAttention, cabOvervie
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const name = String(admin?.email || admin?.username || '').split('@')[0];
   const waiting = attention?.support.awaitingReply ?? 0;
-  const tasks = attention ? waiting + attention.bookings.awaitingDriver + attention.vehicles.awaitingRecheck + (legacy ? attention.reviews.safetyReportsLast7Days : 0) + (cabOverview?.waitingSlots.length ?? 0) + (cabOverview?.alerts.length ?? 0) : 0;
+  const tasks = attention ? waiting + attention.bookings.awaitingDriver + attention.vehicles.awaitingRecheck + (legacy ? attention.reviews.safetyReportsLast7Days : 0) + (cabTodo?.count ?? 0) : 0;
   const totals = period?.totals;
   const dates = (fromKey, toKey) => ({ [fromKey]: range.from, [toKey]: range.to });
   const subtitle = legacy
@@ -163,24 +163,15 @@ export function TodayView({ admin, openRecord, navigate, onAttention, cabOvervie
             side: <Badge value="IN_PROGRESS" />,
             onClick: () => openRecord('trip', trip.id),
           }))} />
-        {cabOverview ? <AttentionCard icon="route" title="Cab slots waiting for a decision" count={cabOverview.waitingSlots.length} tone={cabOverview.metrics.slotsToDecide || cabOverview.metrics.notHereAlerts ? 'warning' : undefined}
-          empty="No cab interests wait for a decision." onAll={() => navigate('cab')}
-          items={[
-            ...cabOverview.alerts.map((alert) => ({
-              key: `alert-${alert.interestId}-${alert.createdAt}`,
-              title: 'Cab is not here',
-              meta: `${alert.corridorName || 'Cab'} · reported ${relativeTime(alert.createdAt, now)}`,
-              side: <Badge tone="danger">Call now</Badge>,
-              onClick: () => navigate('cab', { cab: 'board', route: alert.corridorId, date: alert.serviceDate }),
-            })),
-            ...cabOverview.waitingSlots.slice(0, 6).map((slot) => ({
-              key: slot.slotId,
-              title: slot.corridorName,
-              meta: `${formatDate(slot.startAt)} ${formatTime(slot.startAt)} · ${plural(slot.travellers, 'traveller')}`,
-              side: <Badge tone={slot.decisionDue ? 'warning' : undefined}>{slot.decisionDue ? 'Decide now' : `Decide ${relativeTime(slot.decisionAt, now)}`}</Badge>,
-              onClick: () => navigate('cab', { cab: 'board', route: slot.corridorId, date: slot.serviceDate }),
-            })),
-          ]} /> : null}
+        {cabTodo ? <AttentionCard icon="route" title="Cab to do" count={cabTodo.count} tone={cabTodo.items.some((item) => ['CAB_NOT_HERE', 'NO_DRIVER', 'CHECK_TRIP', 'OPERATOR_CANCELLED'].includes(item.type)) ? 'warning' : undefined}
+          empty="Nothing in Cab needs you." onAll={() => navigate('cab')}
+          items={cabTodo.items.slice(0, 6).map((item) => ({
+            key: item.id,
+            title: item.title,
+            meta: item.detail,
+            side: <Badge tone={item.type === 'CAB_NOT_HERE' ? 'danger' : undefined}>{relativeTime(item.dueAt, now)}</Badge>,
+            onClick: () => navigate('cab', item.runId ? { run: item.runId } : item.type === 'APPROVAL' || item.type === 'EXPIRING' ? { cab: 'partners' } : {}),
+          }))} /> : null}
         <AttentionCard icon="bookings" title="Requests waiting for the driver" count={attention?.bookings.awaitingDriver} loading={!attention}
           empty="No booking requests wait for a driver." onAll={() => go('bookings', { status: 'REQUESTED' })}
           items={attention?.bookings.items.map((booking) => ({
