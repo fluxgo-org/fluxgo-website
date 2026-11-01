@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AdminsView } from './_components/Admins';
+import { DemandDaysView } from './_components/DemandDays';
 import { AnalyticsView } from './_components/Analytics';
 import { CabView } from './_components/Cab';
 import { CommandPalette } from './_components/CommandPalette';
@@ -286,6 +287,7 @@ function Console({ admin, onLogout, onSessionExpired }) {
           {RECORD_SECTIONS[section] ? <RecordsView key={section} section={section} params={params} setParams={setParams} openRecord={openRecord} selected={selected} admins={admins} /> : null}
           {section === 'notify' ? <NotifyView params={params} setParams={setParams} navigate={navigate} openRecord={openRecord} /> : null}
           {section === 'admins' ? <AdminsView admin={admin} onAdminsChanged={setAdmins} /> : null}
+          {section === 'demandDays' ? <DemandDaysView /> : null}
         </main>
       </div>
 
