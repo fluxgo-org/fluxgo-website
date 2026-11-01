@@ -27,6 +27,7 @@ const requiredMarkers = [
   "requestApi('/admin/dashboard/summary'",
   "requestApi('/admin/dashboard/attention'",
   "'/admin/members'",
+  "requestApi('/admin/demand-days')",
   "'/admin/trips'",
   "'/admin/bookings'",
   "'/admin/support/tickets",

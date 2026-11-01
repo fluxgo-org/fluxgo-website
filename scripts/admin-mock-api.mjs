@@ -29,6 +29,11 @@ const VEHICLES = [['Maruti Suzuki', 'Swift'], ['Hyundai', 'Creta'], ['Tata', 'Ne
 const ISSUES = ['NO_SHOW', 'LATE_ARRIVAL', 'RASH_DRIVING', 'PRIVACY_CONCERN', 'DISRESPECTFUL_OR_ABUSIVE_BEHAVIOUR', 'DIFFERENT_DROP_LOCATION', 'VEHICLE_OR_SEAT_NOT_AS_PROMISED', 'UNSAFE_VEHICLE_CONDITION', 'DID_NOT_PICK_UP_CALL', 'POOR_DRIVING_SKILLS'];
 const SAFETY = new Set(['RASH_DRIVING', 'POOR_DRIVING_SKILLS', 'UNSAFE_VEHICLE_CONDITION', 'DISRESPECTFUL_OR_ABUSIVE_BEHAVIOUR', 'PRIVACY_CONCERN', 'POST_RIDE_MEETUP_CONTACT', 'LATE_NIGHT_DIFFICULTY', 'ASKED_TO_GET_DOWN_LOW_BOOKING']);
 
+const demandDays = new Map([
+  ['2026-11-14', { demandDate: '2026-11-14', label: 'Children\'s Day weekend', createdAt: '2026-11-01T06:00:00.000Z' }],
+  ['2026-12-25', { demandDate: '2026-12-25', label: 'Christmas', createdAt: '2026-11-01T06:05:00.000Z' }]
+]);
+
 const admins = [
   { id: randomUUID(), username: 'preview@fluxgo.in', email: 'preview@fluxgo.in', role: 'SUPER_ADMIN', status: 'ACTIVE', passwordChangedAt: iso(-minutes(60 * 24 * 20)), createdAt: iso(-minutes(60 * 24 * 90)), updatedAt: iso(-minutes(600)) },
   { id: randomUUID(), username: 'ops@fluxgo.in', email: 'ops@fluxgo.in', role: 'SUPER_ADMIN', status: 'ACTIVE', passwordChangedAt: iso(-minutes(60 * 24 * 5)), createdAt: iso(-minutes(60 * 24 * 40)), updatedAt: iso(-minutes(900)) },
@@ -494,6 +499,14 @@ function route(method, path, params, body, authed, admin) {
   if (!authed) return [401, { error: { code: 'UNAUTHENTICATED', message: 'Sign in again' } }];
 
   if (path === '/v1/admin/me') return [200, { admin }];
+  if (path === '/v1/admin/demand-days' && method === 'GET') return [200, { demandDays: [...demandDays.values()].sort((a, b) => a.demandDate.localeCompare(b.demandDate)) }];
+  const demandDayMatch = path.match(/^\/v1\/admin\/demand-days\/(\d{4}-\d{2}-\d{2})$/);
+  if (demandDayMatch && method === 'PUT') {
+    const row = { demandDate: demandDayMatch[1], label: String(body?.label || '').trim(), createdAt: demandDays.get(demandDayMatch[1])?.createdAt || new Date().toISOString() };
+    demandDays.set(row.demandDate, row);
+    return [200, { demandDay: row }];
+  }
+  if (demandDayMatch && method === 'DELETE') return demandDays.delete(demandDayMatch[1]) ? [200, { deleted: true }] : [404, { error: { code: 'NOT_FOUND', message: 'Demand day not found' } }];
   if (path === '/v1/admin/users' && method === 'GET') return [200, { users: admins }];
   if (path === '/v1/admin/users' && method === 'POST') {
     const created = { id: randomUUID(), username: body.username || body.email, email: body.email, role: 'SUPER_ADMIN', status: 'ACTIVE', passwordChangedAt: iso(0), createdAt: iso(0), updatedAt: iso(0) };

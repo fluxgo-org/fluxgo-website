@@ -27,7 +27,7 @@ import { filterSummary } from '../_lib/audience';
 export const NAV_GROUPS = [
   { label: 'Workspace', items: ['today', 'analytics', 'support', 'safety', 'cab'] },
   { label: 'Records', items: ['members', 'trips', 'bookings', 'vehicles'] },
-  { label: 'Outreach', items: ['notify', 'sends'] },
+  { label: 'Outreach', items: ['notify', 'sends', 'demandDays'] },
   { label: 'Administration', items: ['admins', 'audit'] },
 ];
 
@@ -43,6 +43,7 @@ export const SECTION_META = {
   vehicles: { label: 'Vehicles', icon: 'vehicles', description: 'Every vehicle and its check' },
   notify: { label: 'Send notification', icon: 'bell', description: 'Offers and updates' },
   sends: { label: 'Sent notifications', icon: 'send', description: 'Every send and who got it' },
+  demandDays: { label: 'Demand days', icon: 'calendar', description: 'Festivals and long weekends for the ride digest' },
   admins: { label: 'Admin users', icon: 'admins', description: 'Console access' },
   audit: { label: 'Audit log', icon: 'audit', description: 'Every admin action' },
 };
