@@ -10,6 +10,7 @@ import { RecordPanel } from './_components/Details';
 import { LoginScreen } from './_components/Login';
 import { NotificationsDialog } from './_components/NotificationsDialog';
 import { NotifyView } from './_components/Notify';
+import { InAppMessagesView } from './_components/InApp';
 import { RecordsView } from './_components/RecordsView';
 import { SupportInbox } from './_components/Support';
 import { TodayView } from './_components/Today';
@@ -286,6 +287,7 @@ function Console({ admin, onLogout, onSessionExpired }) {
           {section === 'support' ? <SupportInbox params={params} setParams={setParams} openRecord={openRecord} waitingCount={attention?.support.awaitingReply} /> : null}
           {RECORD_SECTIONS[section] ? <RecordsView key={section} section={section} params={params} setParams={setParams} openRecord={openRecord} selected={selected} admins={admins} /> : null}
           {section === 'notify' ? <NotifyView params={params} setParams={setParams} navigate={navigate} openRecord={openRecord} /> : null}
+          {section === 'inapp' ? <InAppMessagesView params={params} setParams={setParams} /> : null}
           {section === 'admins' ? <AdminsView admin={admin} onAdminsChanged={setAdmins} /> : null}
           {section === 'demandDays' ? <DemandDaysView /> : null}
         </main>

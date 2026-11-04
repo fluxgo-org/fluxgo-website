@@ -31,7 +31,7 @@ const TYPES = {
 };
 
 /** Count and preview the active members that match the filters. */
-function useAudienceMatch(filters, enabled) {
+export function useAudienceMatch(filters, enabled) {
   const key = JSON.stringify(filters);
   const debouncedKey = useDebounced(key, 300);
   const [state, setState] = useState({ key: null, total: null, items: [], error: '' });
@@ -253,7 +253,7 @@ function Select({ id, label, value, onChange, options, groups, any = 'Any', wide
 }
 
 /** The audience filter panel: quick presets, then grouped fields. */
-function AudienceFilters({ form, onChange }) {
+export function AudienceFilters({ form, onChange }) {
   const set = (key) => (value) => onChange((current) => ({ ...current, [key]: value }));
   const active = cleanForm(form);
   const activeCount = Object.keys(active).length;
@@ -323,7 +323,7 @@ function AudienceFilters({ form, onChange }) {
 }
 
 /** The live member count with the first few names. */
-function MatchPreview({ match }) {
+export function MatchPreview({ match }) {
   if (match.error) {
     return <div className="ax-aud-match is-error" role="alert"><Icon name="alert" size={15} /><span>{match.error}</span><Button size="sm" onClick={match.retry}>Try again</Button></div>;
   }
@@ -349,7 +349,7 @@ function MatchPreview({ match }) {
   );
 }
 
-function MemberPicker({ selected, onAdd, onRemove }) {
+export function MemberPicker({ selected, onAdd, onRemove }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
