@@ -486,6 +486,56 @@ function page(items, params, fallbackSort) {
   return { items: sorted.slice(offset, offset + limit), total: sorted.length, limit, offset, hasMore: offset + limit < sorted.length };
 }
 
+
+// In-app messages: made-up popups. Uploaded banners stay in memory and are served from /mock-uploads/.
+const SAMPLE_BANNER = 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1600&q=80';
+const uploads = new Map();
+const inAppMessages = new Map();
+function addInApp(input) {
+  const row = {
+    id: randomUUID(), subtitle: null, imageUrl: null, imageWidth: null, imageHeight: null, target: null, primaryLabel: null, secondaryLabel: null,
+    secondaryAction: null, secondaryTarget: null, audienceKind: 'ALL', audienceFilters: null, memberIds: [], frequency: 'ONCE', priority: 1,
+    platforms: ['ios', 'android', 'web'], startsAt: null, endsAt: null, pushOnPublish: false, publishedAt: null,
+    createdAt: iso(-minutes(60 * 30)), updatedAt: iso(-minutes(60)), stats: { shown: 0, opened: 0, dismissed: 0 }, ...input,
+  };
+  inAppMessages.set(row.id, row);
+  return row;
+}
+addInApp({ name: 'Tirupati weekend', status: 'LIVE', layout: 'SHEET', title: 'Weekend rides to Tirupati are open', subtitle: 'Hosts from Bengaluru added 42 seats for Saturday morning. Book early to pick your seat.', imageUrl: SAMPLE_BANNER, imageWidth: 1600, imageHeight: 1067, target: { kind: 'SEARCH', originCity: 'Bengaluru', destinationCity: 'Tirupati' }, primaryLabel: 'See rides', frequency: 'UNTIL_TAPPED', priority: 2, publishedAt: iso(-minutes(60 * 20)), stats: { shown: 1840, opened: 412, dismissed: 1120 } });
+addInApp({ name: 'Work email nudge', status: 'PAUSED', layout: 'MODAL_EDGE', title: 'Add your work email', subtitle: 'Members with a verified work email get more accepted requests.', target: { kind: 'SCREEN', screen: 'WORK_EMAIL' }, primaryLabel: 'Verify work email', secondaryLabel: 'Not now', secondaryAction: 'DISMISS', audienceKind: 'FILTERS', audienceFilters: { workEmailStatus: 'NONE' }, frequency: 'DAILY', publishedAt: iso(-minutes(60 * 72)), stats: { shown: 960, opened: 131, dismissed: 790 } });
+addInApp({ name: 'Hyderabad launch', status: 'DRAFT', layout: 'FULLSCREEN', title: 'Fluxgo is now in Hyderabad', subtitle: 'Find rides to Vijayawada, Warangal, and Bengaluru, or offer the empty seats in your car.', imageUrl: SAMPLE_BANNER, imageWidth: 1600, imageHeight: 1067, target: { kind: 'SCREEN', screen: 'FIND_RIDE' }, primaryLabel: 'Find a ride', secondaryLabel: 'Offer a ride', secondaryAction: 'OPEN', secondaryTarget: { kind: 'SCREEN', screen: 'OFFER_RIDE' } });
+
+function inAppRoute(method, path, params, body) {
+  if (path === '/v1/admin/in-app-messages' && method === 'GET') {
+    const items = [...inAppMessages.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return [200, { items, total: items.length, limit: 50, offset: 0, hasMore: false }];
+  }
+  if (path === '/v1/admin/in-app-messages/image-upload' && method === 'POST') {
+    const key = `${randomUUID()}.${String(body?.contentType || 'image/jpeg').split('/')[1]}`;
+    return [200, { uploadUrl: `http://localhost:${PORT}/mock-uploads/${key}`, imageUrl: `http://localhost:${PORT}/mock-uploads/${key}`, expiresAt: iso(minutes(10)) }];
+  }
+  if (path === '/v1/admin/in-app-messages' && method === 'POST') {
+    const row = addInApp({ ...body, status: 'DRAFT', createdAt: iso(0), updatedAt: iso(0) });
+    return [201, { message: row }];
+  }
+  const match = path.match(/^\/v1\/admin\/in-app-messages\/([0-9a-f-]{36})(\/status)?$/);
+  if (!match) return null;
+  const row = inAppMessages.get(match[1]);
+  if (!row) return [404, { error: { code: 'IN_APP_MESSAGE_NOT_FOUND', message: 'This in-app message does not exist' } }];
+  if (match[2] && method === 'POST') {
+    const first = body?.status === 'LIVE' && !row.publishedAt;
+    Object.assign(row, { status: body?.status, updatedAt: iso(0), ...(first ? { publishedAt: iso(0) } : {}) });
+    return [200, { message: row, push: first && row.pushOnPublish ? { status: 'ENQUEUED', count: 1280 } : { status: 'NOT_REQUESTED', count: 0 } }];
+  }
+  if (method === 'PATCH') {
+    if (row.status === 'ENDED') return [409, { error: { code: 'IN_APP_MESSAGE_ENDED', message: 'An ended message cannot change. Copy it to a new message.' } }];
+    Object.assign(row, body, { updatedAt: iso(0) });
+    return [200, { message: row }];
+  }
+  if (method === 'GET') return [200, { message: row }];
+  return null;
+}
+
 function route(method, path, params, body, authed, admin) {
   if (path === '/v1/admin/auth/login' && method === 'POST') {
     if (String(body?.email || '').trim().toLowerCase() !== LOGIN.email || body?.password !== LOGIN.password) return [401, { error: { code: 'ADMIN_INVALID_CREDENTIALS', message: 'The email or password is not correct' } }];
@@ -499,6 +549,8 @@ function route(method, path, params, body, authed, admin) {
   if (!authed) return [401, { error: { code: 'UNAUTHENTICATED', message: 'Sign in again' } }];
 
   if (path === '/v1/admin/me') return [200, { admin }];
+  const inApp = inAppRoute(method, path, params, body);
+  if (inApp) return inApp;
   if (path === '/v1/admin/demand-days' && method === 'GET') return [200, { demandDays: [...demandDays.values()].sort((a, b) => a.demandDate.localeCompare(b.demandDate)) }];
   const demandDayMatch = path.match(/^\/v1\/admin\/demand-days\/(\d{4}-\d{2}-\d{2})$/);
   if (demandDayMatch && method === 'PUT') {
@@ -893,7 +945,7 @@ createServer((request, response) => {
     'access-control-allow-origin': request.headers.origin || ORIGIN,
     'access-control-allow-credentials': 'true',
     'access-control-allow-headers': 'content-type',
-    'access-control-allow-methods': 'GET,POST,PATCH,OPTIONS',
+    'access-control-allow-methods': 'GET,POST,PATCH,PUT,OPTIONS',
     vary: 'origin',
   };
   if (request.method === 'OPTIONS') { response.writeHead(204, headers); response.end(); return; }
@@ -904,6 +956,20 @@ createServer((request, response) => {
     return;
   }
   if (url.pathname.startsWith('/mock-photos/')) { response.writeHead(404); response.end(); return; }
+  const upload = url.pathname.match(/^\/mock-uploads\/([\w.-]+)$/);
+  if (upload && request.method === 'PUT') {
+    const chunks = [];
+    request.on('data', (chunk) => chunks.push(chunk));
+    request.on('end', () => { uploads.set(upload[1], { type: request.headers['content-type'] || 'image/jpeg', data: Buffer.concat(chunks) }); response.writeHead(200, headers); response.end(); });
+    return;
+  }
+  if (upload && request.method === 'GET') {
+    const file = uploads.get(upload[1]);
+    if (!file) { response.writeHead(404); response.end(); return; }
+    response.writeHead(200, { 'content-type': file.type, 'cache-control': 'max-age=3600' });
+    response.end(file.data);
+    return;
+  }
   let raw = '';
   request.on('data', (chunk) => { raw += chunk; });
   request.on('end', () => {
