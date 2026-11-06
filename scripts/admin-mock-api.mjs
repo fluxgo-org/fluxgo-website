@@ -976,7 +976,12 @@ createServer((request, response) => {
     const cookie = (request.headers.cookie || '').split(';').map((part) => part.trim()).find((part) => part.startsWith(`${COOKIE}=`));
     const authed = Boolean(cookie && sessions.has(cookie.split('=')[1]));
     let body = null;
-    try { body = raw ? JSON.parse(raw) : null; } catch { body = null; }
+    try { body = raw ? JSON.parse(raw) : null; } catch {
+      // Same as the real API: a body that is not JSON is an error.
+      response.writeHead(400, { ...headers, 'content-type': 'application/json' });
+      response.end(JSON.stringify({ error: { code: 'INVALID_REQUEST', message: 'The request body is not valid JSON', field: null, details: {} } }));
+      return;
+    }
     const [status, payload, extra] = route(request.method, url.pathname, url.searchParams, body, authed, admins[0]);
     setTimeout(() => {
       response.writeHead(status, { ...headers, ...(payload ? { 'content-type': 'application/json' } : {}), ...(extra || {}) });
