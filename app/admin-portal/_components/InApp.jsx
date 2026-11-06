@@ -187,9 +187,10 @@ function ImageUpload({ draft, setDraft }) {
     setBusy(true);
     try {
       const size = await readImageSize(file);
-      const step = await requestApi('/admin/in-app-messages/image-upload', { method: 'POST', body: { contentType: file.type, sizeBytes: file.size } });
-      const put = await fetch(step.uploadUrl, { method: 'PUT', headers: { 'content-type': file.type }, body: file });
-      if (!put.ok) throw new Error('The image upload failed. Try again.');
+      const step = await requestApi('/admin/in-app-messages/image-upload', { method: 'POST', body: JSON.stringify({ contentType: file.type, sizeBytes: file.size }) });
+      // A blocked or failed S3 request must not read as an API connection error.
+      const put = await fetch(step.uploadUrl, { method: 'PUT', headers: { 'content-type': file.type }, body: file }).catch(() => null);
+      if (!put?.ok) throw new Error('Image storage did not accept the file. Try again. If this continues, check the S3 CORS rule.');
       setDraft((current) => ({ ...current, imageUrl: step.imageUrl, imageWidth: size.width, imageHeight: size.height }));
     } catch (uploadError) {
       if (!isSessionExpired(uploadError)) setError(errorText(uploadError, 'The image upload failed. Try again.'));
@@ -259,10 +260,10 @@ function Editor({ seed, onClose, onSaved }) {
     try {
       const body = toPayload(draft, audienceForm, members);
       const saved = seed
-        ? await requestApi(`/admin/in-app-messages/${seed.id}`, { method: 'PATCH', body })
-        : await requestApi('/admin/in-app-messages', { method: 'POST', body });
+        ? await requestApi(`/admin/in-app-messages/${seed.id}`, { method: 'PATCH', body: JSON.stringify(body) })
+        : await requestApi('/admin/in-app-messages', { method: 'POST', body: JSON.stringify(body) });
       let result = saved;
-      if (publish) result = await requestApi(`/admin/in-app-messages/${saved.message.id}/status`, { method: 'POST', body: { status: 'LIVE' } });
+      if (publish) result = await requestApi(`/admin/in-app-messages/${saved.message.id}/status`, { method: 'POST', body: JSON.stringify({ status: 'LIVE' }) });
       const push = result.push;
       notify(publish
         ? push?.status === 'ENQUEUED' ? `Live. Push sent to ${plural(push.count, 'member')}.` : push?.status === 'FAILED' ? 'Live. The push failed; members still see the popup.' : 'Live. Members see it at the next app open.'
@@ -452,7 +453,7 @@ export function InAppMessagesView({ params, setParams }) {
   const setStatus = async (row, status) => {
     setBusyId(row.id);
     try {
-      await requestApi(`/admin/in-app-messages/${row.id}/status`, { method: 'POST', body: { status } });
+      await requestApi(`/admin/in-app-messages/${row.id}/status`, { method: 'POST', body: JSON.stringify({ status }) });
       notify(status === 'PAUSED' ? 'Paused. Members stop seeing it.' : status === 'ENDED' ? 'Ended.' : 'Live again.');
       setEnding(null);
       await load();
