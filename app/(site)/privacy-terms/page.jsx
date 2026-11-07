@@ -15,7 +15,7 @@ const privacySections = [
     title: 'What this policy covers',
     paragraphs: [
       'This Privacy Policy explains how Fluxgo collects, uses, shares, and protects information when you use our website, mobile application, and related services (the “Services”).',
-      'Fluxgo helps people find or offer seats in intercity car rides. This policy applies to riders, drivers, visitors, and people who contact our support team.',
+      'Fluxgo helps people find or offer seats in intercity car rides, and take a seat in a shared cab that a local cab operator runs. This policy applies to riders, drivers, cab travellers, cab operators, visitors, and people who contact our support team.',
     ],
   },
   {
@@ -26,7 +26,9 @@ const privacySections = [
       'Account information, such as your name, mobile number, email address when you provide one, profile photo when you choose one, and account preferences.',
       'Verification and vehicle information that we need to check a driver, a vehicle, or a ride before publication.',
       'Trip and booking information, such as route, date, time, seats, luggage, fare, booking status, cancellation, and live-trip details when you use that feature.',
-      'Messages, reports, feedback, and other information that you send to another member or to Fluxgo Support.',
+      'Shared cab information, such as the slot, seats, pickup point, guest first names, gender, and age group, boarding status, and late cancellation or no-show records.',
+      'Cab operator information, such as business and contact details, driver details, and vehicle documents (registration certificate, insurance, driving licence, and photos) that we need to check a cab before it takes a booking.',
+      'Messages, reports, feedback, and other information that you send to another member, a cab driver, or Fluxgo Support.',
       'Device and service information, such as device type, app version, language, crash details, security events, and basic usage records.',
       'Payment information when a paid feature is available. Our payment provider handles payment credentials. Fluxgo receives the transaction status and reference needed to support your booking.',
     ],
@@ -58,6 +60,8 @@ const privacySections = [
     paragraphs: ['We share information only when it is needed for the purpose described below, or when the law permits or requires it.'],
     bullets: [
       'With a rider or driver, when limited profile and trip details are needed to arrange and complete a booking.',
+      'With other travellers in a shared cab slot: first name, profile photo, gender, and age group, so you can see who you travel with.',
+      'With the cab operator and driver of a confirmed shared cab: the first names, seats, and pickup point of the travellers. A driver does not see your phone number. You talk to the driver through in-app chat.',
       'With service providers that host, secure, support, verify, or process payments for the Services. They must follow our instructions and protect the information.',
       'With emergency services, regulators, law enforcement, or other parties when we have a legal duty or a good-faith safety reason.',
       'With a successor if Fluxgo is part of a merger, sale, financing, or other business change. The receiving party must follow applicable privacy duties.',
@@ -108,7 +112,7 @@ const privacySections = [
     title: 'Transfers and applicable law',
     paragraphs: [
       'Our service providers may process information in India or another country. When information moves across borders, we use safeguards required by applicable law.',
-      'This policy is a product draft for India. Fluxgo will add the final legal entity details, contact details, and any required notices after legal review.',
+      'This policy follows the Information Technology Act, 2000, the Digital Personal Data Protection Act, 2023, and the rules made under them, as they apply.',
     ],
   },
   {
@@ -133,7 +137,7 @@ const termsSections = [
     number: '02',
     title: 'What Fluxgo provides',
     paragraphs: [
-      'Fluxgo is a platform that helps drivers offer spare seats and helps riders find intercity car rides. Fluxgo is not a taxi operator, carrier, travel agent, or insurer. A driver and a rider are responsible for their own arrangement and conduct.',
+      'Fluxgo is a platform that helps drivers offer spare seats, helps riders find intercity car rides, and collects interest for seats in shared cabs on set routes. Local cab operators own and run the shared cabs. Fluxgo does not own vehicles and is not a carrier, travel agent, or insurer. Each driver, rider, and cab operator is responsible for their own conduct.',
       'We can add, change, pause, or remove a feature. We do not promise that every route, ride, member, or feature will always be available.',
     ],
   },
@@ -175,6 +179,16 @@ const termsSections = [
   },
   {
     number: '07',
+    title: 'Shared cabs',
+    paragraphs: [
+      'Interest in a shared cab slot is free and is not a booking. Your seat is confirmed only when the app shows "Seat confirmed". A shared cab goes only when enough seats fill by 2 hours before pickup. If it does not go, we tell you in the app, and nothing counts against you.',
+      'Pay the seat price shown in the app to the cab operator in the cab. Fluxgo does not take payment for shared cab seats. The cab operator is responsible for the vehicle, the driver, permits, and insurance.',
+      'Show your boarding code to the driver when you get in. A cancellation within 2 hours of pickup is a late cancellation. A missed pickup without a boarding code can be a no-show. Your public profile shows one combined count of late cancellations and no-shows.',
+      'When you add a guest, you confirm that the details are correct and that every traveller under 18 travels with an adult in the same cab.',
+    ],
+  },
+  {
+    number: '08',
     title: 'Safety and emergencies',
     paragraphs: [
       'Use your judgement before and during every ride. Confirm the vehicle and pickup details in the app. Do not enter a vehicle or continue a ride if you feel unsafe.',
@@ -182,7 +196,7 @@ const termsSections = [
     ],
   },
   {
-    number: '08',
+    number: '09',
     title: 'Acceptable use',
     paragraphs: ['You must not:'],
     bullets: [
@@ -195,7 +209,7 @@ const termsSections = [
     ],
   },
   {
-    number: '09',
+    number: '10',
     title: 'Messages, reports, and member content',
     paragraphs: [
       'You keep ownership of content that you submit. You give Fluxgo permission to store, copy, and display that content only as needed to operate, secure, support, and improve the Services.',
@@ -203,7 +217,7 @@ const termsSections = [
     ],
   },
   {
-    number: '10',
+    number: '11',
     title: 'Suspension and account closure',
     paragraphs: [
       'We may limit, suspend, or close an account when we reasonably believe that a person breached these terms, created a safety or fraud risk, broke the law, or harmed another member or the Services.',
@@ -211,7 +225,7 @@ const termsSections = [
     ],
   },
   {
-    number: '11',
+    number: '12',
     title: 'Fluxgo content and feedback',
     paragraphs: [
       'Fluxgo and its licensors own the Services, brand, software, design, and other content that we provide. We give you a limited, personal, non-transferable right to use them for their intended purpose.',
@@ -219,26 +233,26 @@ const termsSections = [
     ],
   },
   {
-    number: '12',
+    number: '13',
     title: 'Disclaimers and liability',
     paragraphs: [
       'To the maximum extent allowed by law, the Services are provided as available. We do not promise that a ride, route, member, vehicle, message, payment, or feature will be safe, accurate, uninterrupted, or available.',
       'Fluxgo does not control a driver’s or rider’s acts, the condition of a vehicle, road conditions, traffic, weather, or events outside our reasonable control. Nothing in these terms removes a right that applicable law does not allow us to remove.',
-      'To the extent allowed by law, Fluxgo is not liable for indirect, special, incidental, or consequential loss that results from use of the Services. The final terms must state any required consumer limits after legal review.',
+      'To the extent allowed by law, Fluxgo is not liable for indirect, special, incidental, or consequential loss that results from use of the Services.',
     ],
   },
   {
-    number: '13',
+    number: '14',
     title: 'Changes to the Services or terms',
     paragraphs: [
       'We may change these terms when the Services or the law changes. We will post the new version here and update the date above. If a change is material, we will give notice when required. Your continued use after the effective date means that you accept the updated terms.',
     ],
   },
   {
-    number: '14',
-    title: 'India legal details and contact',
+    number: '15',
+    title: 'Governing law and contact',
     paragraphs: [
-      'These are draft terms for an India intercity carpooling service. Before publication, Fluxgo’s legal team must add the final legal entity name, registered address, governing law, courts or dispute process, and any required consumer notices.',
+      'The laws of India govern these terms. If a dispute starts, contact us first through in-app support so that we can try to solve it. If we cannot solve it, the courts of India have jurisdiction. Nothing in these terms removes a right that you have under the Consumer Protection Act, 2019.',
       'For questions, requests, or reports, open the Fluxgo app and choose Profile → Help & Support, or email support@fluxgo.in. Create a ticket or email with a clear subject. Do not send passwords, one-time codes, or payment credentials.',
     ],
   },
@@ -347,7 +361,7 @@ export default function PrivacyTermsPage() {
       <main id="main-content" className="fx-legal">
         <header className="fx-legal-hero">
           <div className="fx-wrap">
-            <p className="fx-mono fx-legal-meta"><span>India legal documents</span><span>Last updated: 18 September 2026</span></p>
+            <p className="fx-mono fx-legal-meta"><span>India legal documents</span><span>Last updated: 7 November 2026</span></p>
             <h1 className="fx-page-title">Privacy &amp; Terms</h1>
             <div className="fx-legal-tabs" role="tablist" aria-label="Privacy and terms documents">
               {TABS.map((tab, index) => (
@@ -384,10 +398,6 @@ export default function PrivacyTermsPage() {
           </aside>
 
           <div className="fx-legal-body">
-            <div className="fx-legal-notice" role="note">
-              <p><strong>Draft notice.</strong> These documents need review by a legal adviser before they become final. The final version must state the legal entity and registered address.</p>
-            </div>
-
             <section
               className="fx-legal-panel"
               id="privacy-policy"

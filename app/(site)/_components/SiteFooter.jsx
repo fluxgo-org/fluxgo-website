@@ -18,6 +18,7 @@ export default function SiteFooter() {
           <nav className="fx-footer-col" aria-label="Ride">
             <span className="fx-mono">Ride</span>
             <Link href="/#find">Find a ride</Link>
+            <Link href="/#cab">Shared cabs</Link>
             <Link href="/#trust">Safety</Link>
             <Link href="/#offer">Offer a ride</Link>
           </nav>
