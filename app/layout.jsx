@@ -1,20 +1,20 @@
 export const metadata = {
   metadataBase: new URL('https://www.fluxgo.in'),
   title: 'Fluxgo — Intercity carpools and shared cabs in India',
-  description: 'For trips of a few hours between cities in India. Take one seat in a car or a shared cab, and see who you travel with before you book. Or share the empty seats in your car.',
+  description: 'Reliable rides between cities with verified members only. Carpools and shared cabs for trips of a few hours, across India.',
   applicationName: 'Fluxgo',
   keywords: ['intercity carpooling', 'carpool India', 'shared cab', 'intercity cab seat', 'ride sharing between cities', 'Fluxgo'],
   openGraph: {
-    title: 'Fluxgo — Someone is already going your way',
-    description: 'Find a seat in a carpool or a shared cab, or share yours, on intercity rides across India.',
+    title: 'Fluxgo — Reliable rides between cities',
+    description: 'Share rides between cities with verified members only. Carpools and shared cabs across India.',
     url: 'https://www.fluxgo.in',
     siteName: 'Fluxgo',
     type: 'website'
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Fluxgo — Someone is already going your way',
-    description: 'Find a seat in a carpool or a shared cab, or share yours, on intercity rides across India.'
+    title: 'Fluxgo — Reliable rides between cities',
+    description: 'Share rides between cities with verified members only. Carpools and shared cabs across India.'
   },
   itunes: {
     appId: '6814678664'

@@ -43,7 +43,7 @@ export default function SiteFooter() {
 
         <div className="fx-footer-base">
           <span>© {new Date().getFullYear()} Fluxgo</span>
-          <span>Made in India, for the road between cities.</span>
+          <span>Made in India.</span>
         </div>
       </div>
     </footer>
