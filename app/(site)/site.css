@@ -1,5 +1,5 @@
 /* Fluxgo public site. Tokens mirror fluxgo-frontend/src/constants/tokens.json.
-   Every rule is scoped under .fx so the admin portal styles stay separate. */
+   Every rule is scoped under .fx. */
 
 html:has(body > .fx) { background: #102A1B; scroll-behavior: smooth; scroll-padding-top: 96px; }
 body:has(> .fx) { margin: 0; }

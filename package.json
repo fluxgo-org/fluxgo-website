@@ -5,9 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "check:admin-portal": "node scripts/check-admin-portal.mjs",
-    "dev:admin-mock": "node scripts/admin-mock-api.mjs"
+    "start": "next start"
   },
   "dependencies": {
     "next": "^16.3.5",
