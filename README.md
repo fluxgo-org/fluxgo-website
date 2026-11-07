@@ -1,11 +1,10 @@
 # Fluxgo public website
 
-This repository contains the Fluxgo public website and the admin portal, built with Next.js.
+This repository contains the Fluxgo public website, built with Next.js.
 
 ## Structure
 
 - `app/(site)/` holds the public pages: home, `/support`, and `/privacy-terms`. They share `app/(site)/site.css` and the parts in `app/(site)/_components/`. All public styles sit under the `.fx` root class.
-- `app/admin-portal/` holds the operations console. Its styles are in `app/admin-portal/admin.css` and load only on that route.
 - The public pages use SVG and CSS for all visuals. Colors mirror `fluxgo-frontend/src/constants/tokens.json`.
 
 ## Local development
@@ -33,34 +32,7 @@ Vercel detects Next.js from `package.json`. Add `fluxgo.in` as the custom domain
 
 ## Admin portal
 
-Open `/admin-portal` to use the operations console.
-
-The portal calls the backend admin routes with `credentials: include`. The
-backend owns the session in an HttpOnly cookie. The browser does not store an
-admin bearer token or password. Set `NEXT_PUBLIC_FLUXGO_API_URL` to the
-approved API origin, such as `http://127.0.0.1:3000` for local development or
-the deployed API origin for the hosted website.
-
-The console has a Today page (work that needs an admin, 7-day trends), a support
-inbox with owners, internal notes, and templates, and tables for members, rides,
-bookings, safety reports, manual vehicles, and the audit log. Tables support
-column resize, column visibility, server sorting, advanced filters, quick views,
-and CSV export. Record panels link members, rides, bookings, and tickets. Admins
-can suspend or reactivate members, cancel published rides, and send
-notifications. Admins sign in with email only.
-
-The portal does not poll each view. It checks `GET /v1/admin/dashboard/pulse`
-every 60 s (15 s in an open support chat), pauses while the tab is hidden or
-after 10 min without input, and reloads only views whose data changed.
-
-The portal is an installable web app (`public/admin/manifest.webmanifest`, scope `/admin-portal`). `public/admin-sw.js` only shows admin push notifications and opens the linked page on tap; it does not cache pages or data. Turn notifications on per device in the sidebar under Notifications. On iPhone, push works only after Safari **Add to Home Screen** (iOS 16.4+).
-
-For a local preview with made-up data, run `npm run dev:admin-mock` and start
-`next dev` with `NEXT_PUBLIC_FLUXGO_API_URL=http://localhost:4010`. Sign in with
-`preview@fluxgo.in` and `preview-password`. The mock uses no real data.
-
-The reset form accepts the one-time code from the admin email. It also accepts
-`resetToken` in the URL query for a future email-link template.
+The portal is a separate private app on Railway. Its address stays `https://www.fluxgo.in/admin-portal`. `next.config.mjs` forwards `/admin-portal`, `/admin-portal-assets/*`, `/admin/*`, and `/admin-sw.js` to `ADMIN_PORTAL_ORIGIN`. Set that variable in Vercel. A change needs a new deploy.
 
 ## Shared ride links
 
