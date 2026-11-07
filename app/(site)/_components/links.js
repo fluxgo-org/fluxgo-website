@@ -1,6 +1,8 @@
 export const APP_STORE_URL = 'https://apps.apple.com/in/app/fluxgo-intercity-carpooling/id6814678664';
 export const APP_STORE_ID = '6814678664';
 export const WEB_APP_URL = 'https://app.fluxgo.in';
+/** The web app for cab operators and drivers. */
+export const PARTNER_URL = 'https://partner.fluxgo.in';
 export const SUPPORT_EMAIL = 'support@fluxgo.in';
 export const ANDROID_PACKAGE = 'in.fluxgo.app';
 export const PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`;

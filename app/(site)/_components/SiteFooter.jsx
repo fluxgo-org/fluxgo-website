@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Wordmark from './Wordmark';
 import { AppleGlyph, PlayGlyph } from './StoreButtons';
-import { APP_STORE_URL, PLAY_STORE_URL, SUPPORT_EMAIL, WEB_APP_URL } from './links';
+import { APP_STORE_URL, PARTNER_URL, PLAY_STORE_URL, SUPPORT_EMAIL, WEB_APP_URL } from './links';
 
 export default function SiteFooter() {
   return (
@@ -27,6 +27,7 @@ export default function SiteFooter() {
             <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer">iPhone</a>
             <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer">Android</a>
             <a href={WEB_APP_URL} target="_blank" rel="noopener noreferrer">On a computer: web app</a>
+            <a href={PARTNER_URL} target="_blank" rel="noopener noreferrer">Cab operators: partner app</a>
           </nav>
           <nav className="fx-footer-col" aria-label="Help">
             <span className="fx-mono">Help</span>

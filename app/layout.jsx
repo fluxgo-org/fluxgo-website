@@ -1,7 +1,7 @@
 export const metadata = {
   metadataBase: new URL('https://www.fluxgo.in'),
   title: 'Fluxgo — Intercity carpools and shared cabs in India',
-  description: 'Find a seat in a car already going to your city, take a seat in a shared cab that leaves every hour, or share the empty seats in yours. Intercity travel across India.',
+  description: 'For trips of a few hours between cities in India. Take one seat in a car or a shared cab, and see who you travel with before you book. Or share the empty seats in your car.',
   applicationName: 'Fluxgo',
   keywords: ['intercity carpooling', 'carpool India', 'shared cab', 'intercity cab seat', 'ride sharing between cities', 'Fluxgo'],
   openGraph: {

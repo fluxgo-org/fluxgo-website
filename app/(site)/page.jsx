@@ -6,6 +6,7 @@ import Stats from './_components/Stats';
 import Journey, { Stop } from './_components/Journey';
 import StoreButtons from './_components/StoreButtons';
 import Reveal from './_components/Reveal';
+import { PARTNER_URL } from './_components/links';
 import {
   IconArrow, IconBag, IconBell, IconBolt, IconCab, IconCalendar, IconClock, IconHand,
   IconPin, IconSeat, IconShield, IconSwap, IconTick, IconUsers
@@ -15,9 +16,9 @@ export const metadata = { alternates: { canonical: '/' } };
 
 // Example listings for the mock screens. They are not live data.
 const RESULTS = [
-  { depart: '06:30', arrive: '11:25', duration: '4h 55m', driver: 'Arjun', rating: '4.9', price: 650, left: 2, instant: true },
-  { depart: '09:00', arrive: '14:10', duration: '5h 10m', driver: 'Priya', rating: '4.8', price: 600, left: 1, instant: false, women: true },
-  { depart: '17:45', arrive: '22:40', duration: '4h 55m', driver: 'Rahul', rating: 'New', price: 700, left: 3, instant: true }
+  { depart: '06:30', arrive: '11:30', duration: '5h 00m', driver: 'Arjun', rating: '4.9', price: 500, left: 2, instant: true },
+  { depart: '09:00', arrive: '14:10', duration: '5h 10m', driver: 'Priya', rating: '4.8', price: 450, left: 1, instant: false, women: true },
+  { depart: '17:45', arrive: '22:45', duration: '5h 00m', driver: 'Rahul', rating: 'New', price: 550, left: 3, instant: true }
 ];
 
 const SLOTS = [
@@ -61,7 +62,7 @@ const PILLARS = [
     items: [
       ['Trusted contact', 'Save someone you trust before your first ride.'],
       ['Live location', 'While a carpool is on, the trip shows where the car is.'],
-      ['Women co-travellers', 'Filter for rides where at least one woman has a confirmed seat.'],
+      ['Women co-travellers', 'See women co-travellers before you book. Filter for rides with at least one woman on board.'],
       ['Report or block', 'Report any ride from the trip screen. Block a member, and you do not share a cab again.']
     ]
   },
@@ -82,6 +83,7 @@ const FAQ = [
   { q: 'What is a shared cab on Fluxgo?', a: 'A cab that leaves from a fixed pickup point in a 1 hour slot on a cab route. You send interest in a slot. When 4 seats fill, a local cab operator takes the trip and your seat is confirmed. Fluxgo does not own the cabs.' },
   { q: 'How do I pay for a cab seat?', a: 'Pay the fixed seat price in the cab, to the cab operator. You pay nothing in the app. The price shows before you send interest.' },
   { q: 'What if a cab does not fill?', a: 'If fewer than 4 seats fill by 2 hours before pickup, the cab does not go. We tell you before then, and nothing counts against you. You can choose a nearby slot.' },
+  { q: 'Which routes does Fluxgo cover?', a: 'Carpools run on any route a host publishes, anywhere in India. Shared cabs run between Bengaluru and Anantapur for now, and more cab routes are on the way.' },
   { q: 'How do I know a host is genuine?', a: 'Each host signs in with a verified mobile number and adds a vehicle that we match to its registration. Before you book, you see their ratings from past trips, their car, and a work email badge if they have one.' },
   { q: 'What if something feels wrong during a ride?', a: 'Ask to stop at a safe public place. If you are in danger, call 112. Your trusted contact is saved in the app, and you can report the ride from the trip screen. Our team reads every report.' },
   { q: 'Can I find a ride and offer one with the same account?', a: 'Yes. One account does both. Take a seat this weekend and offer yours the next.' },
@@ -100,11 +102,20 @@ export default function Home() {
         <Stats />
 
         <Journey>
-          <Stop id="find" number="01" label="Find a ride">
+          <Stop id="why" number="01" label="Why Fluxgo">
+            <h2 className="fx-h2 fx-why-title" data-reveal id="why-title">Trips of a few hours are the hardest to plan.</h2>
+            <div className="fx-facts">
+              <div data-reveal><span className="fx-mono">Buses</span><strong>Few departures</strong><p>Most buses run overnight on long routes. On a 4 hour route, you get a few fixed times.</p></div>
+              <div data-reveal style={{ '--d': '80ms' }}><span className="fx-mono">Cabs</span><strong>You pay for the whole car</strong><p>Fine for a family. Expensive when it is just you.</p></div>
+              <div data-reveal style={{ '--d': '160ms' }}><span className="fx-mono">WhatsApp groups</span><strong>You do not know who is coming</strong><p>Or if the car will turn up. Plans change at the last minute.</p></div>
+            </div>
+          </Stop>
+
+          <Stop id="find" number="02" label="Find a ride">
             <div className="fx-stop-grid">
               <div className="fx-stop-copy" data-reveal>
                 <h2 className="fx-h2" id="find-title">No sold-out buses. No haggling at the pickup.</h2>
-                <p className="fx-lede">Search your route and see every car and every shared cab going that day. Each ride shows when it leaves, the fixed price per seat, the vehicle, and how past travellers rated the host.</p>
+                <p className="fx-lede">Search your route and date. You see every car and shared cab going that day, when it leaves, the price per seat, the vehicle, and what past travellers said about the host.</p>
                 <ol className="fx-steps">
                   <li><span className="fx-mono">01</span>Search your route and date.</li>
                   <li><span className="fx-mono">02</span>Compare carpools and cabs, times, and prices.</li>
@@ -116,8 +127,8 @@ export default function Home() {
               <div className="fx-mock fx-mock-find" data-reveal>
                 <div className="fx-search">
                   <div className="fx-search-route">
-                    <div className="fx-search-field"><span className="fx-search-dot" /><div><small>From</small><strong>Bengaluru</strong></div></div>
-                    <div className="fx-search-field"><span className="fx-search-dot fx-search-dot-end" /><div><small>To</small><strong>Hyderabad</strong></div></div>
+                    <div className="fx-search-field"><span className="fx-search-dot" /><div><small>From</small><strong>Hyderabad</strong></div></div>
+                    <div className="fx-search-field"><span className="fx-search-dot fx-search-dot-end" /><div><small>To</small><strong>Vijayawada</strong></div></div>
                     <span className="fx-search-swap"><IconSwap width={18} height={18} /></span>
                   </div>
                   <div className="fx-search-row">
@@ -161,11 +172,11 @@ export default function Home() {
             </div>
           </Stop>
 
-          <Stop id="cab" number="02" label="Shared cabs">
+          <Stop id="cab" number="03" label="Shared cabs">
             <div className="fx-stop-grid fx-stop-grid-flip">
               <div className="fx-stop-copy" data-reveal>
                 <h2 className="fx-h2" id="cab-title">No car on your day? A cab leaves every hour.</h2>
-                <p className="fx-lede">On cab routes, pick a 1 hour slot from a fixed pickup point. Local cab operators run the cabs. Fluxgo fills the seats, so you pay for one seat, not the whole cab.</p>
+                <p className="fx-lede">Pick a 1 hour slot from a fixed pickup point. Local cab operators run the cabs and Fluxgo fills the seats, so you pay for one seat. You know your seat is confirmed before the day, not at the pickup.</p>
                 <ol className="fx-cab-steps">
                   {CAB_STEPS.map(([title, body], i) => (
                     <li key={title}>
@@ -174,6 +185,7 @@ export default function Home() {
                     </li>
                   ))}
                 </ol>
+                <p className="fx-aside"><IconCab width={18} height={18} /><span><strong>Run a cab or a fleet?</strong> Add your cabs and drivers, and fill seats on your routes. <a className="fx-link" href={PARTNER_URL} target="_blank" rel="noopener noreferrer">Open the partner app</a></span></p>
               </div>
 
               <div className="fx-mock fx-mock-cab" data-reveal>
@@ -228,7 +240,7 @@ export default function Home() {
             </div>
           </Stop>
 
-          <Stop id="trust" number="03" label="Before you get in">
+          <Stop id="trust" number="04" label="Before you get in">
             <div className="fx-trust-head" data-reveal>
               <h2 className="fx-h2" id="trust-title">Getting into a car with someone new is a big ask.</h2>
               <p className="fx-lede">So the answers come first. Who is driving, what they drive, what you pay, and who to call. All of it before you leave home.</p>
@@ -251,11 +263,11 @@ export default function Home() {
             </div>
           </Stop>
 
-          <Stop id="offer" number="04" label="Offer a ride">
+          <Stop id="offer" number="05" label="Offer a ride">
             <div className="fx-stop-grid">
               <div className="fx-stop-copy" data-reveal>
                 <h2 className="fx-h2" id="offer-title">Driving home anyway? Split the fuel with good company.</h2>
-                <p className="fx-lede">Publish the trip you were already making. Set the time, the seats, the luggage space, and the price per seat. Then choose who can join.</p>
+                <p className="fx-lede">Publish a trip you are making anyway. You decide who gets in: read each profile and accept, or let only verified members book.</p>
                 <div className="fx-split-points">
                   <div><span><IconHand /></span><p><strong>Request to book</strong>See each profile. Accept who you want.</p></div>
                   <div><span><IconBolt /></span><p><strong>Instant book</strong>Seats fill without you lifting a finger.</p></div>
@@ -299,17 +311,6 @@ export default function Home() {
                   <span className="fx-publish-button">Publish ride</span>
                 </div>
               </div>
-            </div>
-          </Stop>
-
-          <Stop id="idea" number="05" label="The idea">
-            <p className="fx-statement" data-reveal id="idea-title">
-              A seat in a car or cab <em>already going your way</em>.
-            </p>
-            <div className="fx-facts">
-              <div data-reveal><span className="fx-mono">You choose</span><strong>Carpool or cab</strong><p>Ride with a host who is making the trip, or take a seat in a shared cab.</p></div>
-              <div data-reveal style={{ '--d': '80ms' }}><span className="fx-mono">You get</span><strong>One account</strong><p>Take a seat today. Offer yours tomorrow. No switching.</p></div>
-              <div data-reveal style={{ '--d': '160ms' }}><span className="fx-mono">You go</span><strong>City to city</strong><p>Made for the long road between cities, not trips across town.</p></div>
             </div>
           </Stop>
 

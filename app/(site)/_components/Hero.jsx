@@ -8,13 +8,12 @@ const CYCLE_MS = 4200;
 
 // Example rides for the hero. They show how a listing looks; they are not live data.
 const RIDES = [
-  { to: 'Hyderabad', from: 'Bengaluru', fromCode: 'BLR', toCode: 'HYD', depart: '06:30', arrive: '11:25', duration: '4h 55m', price: 650, left: 2, seats: 3, instant: true, driver: 'Arjun', car: 'Hyundai i20', shape: 0 },
   { to: 'Mysuru', from: 'Bengaluru', fromCode: 'BLR', toCode: 'MYS', depart: '07:15', arrive: '10:00', duration: '2h 45m', price: 280, left: 3, seats: 3, instant: false, driver: 'Meera', car: 'Tata Nexon', shape: 1 },
-  { to: 'Anantapur', from: 'Bengaluru', fromCode: 'BLR', toCode: 'ATP', depart: '16:00', arrive: '20:10', duration: '4h 10m', price: 600, left: 2, seats: 7, cab: true, car: 'Toyota Innova Crysta', shape: 1 },
-  { to: 'Pondicherry', from: 'Chennai', fromCode: 'MAA', toCode: 'PNY', depart: '08:00', arrive: '11:10', duration: '3h 10m', price: 350, left: 1, seats: 3, instant: true, driver: 'Karthik', car: 'Maruti Baleno', shape: 2 },
+  { to: 'Anantapur', from: 'Bengaluru', fromCode: 'BLR', toCode: 'ATP', depart: '16:00', arrive: '20:10', duration: '4h 10m', price: 600, left: 2, seats: 7, cab: true, car: 'Toyota Innova Crysta', shape: 0 },
   { to: 'Pune', from: 'Mumbai', fromCode: 'BOM', toCode: 'PNQ', depart: '18:30', arrive: '21:45', duration: '3h 15m', price: 420, left: 2, seats: 4, instant: false, driver: 'Riya', car: 'Honda City', shape: 1 },
-  { to: 'Coimbatore', from: 'Bengaluru', fromCode: 'BLR', toCode: 'CJB', depart: '05:45', arrive: '12:10', duration: '6h 25m', price: 750, left: 2, seats: 3, instant: true, driver: 'Vikram', car: 'Kia Seltos', shape: 0 },
-  { to: 'Vijayawada', from: 'Hyderabad', fromCode: 'HYD', toCode: 'VGA', depart: '09:30', arrive: '14:40', duration: '5h 10m', price: 550, left: 3, seats: 3, instant: false, driver: 'Sneha', car: 'Toyota Glanza', shape: 2 }
+  { to: 'Pondicherry', from: 'Chennai', fromCode: 'MAA', toCode: 'PNY', depart: '08:00', arrive: '11:10', duration: '3h 10m', price: 350, left: 1, seats: 3, instant: true, driver: 'Karthik', car: 'Maruti Baleno', shape: 2 },
+  { to: 'Vijayawada', from: 'Hyderabad', fromCode: 'HYD', toCode: 'VGA', depart: '09:30', arrive: '14:40', duration: '5h 10m', price: 550, left: 3, seats: 3, instant: false, driver: 'Sneha', car: 'Toyota Glanza', shape: 0 },
+  { to: 'Tirupati', from: 'Bengaluru', fromCode: 'BLR', toCode: 'TPTY', depart: '06:00', arrive: '10:45', duration: '4h 45m', price: 500, left: 2, seats: 3, instant: true, driver: 'Arjun', car: 'Hyundai i20', shape: 2 }
 ];
 
 const SHAPES = [
@@ -112,14 +111,14 @@ export default function Hero() {
           </h1>
 
           <p className="fx-hero-lede">
-            Take the empty seat in a verified car heading your way, or a seat in a shared cab that leaves every hour. Know the driver, the price, and the pickup before you leave home.
+            For trips of 3 to 6 hours, where buses are few and a cab is too much for one person. Take one seat in a car or a shared cab, and see who you travel with before you book.
           </p>
 
           <StoreButtons tone="dark" />
 
           <ul className="fx-hero-proof" aria-label="What every ride comes with">
             <li><IconTick />Checked vehicles</li>
-            <li><IconTick />Fixed seat prices</li>
+            <li><IconTick />Verified members</li>
             <li><IconTick />Shared cabs</li>
             <li><IconTick />Trusted contact</li>
           </ul>
@@ -137,7 +136,6 @@ export default function Hero() {
             <RouteMap ride={ride} still={reduced} />
             <div className="fx-ride-body">
               <div className="fx-ride-top">
-                <span className="fx-mono">Example ride</span>
                 {ride.cab ? (
                   <span className="fx-tag fx-tag-cab"><IconCab width={14} height={14} />Shared cab</span>
                 ) : (
