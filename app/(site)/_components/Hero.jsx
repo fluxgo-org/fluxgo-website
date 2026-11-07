@@ -111,17 +111,11 @@ export default function Hero() {
           </h1>
 
           <p className="fx-hero-lede">
-            For trips of 3 to 6 hours, where buses are few and a cab is too much for one person. Take one seat in a car or a shared cab, and see who you travel with before you book.
+            Share rides between cities with verified members only. Carpools and shared cabs, for trips of a few hours.
           </p>
 
           <StoreButtons tone="dark" />
 
-          <ul className="fx-hero-proof" aria-label="What every ride comes with">
-            <li><IconTick />Checked vehicles</li>
-            <li><IconTick />Verified members</li>
-            <li><IconTick />Shared cabs</li>
-            <li><IconTick />Trusted contact</li>
-          </ul>
         </div>
 
         <div

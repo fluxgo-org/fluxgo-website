@@ -19,7 +19,8 @@ export default function SiteFooter() {
             <span className="fx-mono">Ride</span>
             <Link href="/#find">Find a ride</Link>
             <Link href="/#cab">Shared cabs</Link>
-            <Link href="/#trust">Safety</Link>
+            <Link href="/#reliability">Reliability</Link>
+            <Link href="/#trust">Trust</Link>
             <Link href="/#offer">Offer a ride</Link>
           </nav>
           <nav className="fx-footer-col" aria-label="Get Fluxgo">
