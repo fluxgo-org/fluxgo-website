@@ -111,7 +111,7 @@ export default function Hero() {
           </h1>
 
           <p className="fx-hero-lede">
-            Share intercity rides with verified members only. Carpools and shared cabs, for trips of a few hours.
+            Reliable intercity rides. Share a ride with verified members, in a carpool or a shared cab.
           </p>
 
           <StoreButtons tone="dark" />
