@@ -9,7 +9,7 @@ export default function SiteFooter() {
       <div className="fx-wrap">
         <div className="fx-footer-grid">
           <div className="fx-footer-lead">
-            <p className="fx-footer-line">Reliable rides between cities. <span>Verified members only.</span></p>
+            <p className="fx-footer-line">Reliable intercity rides. <span>Verified members only.</span></p>
             <div className="fx-footer-get">
               <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer"><AppleGlyph />App Store</a>
               <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer"><PlayGlyph />Google Play</a>
