@@ -5,9 +5,11 @@ import { useEffect, useState } from 'react';
 import Wordmark from './Wordmark';
 
 const NAV = [
+  { href: '/#reliability', label: 'Reliability' },
+  { href: '/#trust', label: 'Trust' },
   { href: '/#find', label: 'Find a ride' },
-  { href: '/#trust', label: 'Safety' },
   { href: '/#offer', label: 'Offer a ride' },
+  { href: '/#cab', label: 'Shared cabs' },
   { href: '/support', label: 'Support' }
 ];
 

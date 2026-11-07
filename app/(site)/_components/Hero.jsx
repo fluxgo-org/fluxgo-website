@@ -2,18 +2,18 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import StoreButtons from './StoreButtons';
-import { IconBolt, IconHand, IconTick } from './Icons';
+import { IconBolt, IconCab, IconHand, IconTick } from './Icons';
 
 const CYCLE_MS = 4200;
 
 // Example rides for the hero. They show how a listing looks; they are not live data.
 const RIDES = [
-  { to: 'Hyderabad', from: 'Bengaluru', fromCode: 'BLR', toCode: 'HYD', depart: '06:30', arrive: '11:25', duration: '4h 55m', price: 650, left: 2, seats: 3, instant: true, driver: 'Arjun', car: 'Hyundai i20', shape: 0 },
   { to: 'Mysuru', from: 'Bengaluru', fromCode: 'BLR', toCode: 'MYS', depart: '07:15', arrive: '10:00', duration: '2h 45m', price: 280, left: 3, seats: 3, instant: false, driver: 'Meera', car: 'Tata Nexon', shape: 1 },
-  { to: 'Pondicherry', from: 'Chennai', fromCode: 'MAA', toCode: 'PNY', depart: '08:00', arrive: '11:10', duration: '3h 10m', price: 350, left: 1, seats: 3, instant: true, driver: 'Karthik', car: 'Maruti Baleno', shape: 2 },
+  { to: 'Anantapur', from: 'Bengaluru', fromCode: 'BLR', toCode: 'ATP', depart: '16:00', arrive: '20:10', duration: '4h 10m', price: 600, left: 2, seats: 7, cab: true, car: 'Toyota Innova Crysta', shape: 0 },
   { to: 'Pune', from: 'Mumbai', fromCode: 'BOM', toCode: 'PNQ', depart: '18:30', arrive: '21:45', duration: '3h 15m', price: 420, left: 2, seats: 4, instant: false, driver: 'Riya', car: 'Honda City', shape: 1 },
-  { to: 'Coimbatore', from: 'Bengaluru', fromCode: 'BLR', toCode: 'CJB', depart: '05:45', arrive: '12:10', duration: '6h 25m', price: 750, left: 2, seats: 3, instant: true, driver: 'Vikram', car: 'Kia Seltos', shape: 0 },
-  { to: 'Vijayawada', from: 'Hyderabad', fromCode: 'HYD', toCode: 'VGA', depart: '09:30', arrive: '14:40', duration: '5h 10m', price: 550, left: 3, seats: 3, instant: false, driver: 'Sneha', car: 'Toyota Glanza', shape: 2 }
+  { to: 'Pondicherry', from: 'Chennai', fromCode: 'MAA', toCode: 'PNY', depart: '08:00', arrive: '11:10', duration: '3h 10m', price: 350, left: 1, seats: 3, instant: true, driver: 'Karthik', car: 'Maruti Baleno', shape: 2 },
+  { to: 'Vijayawada', from: 'Hyderabad', fromCode: 'HYD', toCode: 'VGA', depart: '09:30', arrive: '14:40', duration: '5h 10m', price: 550, left: 3, seats: 3, instant: false, driver: 'Sneha', car: 'Toyota Glanza', shape: 0 },
+  { to: 'Tirupati', from: 'Bengaluru', fromCode: 'BLR', toCode: 'TPTY', depart: '06:00', arrive: '10:45', duration: '4h 45m', price: 500, left: 2, seats: 3, instant: true, driver: 'Arjun', car: 'Hyundai i20', shape: 2 }
 ];
 
 const SHAPES = [
@@ -97,8 +97,6 @@ export default function Hero() {
 
       <div className="fx-wrap fx-hero-grid">
         <div className="fx-hero-copy">
-          <p className="fx-chip fx-chip-dark"><span className="fx-pulse" aria-hidden="true" />Intercity carpooling · India</p>
-
           <h1 className="fx-hero-title" id="fx-hero-title">
             <span className="fx-sr">Going to another city? Someone already is.</span>
             <span aria-hidden="true">
@@ -113,16 +111,11 @@ export default function Hero() {
           </h1>
 
           <p className="fx-hero-lede">
-            Take the empty seat in a verified car heading your way. Know the driver, the price, and the pickup before you leave home.
+            Share intercity rides with verified members only. Carpools and shared cabs, for trips of a few hours.
           </p>
 
           <StoreButtons tone="dark" />
 
-          <ul className="fx-hero-proof" aria-label="What every ride comes with">
-            <li><IconTick />Checked vehicles</li>
-            <li><IconTick />Fixed seat prices</li>
-            <li><IconTick />Trusted contact</li>
-          </ul>
         </div>
 
         <div
@@ -133,15 +126,18 @@ export default function Hero() {
           onBlurCapture={() => setPaused(false)}
         >
           <div className="fx-ride-deck" aria-hidden="true"><span /><span /></div>
-          <article className="fx-ride" aria-label={`Example ride from ${ride.from} to ${ride.to}`} key={index}>
+          <article className="fx-ride" aria-label={`Example ${ride.cab ? 'shared cab' : 'ride'} from ${ride.from} to ${ride.to}`} key={index}>
             <RouteMap ride={ride} still={reduced} />
             <div className="fx-ride-body">
               <div className="fx-ride-top">
-                <span className="fx-mono">Example ride</span>
-                <span className={`fx-tag ${ride.instant ? 'fx-tag-brand' : ''}`}>
-                  {ride.instant ? <IconBolt width={14} height={14} /> : <IconHand width={14} height={14} />}
-                  {ride.instant ? 'Instant book' : 'Request to book'}
-                </span>
+                {ride.cab ? (
+                  <span className="fx-tag fx-tag-cab"><IconCab width={14} height={14} />Shared cab</span>
+                ) : (
+                  <span className={`fx-tag ${ride.instant ? 'fx-tag-brand' : ''}`}>
+                    {ride.instant ? <IconBolt width={14} height={14} /> : <IconHand width={14} height={14} />}
+                    {ride.instant ? 'Instant book' : 'Request to book'}
+                  </span>
+                )}
               </div>
               <div className="fx-ride-times">
                 <div><strong>{ride.depart}</strong><span>{ride.from}</span></div>
@@ -151,11 +147,23 @@ export default function Hero() {
               <div className="fx-ride-tear" aria-hidden="true" />
               <div className="fx-ride-foot">
                 <div className="fx-ride-driver">
-                  <span className="fx-avatar">{ride.driver[0]}</span>
-                  <div>
-                    <strong>{ride.driver} <IconTick className="fx-verified" /></strong>
-                    <small>{ride.car} · Verified vehicle</small>
-                  </div>
+                  {ride.cab ? (
+                    <>
+                      <span className="fx-avatar fx-avatar-cab"><IconCab width={20} height={20} /></span>
+                      <div>
+                        <strong>{ride.car}</strong>
+                        <small>SUV · Local cab operator</small>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span className="fx-avatar">{ride.driver[0]}</span>
+                      <div>
+                        <strong>{ride.driver} <IconTick className="fx-verified" /></strong>
+                        <small>{ride.car} · Verified vehicle</small>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="fx-ride-price"><strong>₹{ride.price}</strong><small>per seat</small></div>
               </div>

@@ -55,7 +55,7 @@ export function Stop({ id, number, label, children, className = '' }) {
         <span className="fx-stop-dot" />
       </div>
       <p className="fx-stop-label fx-mono" data-reveal>
-        <span>Stop {number}</span>{label}
+        {label}
       </p>
       {children}
     </section>

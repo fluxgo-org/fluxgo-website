@@ -3,7 +3,7 @@ import SiteHeader from '../_components/SiteHeader';
 import SiteFooter from '../_components/SiteFooter';
 import Reveal from '../_components/Reveal';
 import { SUPPORT_EMAIL } from '../_components/links';
-import { IconArrow, IconChat, IconHand, IconSeat, IconShield } from '../_components/Icons';
+import { IconArrow, IconCab, IconChat, IconHand, IconSeat, IconShield } from '../_components/Icons';
 
 const TOPICS = [
   {
@@ -14,6 +14,18 @@ const TOPICS = [
       ['When is my seat confirmed?', 'With Instant book, at once. With Request to book, when the driver accepts. The app tells you either way, and the trip shows its status.'],
       ['How do I change or cancel a booking?', 'Open the trip in the Fluxgo app and use the change or cancel action for that booking. Check the result before you leave the screen.'],
       ['How do I agree on a pickup point?', 'Use chat on the trip. Keep the plan in writing, so you and the driver see the same thing on the day.']
+    ]
+  },
+  {
+    id: 'cab',
+    icon: IconCab,
+    title: 'Shared cabs',
+    items: [
+      ['When is my cab seat confirmed?', 'When the app shows Seat confirmed. If a cab already has free seats in the slot, that happens at once. If not, your interest waits until 4 seats fill and a local cab operator takes the trip.'],
+      ['When do I get the cab and driver details?', '2 hours before pickup. You see the vehicle number, the driver name, and a chat with the driver. The driver never sees your phone number.'],
+      ['How do I pay?', 'Pay the fixed seat price to the cab operator in the cab. You pay nothing in the app.'],
+      ['What is the boarding code?', 'A code in the app that shows 1 hour before pickup. Give it to the driver when you get in. Without it, the trip cannot mark you as on board.'],
+      ['Can I cancel?', 'Yes. Open the cab in Trips and cancel. A cancellation within 2 hours of pickup shows as a late cancel on your profile. If a cab does not go because seats did not fill, nothing counts against you.']
     ]
   },
   {
@@ -68,7 +80,7 @@ export default function SupportPage() {
             <div className="fx-page-hero-copy">
               <p className="fx-chip fx-chip-dark"><span className="fx-pulse" aria-hidden="true" />Support</p>
               <h1 className="fx-page-title" id="support-title">Stuck between two cities? Start here.</h1>
-              <p className="fx-hero-lede">Answers for bookings, rides, and your account. A real person reads every message we get.</p>
+              <p className="fx-hero-lede">Answers for bookings, shared cabs, rides, and your account. A real person reads every message we get.</p>
             </div>
 
             <a className="fx-sos" href="tel:112">

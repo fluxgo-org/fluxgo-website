@@ -56,3 +56,12 @@ export const IconPin = (p) => (
 export const IconClock = (p) => (
   <svg {...base} {...p}><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>
 );
+export const IconCab = (p) => (
+  <svg {...base} {...p}><path d="M5 16V11.5l1.8-4.3A2 2 0 0 1 8.6 6h6.8a2 2 0 0 1 1.8 1.2l1.8 4.3V16" /><path d="M3.5 16h17v2a1 1 0 0 1-1 1H18a1 1 0 0 1-1-1v-1H7v1a1 1 0 0 1-1 1H4.5a1 1 0 0 1-1-1v-2ZM5 11.5h14M7.5 14h1M15.5 14h1" /></svg>
+);
+export const IconBell = (p) => (
+  <svg {...base} {...p}><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16Z" /><path d="M10 20.5a2 2 0 0 0 4 0" /></svg>
+);
+export const IconUsers = (p) => (
+  <svg {...base} {...p}><circle cx="9" cy="8.5" r="3.2" /><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5" /><path d="M15.5 5.6a3.2 3.2 0 0 1 0 5.8M17.5 14.3c1.6.7 2.7 2.3 3 4.7" /></svg>
+);
