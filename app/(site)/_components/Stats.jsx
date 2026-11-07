@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { STATS, STATS_AS_OF } from './stats';
+import { STATS } from './stats';
 
 function useCountUp(target, run) {
   const [value, setValue] = useState(target);
@@ -58,7 +58,6 @@ export default function Stats() {
         <ul className="fx-stats-row">
           {STATS.map((stat, i) => <Stat key={stat.label} stat={stat} run={run} index={i} />)}
         </ul>
-        <p className="fx-stats-asof fx-mono">Fluxgo in numbers · {STATS_AS_OF}</p>
       </div>
     </section>
   );

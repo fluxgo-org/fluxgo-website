@@ -98,8 +98,6 @@ export default function Hero() {
 
       <div className="fx-wrap fx-hero-grid">
         <div className="fx-hero-copy">
-          <p className="fx-chip fx-chip-dark"><span className="fx-pulse" aria-hidden="true" />Carpools and shared cabs · India</p>
-
           <h1 className="fx-hero-title" id="fx-hero-title">
             <span className="fx-sr">Going to another city? Someone already is.</span>
             <span aria-hidden="true">

@@ -183,7 +183,6 @@ export default function Home() {
                       <small>Thu, 13 Nov</small>
                       <strong>Bengaluru <IconArrow width={16} height={16} /> Anantapur</strong>
                     </div>
-                    <span className="fx-tag fx-tag-sm">Example</span>
                   </div>
 
                   <div className="fx-slots" aria-hidden="true">
@@ -305,7 +304,7 @@ export default function Home() {
 
           <Stop id="idea" number="05" label="The idea">
             <p className="fx-statement" data-reveal id="idea-title">
-              No bus that sells out. No cab you pay for alone. <em>A seat in a car or cab already going to your city</em>, at a fixed price.
+              A seat in a car or cab <em>already going your way</em>.
             </p>
             <div className="fx-facts">
               <div data-reveal><span className="fx-mono">You choose</span><strong>Carpool or cab</strong><p>Ride with a host who is making the trip, or take a seat in a shared cab.</p></div>
