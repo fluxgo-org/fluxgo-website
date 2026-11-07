@@ -38,9 +38,9 @@ const SLOT_TRAVELLERS = [
 
 const CAB_STEPS = [
   ['Pick a slot', 'Free, and not a booking yet.'],
-  ['Seat confirmed', 'Once 4 seats fill, an operator takes the trip.'],
+  ['Seat confirmed', 'Once 4 seats fill. Confirmed or called off 2 hours before pickup.'],
   ['Cab details', 'Vehicle number and driver, 2 hours before pickup.'],
-  ['Pay in the cab', 'Nothing to pay in the app.']
+  ['Board and pay', 'Show your boarding code. Pay in the cab, not in the app.']
 ];
 
 const TRUST_FACTS = [
@@ -51,9 +51,9 @@ const TRUST_FACTS = [
 ];
 
 const RELIABILITY_FACTS = [
-  ['2 h', 'A shared cab is confirmed or called off 2 hours before pickup.'],
-  ['1 code', 'Each cab seat gets a boarding code. No code, no boarding.'],
-  ['On record', 'Late cancels and no-shows show on every profile.']
+  ['On record', 'Late cancels and no-shows show on every profile.'],
+  ['Confirmed', 'Instant book confirms at once. A request shows it is waiting.'],
+  ['1 h', 'A reminder 1 hour before every ride.']
 ];
 
 const PROFILE_FACTS = [
@@ -71,10 +71,10 @@ const CO_TRAVELLERS = [
 const FAQ = [
   { q: 'Who can I travel with?', a: 'Only members with a verified phone. Hosts can also limit a ride to members with a verified work email.' },
   { q: 'What if someone does not show up?', a: 'Late cancels and no-shows go on the member’s profile, so everyone sees them before they book.' },
-  { q: 'How does a shared cab work?', a: 'Pick an hourly slot. When 4 seats fill, a local cab operator takes the trip. You pay in the cab.' },
-  { q: 'What if the cab does not fill?', a: 'We tell you before 2 hours to pickup, and nothing counts against you.' },
+  { q: 'Something feels wrong on a ride?', a: 'Call 112 if you are in danger. Then report the ride from the trip screen. We read every report.' },
   { q: 'Which routes?', a: 'Carpools run anywhere a host publishes. Shared cabs run Bengaluru ↔ Anantapur for now.' },
-  { q: 'Something feels wrong on a ride?', a: 'Call 112 if you are in danger. Then report the ride from the trip screen. We read every report.' }
+  { q: 'How does a shared cab work?', a: 'Pick an hourly slot. When 4 seats fill, a local cab operator takes the trip. You pay in the cab.' },
+  { q: 'What if the cab does not fill?', a: 'We tell you before 2 hours to pickup, and nothing counts against you.' }
 ];
 
 export default function Home() {
@@ -206,7 +206,54 @@ export default function Home() {
             </div>
           </Stop>
 
-          <Stop id="cab" number="05" label="Shared cabs">
+          <Stop id="offer" number="05" label="Offer a ride">
+            <div className="fx-stop-grid">
+              <div className="fx-stop-copy" data-reveal>
+                <h2 className="fx-h2" id="offer-title">Driving anyway? Fill your empty seats.</h2>
+                <p className="fx-lede">You choose who rides. Accept people one by one, or allow verified members only.</p>
+                <p className="fx-aside"><IconPin width={18} height={18} /><span><strong>Know the demand.</strong> See how many people searched your route this week, day by day.</span></p>
+              </div>
+
+              <div className="fx-mock fx-mock-offer" data-reveal>
+                <div className="fx-publish">
+                  <div className="fx-publish-head">
+                    <span className="fx-mono">Publish a ride</span>
+                    <span className="fx-verified-pill"><IconTick className="fx-verified" />Vehicle verified</span>
+                  </div>
+                  <div className="fx-publish-route">
+                    <div><small>From</small><strong>Pune</strong></div>
+                    <span className="fx-publish-arrow"><IconArrow width={18} height={18} /></span>
+                    <div><small>To</small><strong>Mumbai</strong></div>
+                  </div>
+                  <div className="fx-publish-grid">
+                    <div className="fx-field"><small>Leaving</small><strong>Fri, 14 Nov · 07:00</strong></div>
+                    <div className="fx-field"><small>Price per seat</small><strong>₹420</strong></div>
+                  </div>
+                  <div className="fx-field fx-field-row">
+                    <small>Seats</small>
+                    <div className="fx-seat-picker" aria-hidden="true">
+                      {[1, 2, 3, 4].map((n) => <span key={n} className={n <= 3 ? 'is-on' : ''}><IconSeat width={16} height={16} /></span>)}
+                    </div>
+                  </div>
+                  <div className="fx-field fx-field-row">
+                    <small>Luggage</small>
+                    <span className="fx-luggage"><IconBag width={16} height={16} />One cabin bag each</span>
+                  </div>
+                  <div className="fx-field fx-field-row">
+                    <small>Who can book</small>
+                    <span className="fx-luggage"><IconTick className="fx-verified" />Verified members only</span>
+                  </div>
+                  <div className="fx-segment" aria-hidden="true">
+                    <span><IconBolt width={14} height={14} />Instant</span>
+                    <span className="is-on"><IconHand width={14} height={14} />Request</span>
+                  </div>
+                  <span className="fx-publish-button">Publish ride</span>
+                </div>
+              </div>
+            </div>
+          </Stop>
+
+          <Stop id="cab" number="06" label="Shared cabs">
             <div className="fx-stop-grid fx-stop-grid-flip">
               <div className="fx-stop-copy" data-reveal>
                 <h2 className="fx-h2" id="cab-title">One seat in a shared cab.</h2>
@@ -269,53 +316,6 @@ export default function Home() {
                     </ul>
                     <span className="fx-publish-button">Send interest</span>
                   </div>
-                </div>
-              </div>
-            </div>
-          </Stop>
-
-          <Stop id="offer" number="06" label="Offer a ride">
-            <div className="fx-stop-grid">
-              <div className="fx-stop-copy" data-reveal>
-                <h2 className="fx-h2" id="offer-title">Driving anyway? Fill your empty seats.</h2>
-                <p className="fx-lede">You choose who rides. Accept people one by one, or allow verified members only.</p>
-                <p className="fx-aside"><IconPin width={18} height={18} /><span><strong>Know the demand.</strong> See how many people searched your route this week, day by day.</span></p>
-              </div>
-
-              <div className="fx-mock fx-mock-offer" data-reveal>
-                <div className="fx-publish">
-                  <div className="fx-publish-head">
-                    <span className="fx-mono">Publish a ride</span>
-                    <span className="fx-verified-pill"><IconTick className="fx-verified" />Vehicle verified</span>
-                  </div>
-                  <div className="fx-publish-route">
-                    <div><small>From</small><strong>Pune</strong></div>
-                    <span className="fx-publish-arrow"><IconArrow width={18} height={18} /></span>
-                    <div><small>To</small><strong>Mumbai</strong></div>
-                  </div>
-                  <div className="fx-publish-grid">
-                    <div className="fx-field"><small>Leaving</small><strong>Fri, 14 Nov · 07:00</strong></div>
-                    <div className="fx-field"><small>Price per seat</small><strong>₹420</strong></div>
-                  </div>
-                  <div className="fx-field fx-field-row">
-                    <small>Seats</small>
-                    <div className="fx-seat-picker" aria-hidden="true">
-                      {[1, 2, 3, 4].map((n) => <span key={n} className={n <= 3 ? 'is-on' : ''}><IconSeat width={16} height={16} /></span>)}
-                    </div>
-                  </div>
-                  <div className="fx-field fx-field-row">
-                    <small>Luggage</small>
-                    <span className="fx-luggage"><IconBag width={16} height={16} />One cabin bag each</span>
-                  </div>
-                  <div className="fx-field fx-field-row">
-                    <small>Who can book</small>
-                    <span className="fx-luggage"><IconTick className="fx-verified" />Verified members only</span>
-                  </div>
-                  <div className="fx-segment" aria-hidden="true">
-                    <span><IconBolt width={14} height={14} />Instant</span>
-                    <span className="is-on"><IconHand width={14} height={14} />Request</span>
-                  </div>
-                  <span className="fx-publish-button">Publish ride</span>
                 </div>
               </div>
             </div>
