@@ -915,3 +915,25 @@ body:has(> .fx) { margin: 0; }
   .fx-profile-facts { grid-template-columns: 1fr 1fr; }
   .fx-profile-facts div:last-child { grid-column: 1 / -1; }
 }
+
+/* Invite friends: the member's car from above (you drive, right-hand drive) and the invite pass. */
+.fx-invite { display: grid; gap: 14px; padding: 18px; border-radius: 24px; background: var(--white); box-shadow: var(--shadow-card); }
+.fx-invite-car { display: grid; grid-template-columns: repeat(2, 64px); justify-content: center; gap: 14px 46px; padding: 26px 22px 30px; border-radius: 44px; background: var(--hero); }
+.fx-invite-seat { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 20px; border: 1.5px dashed rgba(233, 240, 234, 0.4); color: var(--mint); font-size: 22px; font-weight: 500; }
+.fx-invite-seat.is-taken { border: 0; background: rgba(180, 226, 174, 0.18); color: var(--on-dark); font-size: 20px; font-weight: 600; }
+.fx-invite-seat.is-you { border: 0; background: rgba(233, 240, 234, 0.16); color: var(--mint); font-size: 13px; font-weight: 600; }
+.fx-invite-pass { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: 18px; border: 1px solid var(--line); }
+.fx-invite-pass small { display: block; color: var(--ink3); font-size: 12px; }
+.fx-invite-pass strong { display: block; font-size: 24px; letter-spacing: 2px; }
+.fx-invite-reward { padding-left: 16px; border-left: 1.5px dashed var(--line-hard); text-align: right; }
+.fx-invite-reward strong { display: inline-flex; align-items: center; gap: 6px; color: var(--brand); letter-spacing: 0; }
+.fx-invite-reward strong img { width: 22px; height: 22px; flex: none; }
+.fx-invite-landing { display: grid; gap: 18px; margin-top: 8vh; padding: clamp(20px, 4vw, 32px); border-radius: 28px; background: var(--white); color: var(--ink); box-shadow: var(--shadow-float); }
+.fx-invite-landing h1 { font-size: clamp(26px, 5vw, 34px); line-height: 1.15; letter-spacing: -0.02em; }
+.fx-invite-landing > p { color: var(--ink2); }
+.fx-invite-landing .fx-share-btn { justify-self: stretch; }
+.fx-invite-landing-pass { background: var(--paper); }
+.fx-invite-landing-stores { display: grid; gap: 10px; }
+/* The store note text is white for the dark hero; on the white invite card it needs ink colours. */
+.fx-invite-landing-stores p, .fx-invite-landing-stores .fx-stores-note { color: var(--ink2); }
+.fx-invite-landing-stores .fx-stores-note a { color: var(--brand); }
