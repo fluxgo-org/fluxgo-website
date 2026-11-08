@@ -9,7 +9,7 @@ export async function generateMetadata({ params }) {
   const { code } = await params;
   const value = normalizeInviteCode(code);
   const title = 'You have an invite to Fluxgo';
-  const description = 'Share intercity rides with verified members. Use this invite code in the app, and you both get 100 credits after your first ride.';
+  const description = 'Share intercity rides with verified members. Use this invite code in the app, and you both get 100 credits after your first ride, and up to 300 credits each.';
   return {
     title,
     description,
@@ -36,7 +36,7 @@ function appAction(kind, code) {
 const STEPS = [
   ['Get the app', 'Fluxgo for iPhone, or Android when it is out.'],
   ['Enter the code', 'In your first 7 days, before your first booking or ride.'],
-  ['Take your first ride', 'You and your friend each get 100 Fluxgo Credits.']
+  ['Take your first ride', 'You and your friend each get 100 Fluxgo Credits. Your third ride and your first ride as a host add 100 each.']
 ];
 
 /** Landing page for a member's invite link (www.fluxgo.in/r/CODE). With the app installed, the phone skips this page. */
@@ -50,7 +50,7 @@ export default async function InvitePage({ params }) {
       <header className="fx-share-top"><Link href="/" aria-label="Fluxgo home"><Wordmark /></Link></header>
       <section className="fx-share-sheet fx-invite-landing">
         <h1>A friend invited you to Fluxgo</h1>
-        <p>Share intercity rides with verified members. Use this code, and you both get 100 credits after your first ride.</p>
+        <p>Share intercity rides with verified members. Use this code, and you both get 100 credits after your first ride, and up to 300 credits each.</p>
         {code ? <div className="fx-invite-pass fx-invite-landing-pass">
           <div>
             <small>Invite code</small>
@@ -58,7 +58,7 @@ export default async function InvitePage({ params }) {
           </div>
           <div className="fx-invite-reward">
             <small>Credits for you</small>
-            <strong>100</strong>
+            <strong><img src="/assets/fluxgo-credits-coin-3d.png" alt="" width="22" height="22" />100</strong>
           </div>
         </div> : <p>This invite link is not complete. Ask your friend to share it again.</p>}
         <ol className="fx-cab-steps">

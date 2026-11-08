@@ -926,10 +926,14 @@ body:has(> .fx) { margin: 0; }
 .fx-invite-pass small { display: block; color: var(--ink3); font-size: 12px; }
 .fx-invite-pass strong { display: block; font-size: 24px; letter-spacing: 2px; }
 .fx-invite-reward { padding-left: 16px; border-left: 1.5px dashed var(--line-hard); text-align: right; }
-.fx-invite-reward strong { color: var(--brand); letter-spacing: 0; }
+.fx-invite-reward strong { display: inline-flex; align-items: center; gap: 6px; color: var(--brand); letter-spacing: 0; }
+.fx-invite-reward strong img { width: 22px; height: 22px; flex: none; }
 .fx-invite-landing { display: grid; gap: 18px; margin-top: 8vh; padding: clamp(20px, 4vw, 32px); border-radius: 28px; background: var(--white); color: var(--ink); box-shadow: var(--shadow-float); }
 .fx-invite-landing h1 { font-size: clamp(26px, 5vw, 34px); line-height: 1.15; letter-spacing: -0.02em; }
 .fx-invite-landing > p { color: var(--ink2); }
 .fx-invite-landing .fx-share-btn { justify-self: stretch; }
 .fx-invite-landing-pass { background: var(--paper); }
 .fx-invite-landing-stores { display: grid; gap: 10px; }
+/* The store note text is white for the dark hero; on the white invite card it needs ink colours. */
+.fx-invite-landing-stores p, .fx-invite-landing-stores .fx-stores-note { color: var(--ink2); }
+.fx-invite-landing-stores .fx-stores-note a { color: var(--brand); }

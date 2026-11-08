@@ -70,7 +70,7 @@ const CO_TRAVELLERS = [
 
 const INVITE_STEPS = [
   ['First ride', 'Your friend completes a ride of 50 km or more.'],
-  ['Third ride', 'Three rides in 60 days, with at least 2 hosts.'],
+  ['Third ride', 'Three rides in 60 days, on 3 different days, with at least 2 hosts.'],
   ['First ride as a host', 'Your friend drives and takes a co-traveller.']
 ];
 
@@ -84,7 +84,8 @@ const FAQ = [
   { q: 'Which routes?', a: 'Carpools run anywhere a host publishes. Shared cabs run Bengaluru ↔ Anantapur for now.' },
   { q: 'How does a shared cab work?', a: 'Pick an hourly slot. When 4 seats fill, a local cab operator takes the trip. You pay in the cab.' },
   { q: 'What if the cab does not fill?', a: 'We tell you before 2 hours to pickup, and nothing counts against you.' },
-  { q: 'How do invites work?', a: 'Share your code from Invite and earn in the app. Your friend enters it in their first 7 days. A ride counts at 50 km or more and ₹100 or more a seat, and not when you are the host. Credits arrive 72 hours after the ride.' },
+  { q: 'How do invites work?', a: 'Share your code from Invite and earn in the app. Your friend enters it in their first 7 days. A ride counts at 50 km or more and ₹100 or more a seat, and not when you are the host. Credits arrive 72 hours after the ride. After 5 friends, your code closes.' },
+  { q: 'What can I do with credits?', a: 'Use them for up to half the price of a Fluxgo Cab seat. Your balance and history are in Fluxgo Credits in the app.' },
 ];
 
 export default function Home() {
@@ -335,7 +336,7 @@ export default function Home() {
             <div className="fx-stop-grid">
               <div className="fx-stop-copy" data-reveal>
                 <h2 className="fx-h2" id="invite-title">Bring a friend. You both earn.</h2>
-                <p className="fx-lede">Share your invite code from the app. You and your friend each get 100 Fluxgo Credits at three steps.</p>
+                <p className="fx-lede">Share your invite code from the app. You and your friend each get 100 Fluxgo Credits at three steps, so up to 300 credits each for every friend.</p>
                 <ol className="fx-cab-steps">
                   {INVITE_STEPS.map(([title, body], i) => (
                     <li key={title}>
@@ -344,7 +345,7 @@ export default function Home() {
                     </li>
                   ))}
                 </ol>
-                <p className="fx-aside"><IconSeat width={18} height={18} /><span><strong>Up to 5 friends.</strong> Use credits on Fluxgo Cab seats.</span></p>
+                <p className="fx-aside"><IconSeat width={18} height={18} /><span><strong>Up to 5 friends.</strong> Use credits for up to half the price of a Fluxgo Cab seat.</span></p>
               </div>
 
               <div className="fx-mock" data-reveal>
@@ -361,7 +362,7 @@ export default function Home() {
                     </div>
                     <div className="fx-invite-reward">
                       <small>Credits for your friend</small>
-                      <strong>100</strong>
+                      <strong><img src="/assets/fluxgo-credits-coin-3d.png" alt="" width="22" height="22" />100</strong>
                     </div>
                   </div>
                   <span className="fx-publish-button">Invite on WhatsApp</span>
