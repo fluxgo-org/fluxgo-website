@@ -335,7 +335,7 @@ export default function Home() {
             <div className="fx-stop-grid">
               <div className="fx-stop-copy" data-reveal>
                 <h2 className="fx-h2" id="invite-title">Bring a friend. You both earn.</h2>
-                <p className="fx-lede">Share your invite code from the app. You and your friend each get ₹100 in Fluxgo Credits at three steps.</p>
+                <p className="fx-lede">Share your invite code from the app. You and your friend each get 100 Fluxgo Credits at three steps.</p>
                 <ol className="fx-cab-steps">
                   {INVITE_STEPS.map(([title, body], i) => (
                     <li key={title}>
@@ -344,7 +344,7 @@ export default function Home() {
                     </li>
                   ))}
                 </ol>
-                <p className="fx-aside"><IconSeat width={18} height={18} /><span><strong>Up to 5 friends.</strong> Use credits on Fluxgo Cab seats. 1 credit is ₹1.</span></p>
+                <p className="fx-aside"><IconSeat width={18} height={18} /><span><strong>Up to 5 friends.</strong> Use credits on Fluxgo Cab seats.</span></p>
               </div>
 
               <div className="fx-mock" data-reveal>
@@ -360,8 +360,8 @@ export default function Home() {
                       <strong>ANANYA42</strong>
                     </div>
                     <div className="fx-invite-reward">
-                      <small>Friend gets</small>
-                      <strong>₹100</strong>
+                      <small>Credits for your friend</small>
+                      <strong>100</strong>
                     </div>
                   </div>
                   <span className="fx-publish-button">Invite on WhatsApp</span>
