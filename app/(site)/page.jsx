@@ -68,13 +68,23 @@ const CO_TRAVELLERS = [
   { name: 'Karthik', note: 'Verified' }
 ];
 
+const INVITE_STEPS = [
+  ['First ride', 'Your friend completes a ride of 50 km or more.'],
+  ['Third ride', 'Three rides in 60 days, with at least 2 hosts.'],
+  ['First ride as a host', 'Your friend drives and takes a co-traveller.']
+];
+
+// Seats in the invite mock, front row first: 1 friend, you at the wheel, 2 friends, 2 open seats.
+const INVITE_SEATS = ['Rahul', 'you', 'Meera', 'Arjun', null, null];
+
 const FAQ = [
   { q: 'Who can I travel with?', a: 'Only members with a verified phone. Hosts can also limit a ride to members with a verified work email.' },
   { q: 'What if someone does not show up?', a: 'Late cancels and no-shows go on the member’s profile, so everyone sees them before they book.' },
   { q: 'Something feels wrong on a ride?', a: 'Call 112 if you are in danger. Then report the ride from the trip screen. We read every report.' },
   { q: 'Which routes?', a: 'Carpools run anywhere a host publishes. Shared cabs run Bengaluru ↔ Anantapur for now.' },
   { q: 'How does a shared cab work?', a: 'Pick an hourly slot. When 4 seats fill, a local cab operator takes the trip. You pay in the cab.' },
-  { q: 'What if the cab does not fill?', a: 'We tell you before 2 hours to pickup, and nothing counts against you.' }
+  { q: 'What if the cab does not fill?', a: 'We tell you before 2 hours to pickup, and nothing counts against you.' },
+  { q: 'How do invites work?', a: 'Share your code from Invite and earn in the app. Your friend enters it in their first 7 days. A ride counts at 50 km or more and ₹100 or more a seat, and not when you are the host. Credits arrive 72 hours after the ride.' },
 ];
 
 export default function Home() {
@@ -321,7 +331,46 @@ export default function Home() {
             </div>
           </Stop>
 
-          <Stop id="questions" number="07" label="Questions">
+          <Stop id="invite" number="07" label="Invite friends">
+            <div className="fx-stop-grid">
+              <div className="fx-stop-copy" data-reveal>
+                <h2 className="fx-h2" id="invite-title">Bring a friend. You both earn.</h2>
+                <p className="fx-lede">Share your invite code from the app. You and your friend each get ₹100 in Fluxgo Credits at three steps.</p>
+                <ol className="fx-cab-steps">
+                  {INVITE_STEPS.map(([title, body], i) => (
+                    <li key={title}>
+                      <span className="fx-mono">0{i + 1}</span>
+                      <div><strong>{title}</strong><p>{body}</p></div>
+                    </li>
+                  ))}
+                </ol>
+                <p className="fx-aside"><IconSeat width={18} height={18} /><span><strong>Up to 5 friends.</strong> Use credits on Fluxgo Cab seats. 1 credit is ₹1.</span></p>
+              </div>
+
+              <div className="fx-mock" data-reveal>
+                <div className="fx-invite">
+                  <div className="fx-invite-car" aria-hidden="true">
+                    {INVITE_SEATS.map((seat, i) => (
+                      <span key={i} className={`fx-invite-seat${seat === 'you' ? ' is-you' : seat ? ' is-taken' : ''}`}>{seat === 'you' ? 'You' : seat ? seat[0] : '+'}</span>
+                    ))}
+                  </div>
+                  <div className="fx-invite-pass">
+                    <div>
+                      <small>Invite code</small>
+                      <strong>ANANYA42</strong>
+                    </div>
+                    <div className="fx-invite-reward">
+                      <small>Friend gets</small>
+                      <strong>₹100</strong>
+                    </div>
+                  </div>
+                  <span className="fx-publish-button">Invite on WhatsApp</span>
+                </div>
+              </div>
+            </div>
+          </Stop>
+
+          <Stop id="questions" number="08" label="Questions">
             <div className="fx-faq-grid">
               <div data-reveal>
                 <h2 className="fx-h2" id="questions-title">Questions.</h2>
