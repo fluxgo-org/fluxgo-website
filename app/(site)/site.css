@@ -937,3 +937,16 @@ body:has(> .fx) { margin: 0; }
 /* The store note text is white for the dark hero; on the white invite card it needs ink colours. */
 .fx-invite-landing-stores p, .fx-invite-landing-stores .fx-stores-note { color: var(--ink2); }
 .fx-invite-landing-stores .fx-stores-note a { color: var(--brand); }
+
+/* Cab ride page (2026-11-11) */
+.fx-share-cab-status p { display: flex; align-items: flex-start; gap: 8px; margin: 0; font-size: 15px; line-height: 1.45; }
+.fx-share-cab-status svg { flex: none; margin-top: 2px; color: var(--brand, #2f6b46); }
+.fx-share-bar-note a { color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.fx-share-more { display: grid; gap: 16px; }
+.fx-share-more-row { display: flex; gap: 12px; align-items: flex-start; }
+.fx-share-more-row + .fx-share-more-row { padding-top: 16px; border-top: 1px solid var(--line, rgba(0, 0, 0, 0.08)); }
+.fx-share-more-row > svg { flex: none; margin-top: 2px; color: var(--brand, #2f6b46); }
+.fx-share-more h2 { font-size: 16px; margin: 0; }
+.fx-share-more p { margin: 4px 0 0; font-size: 14px; line-height: 1.45; }
+.fx-share-more a { color: var(--brand, #2f6b46); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.fx-share-more-links { display: flex; flex-wrap: wrap; gap: 8px; }
