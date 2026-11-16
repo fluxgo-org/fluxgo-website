@@ -14,6 +14,8 @@ import {
   WEB_APP_URL
 } from '../../_components/links';
 import { deviceKind } from '../../../../lib/app-links';
+import { VISITOR_HEADER, pageLinkContext } from '../../../../lib/link-tracking';
+import TrackedLink from '../../_components/TrackedLink';
 import {
   STATE_COPY,
   duration,
@@ -83,54 +85,66 @@ function Avatar({ host }) {
  * One button for every ride state. The phone opens Fluxgo when it is installed.
  * If not, the store opens. A computer has no app, so it goes to the web app.
  */
-function appAction(kind, id) {
+function appAction(kind, id, link) {
   if (kind === 'ios') {
     return {
-      href: id ? `${OPEN_HOST_URL}/open/ride/${id}` : APP_STORE_URL,
+      track: id ? 'open_app' : 'store_ios',
+      href: id ? link.next(`${OPEN_HOST_URL}/open/ride/${id}`, { visitor: true }) : APP_STORE_URL,
       label: 'Open in the Fluxgo app',
       note: 'Opens Fluxgo if you have it. If not, the App Store opens.'
     };
   }
   if (kind === 'android') {
     return {
+      track: id ? 'open_app' : 'store_android',
       href: id
-        ? `intent://trip/${id}#Intent;scheme=fluxgo;package=${ANDROID_PACKAGE};S.browser_fallback_url=${encodeURIComponent(PLAY_STORE_URL)};end`
-        : PLAY_STORE_URL,
+        ? `intent://${link.next(`trip/${id}`)}#Intent;scheme=fluxgo;package=${ANDROID_PACKAGE};S.browser_fallback_url=${encodeURIComponent(link.play(PLAY_STORE_URL))};end`
+        : link.play(PLAY_STORE_URL),
       label: 'Open in the Fluxgo app',
       note: 'Opens Fluxgo if you have it. If not, Google Play opens.'
     };
   }
   return {
-    href: id ? `${WEB_APP_URL}/trip/${id}` : WEB_APP_URL,
+    track: 'web_app',
+    href: link.next(id ? `${WEB_APP_URL}/trip/${id}` : WEB_APP_URL),
     label: 'Continue on the web',
     note: 'On a phone, open this link to use the Fluxgo app.'
   };
 }
 
-function Unavailable({ id, kind }) {
-  const action = appAction(kind, id);
+function Unavailable({ id, kind, link }) {
+  const action = appAction(kind, id, link);
   return (
     <main className="fx-share fx-share-empty">
       <header className="fx-share-top"><Link href="/" aria-label="Fluxgo home"><Wordmark /></Link></header>
       <section className="fx-share-sheet">
         <h1>We could not load this ride</h1>
         <p>Try again in a minute, or open it in the Fluxgo app.</p>
-        <a className="fx-share-btn" href={action.href}>{action.label}</a>
+        <TrackedLink action={action.track} className="fx-share-btn" href={action.href}>{action.label}</TrackedLink>
       </section>
     </main>
   );
 }
 
-export default async function RidePage({ params }) {
+export default async function RidePage({ params, searchParams }) {
   const { publicId } = await params;
   const result = await loadRide(publicId);
   if (result.notFound) notFound();
-  const kind = deviceKind((await headers()).get('user-agent') ?? '');
-  if (!result.trip) return <Unavailable id={result.id} kind={kind} />;
+  const requestHeaders = await headers();
+  const kind = deviceKind(requestHeaders.get('user-agent') ?? '');
+  const link = pageLinkContext({
+    pathname: `/ride/${publicId}`,
+    searchParams: await searchParams,
+    visitorId: requestHeaders.get(VISITOR_HEADER),
+    referer: requestHeaders.get('referer')
+  });
+  if (!result.trip) return <Unavailable id={result.id} kind={kind} link={link} />;
 
   const { trip } = result;
-  const action = appAction(kind, trip.publicId);
-  const share = rideShareMessage(trip, `${SITE_URL}/ride/${trip.publicId}`);
+  const action = appAction(kind, trip.publicId, link);
+  // A visitor who shares this page again keeps the first share ID, so later opens still count for the first share.
+  const shareUrl = `${SITE_URL}/ride/${trip.publicId}${link.shareId ? `?s=${link.shareId}` : ''}`;
+  const share = rideShareMessage(trip, shareUrl);
   const closed = STATE_COPY[trip.state];
   const routeTime = duration(trip.routeDurationSeconds);
   const stops = [
@@ -249,7 +263,7 @@ export default async function RidePage({ params }) {
         <div className="fx-share-bar-inner">
           <p className="fx-share-bar-note">{action.note}</p>
           <div className="fx-share-bar-actions is-single">
-            <a className="fx-share-btn" href={action.href}>{action.label}</a>
+            <TrackedLink action={action.track} className="fx-share-btn" href={action.href}>{action.label}</TrackedLink>
           </div>
         </div>
       </footer>

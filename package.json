@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "check:link-tracking": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-link-tracking.mjs"
   },
   "dependencies": {
     "next": "^16.3.5",
