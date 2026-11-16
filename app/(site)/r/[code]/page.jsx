@@ -4,6 +4,8 @@ import Wordmark from '../../_components/Wordmark';
 import StoreButtons from '../../_components/StoreButtons';
 import { ANDROID_PACKAGE, APP_STORE_ID, APP_STORE_URL, OPEN_HOST_URL, PLAY_STORE_URL, SITE_URL } from '../../_components/links';
 import { deviceKind, normalizeInviteCode } from '../../../../lib/app-links';
+import { VISITOR_HEADER, pageLinkContext } from '../../../../lib/link-tracking';
+import TrackedLink from '../../_components/TrackedLink';
 
 export async function generateMetadata({ params }) {
   const { code } = await params;
@@ -22,11 +24,14 @@ export async function generateMetadata({ params }) {
 }
 
 /** The phone opens Fluxgo when it is installed; if not, the store opens. Invites are in the phone app only. */
-function appAction(kind, code) {
-  if (kind === 'ios') return { href: code ? `${OPEN_HOST_URL}/open/r/${code}` : APP_STORE_URL, label: 'Open in the Fluxgo app' };
+function appAction(kind, code, link) {
+  if (kind === 'ios') return { track: code ? 'open_app' : 'store_ios', href: code ? link.next(`${OPEN_HOST_URL}/open/r/${code}`, { visitor: true }) : APP_STORE_URL, label: 'Open in the Fluxgo app' };
   if (kind === 'android') {
     return {
-      href: code ? `intent://profile/invite-code?code=${code}#Intent;scheme=fluxgo;package=${ANDROID_PACKAGE};S.browser_fallback_url=${encodeURIComponent(PLAY_STORE_URL)};end` : PLAY_STORE_URL,
+      track: code ? 'open_app' : 'store_android',
+      href: code
+        ? `intent://${link.next(`profile/invite-code?code=${code}`)}#Intent;scheme=fluxgo;package=${ANDROID_PACKAGE};S.browser_fallback_url=${encodeURIComponent(link.play(PLAY_STORE_URL))};end`
+        : link.play(PLAY_STORE_URL),
       label: 'Open in the Fluxgo app'
     };
   }
@@ -40,11 +45,18 @@ const STEPS = [
 ];
 
 /** Landing page for a member's invite link (www.fluxgo.in/r/CODE). With the app installed, the phone skips this page. */
-export default async function InvitePage({ params }) {
+export default async function InvitePage({ params, searchParams }) {
   const { code: raw } = await params;
   const code = normalizeInviteCode(raw);
-  const kind = deviceKind((await headers()).get('user-agent') ?? '');
-  const action = appAction(kind, code);
+  const requestHeaders = await headers();
+  const kind = deviceKind(requestHeaders.get('user-agent') ?? '');
+  const link = pageLinkContext({
+    pathname: `/r/${raw}`,
+    searchParams: await searchParams,
+    visitorId: requestHeaders.get(VISITOR_HEADER),
+    referer: requestHeaders.get('referer')
+  });
+  const action = appAction(kind, code, link);
   return (
     <main className="fx-share fx-share-empty">
       <header className="fx-share-top"><Link href="/" aria-label="Fluxgo home"><Wordmark /></Link></header>
@@ -69,7 +81,7 @@ export default async function InvitePage({ params }) {
             </li>
           ))}
         </ol>
-        {action ? <a className="fx-share-btn" href={action.href}>{action.label}</a> : <div className="fx-invite-landing-stores"><p>Invites work in the Fluxgo phone app.</p><StoreButtons /></div>}
+        {action ? <TrackedLink action={action.track} className="fx-share-btn" href={action.href}>{action.label}</TrackedLink> : <div className="fx-invite-landing-stores"><p>Invites work in the Fluxgo phone app.</p><StoreButtons link={link} /></div>}
       </section>
     </main>
   );

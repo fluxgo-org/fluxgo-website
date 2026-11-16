@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { sendLinkAction } from '../../_components/TrackedLink';
 
 const IconShare = (p) => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" {...p}>
@@ -46,6 +47,7 @@ export default function ShareRideButton({ text, url }) {
   }, [menuOpen]);
 
   const share = async () => {
+    sendLinkAction('share_page');
     if (typeof navigator.share === 'function') {
       try {
         await navigator.share({ text: fullText });

@@ -1,4 +1,5 @@
 import { APP_STORE_URL, PLAY_STORE_URL, WEB_APP_URL } from './links';
+import TrackedLink from './TrackedLink';
 
 export function AppleGlyph() {
   return (
@@ -16,21 +17,24 @@ export function PlayGlyph() {
   );
 }
 
-export default function StoreButtons({ tone = 'dark', showNote = true }) {
+/** `link` (optional) is a page link context: it adds the share ID and utm tags to Google Play and the web app. */
+export default function StoreButtons({ tone = 'dark', showNote = true, link = null }) {
+  const playUrl = link ? link.play(PLAY_STORE_URL) : PLAY_STORE_URL;
+  const webUrl = link ? link.next(WEB_APP_URL) : WEB_APP_URL;
   return (
     <div className={`fx-stores fx-stores-${tone}`}>
       <div className="fx-stores-row">
-        <a className="fx-store fx-store-apple" href={APP_STORE_URL} target="_blank" rel="noopener noreferrer">
+        <TrackedLink action="store_ios" className="fx-store fx-store-apple" href={APP_STORE_URL} target="_blank" rel="noopener noreferrer">
           <AppleGlyph />
           <span><small>Download on the</small><strong>App Store</strong></span>
-        </a>
-        <a className="fx-store fx-store-play" href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer">
+        </TrackedLink>
+        <TrackedLink action="store_android" className="fx-store fx-store-play" href={playUrl} target="_blank" rel="noopener noreferrer">
           <PlayGlyph />
           <span><small>Get it on</small><strong>Google Play</strong></span>
-        </a>
+        </TrackedLink>
       </div>
       {showNote ? (
-        <p className="fx-stores-note">Not on your phone? <a href={WEB_APP_URL} target="_blank" rel="noopener noreferrer">Continue on the web</a></p>
+        <p className="fx-stores-note">Not on your phone? <TrackedLink action="web_app" href={webUrl} target="_blank" rel="noopener noreferrer">Continue on the web</TrackedLink></p>
       ) : null}
     </div>
   );

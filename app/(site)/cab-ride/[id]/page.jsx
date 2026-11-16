@@ -5,6 +5,8 @@ import Wordmark from '../../_components/Wordmark';
 import { IconArrow, IconCalendar, IconCab, IconClock, IconSeat, IconShield, IconStar, IconUsers } from '../../_components/Icons';
 import { ANDROID_PACKAGE, APP_STORE_ID, APP_STORE_URL, PARTNER_URL, PLAY_STORE_URL, SITE_URL, WEB_APP_URL } from '../../_components/links';
 import { deviceKind } from '../../../../lib/app-links';
+import { VISITOR_HEADER, pageLinkContext } from '../../../../lib/link-tracking';
+import TrackedLink from '../../_components/TrackedLink';
 import ShareRideButton from '../../ride/[publicId]/ShareRideButton';
 import { FUEL_LABELS, TYPE_LABELS, cabDate, cabShareMessage, cabSummary, cabTime, cabTitle, cabWindow, closedCopy, loadCabRide, rupees } from './cab-data';
 
@@ -32,16 +34,17 @@ export async function generateMetadata({ params }) {
  * The button opens the cab in the app (Cab is in app 1.3.0 and later). There is no universal link for cab rides yet,
  * so the phone uses the fluxgo:// scheme and the page also shows the store link.
  */
-function appAction(kind, id) {
-  if (kind === 'ios') return { href: `fluxgo:///cab-ride/${id}`, label: 'Book in the Fluxgo app', store: { href: APP_STORE_URL, label: 'Get Fluxgo on the App Store' } };
+function appAction(kind, id, link) {
+  if (kind === 'ios') return { track: 'open_app', href: link.next(`fluxgo:///cab-ride/${id}`), label: 'Book in the Fluxgo app', store: { track: 'store_ios', href: APP_STORE_URL, label: 'Get Fluxgo on the App Store' } };
   if (kind === 'android') {
     return {
-      href: `intent://cab-ride/${id}#Intent;scheme=fluxgo;package=${ANDROID_PACKAGE};S.browser_fallback_url=${encodeURIComponent(PLAY_STORE_URL)};end`,
+      track: 'open_app',
+      href: `intent://${link.next(`cab-ride/${id}`)}#Intent;scheme=fluxgo;package=${ANDROID_PACKAGE};S.browser_fallback_url=${encodeURIComponent(link.play(PLAY_STORE_URL))};end`,
       label: 'Book in the Fluxgo app',
-      store: { href: PLAY_STORE_URL, label: 'Get Fluxgo on Google Play' }
+      store: { track: 'store_android', href: link.play(PLAY_STORE_URL), label: 'Get Fluxgo on Google Play' }
     };
   }
-  return { href: `${WEB_APP_URL}/cab-ride/${id}`, label: 'Book on the web', store: null };
+  return { track: 'web_app', href: link.next(`${WEB_APP_URL}/cab-ride/${id}`), label: 'Book on the web', store: null };
 }
 
 function SeatDots({ left, total }) {
@@ -65,16 +68,24 @@ function Unavailable() {
   );
 }
 
-export default async function CabRidePage({ params }) {
+export default async function CabRidePage({ params, searchParams }) {
   const { id } = await params;
   const result = await loadCabRide(id);
   if (result.notFound) notFound();
   if (!result.ride) return <Unavailable />;
 
   const { ride } = result;
-  const kind = deviceKind((await headers()).get('user-agent') ?? '');
-  const action = appAction(kind, ride.id);
-  const share = cabShareMessage(ride, `${SITE_URL}/cab-ride/${ride.id}`);
+  const requestHeaders = await headers();
+  const kind = deviceKind(requestHeaders.get('user-agent') ?? '');
+  const link = pageLinkContext({
+    pathname: `/cab-ride/${ride.id}`,
+    searchParams: await searchParams,
+    visitorId: requestHeaders.get(VISITOR_HEADER),
+    referer: requestHeaders.get('referer')
+  });
+  const action = appAction(kind, ride.id, link);
+  // A visitor who shares this page again keeps the first share ID.
+  const share = cabShareMessage(ride, `${SITE_URL}/cab-ride/${ride.id}${link.shareId ? `?s=${link.shareId}` : ''}`);
   const closed = closedCopy(ride);
   const first = ride.pickups[0];
   const vehicleSpecs = ride.vehicle ? [TYPE_LABELS[ride.vehicle.type], FUEL_LABELS[ride.vehicle.fuel], ride.vehicle.colour].filter(Boolean) : [];
@@ -182,7 +193,7 @@ export default async function CabRidePage({ params }) {
               <h2>Travel between cities with Fluxgo</h2>
               <p>Carpool and cab seats with checked members and drivers.</p>
               <p className="fx-share-more-links">
-                <a href={APP_STORE_URL}>App Store</a><span aria-hidden="true">·</span><a href={PLAY_STORE_URL}>Google Play</a><span aria-hidden="true">·</span><a href={WEB_APP_URL}>Web</a>
+                <TrackedLink action="store_ios" href={APP_STORE_URL}>App Store</TrackedLink><span aria-hidden="true">·</span><TrackedLink action="store_android" href={link.play(PLAY_STORE_URL)}>Google Play</TrackedLink><span aria-hidden="true">·</span><TrackedLink action="web_app" href={link.next(WEB_APP_URL)}>Web</TrackedLink>
               </p>
             </div>
           </div>
@@ -190,7 +201,7 @@ export default async function CabRidePage({ params }) {
             <IconCab width={20} height={20} />
             <div>
               <h2>Run a cab? Become a Fluxgo partner</h2>
-              <p>Post your rides and fill empty seats. Join at <a href={PARTNER_URL}>{PARTNER_URL.replace('https://', '')}</a></p>
+              <p>Post your rides and fill empty seats. Join at <TrackedLink action="partner_signup" href={PARTNER_URL}>{PARTNER_URL.replace('https://', '')}</TrackedLink></p>
             </div>
           </div>
         </section>
@@ -198,9 +209,9 @@ export default async function CabRidePage({ params }) {
 
       <footer className="fx-share-bar">
         <div className="fx-share-bar-inner">
-          <p className="fx-share-bar-note">{action.store ? <>No app yet? <a href={action.store.href}>{action.store.label}</a></> : 'On a phone, open this link to book in the Fluxgo app.'}</p>
+          <p className="fx-share-bar-note">{action.store ? <>No app yet? <TrackedLink action={action.store.track} href={action.store.href}>{action.store.label}</TrackedLink></> : 'On a phone, open this link to book in the Fluxgo app.'}</p>
           <div className="fx-share-bar-actions is-single">
-            <a className="fx-share-btn" href={action.href}>{closed ? 'See other cabs' : action.label}</a>
+            <TrackedLink action={closed ? 'other_cabs' : action.track} className="fx-share-btn" href={action.href}>{closed ? 'See other cabs' : action.label}</TrackedLink>
           </div>
         </div>
       </footer>
