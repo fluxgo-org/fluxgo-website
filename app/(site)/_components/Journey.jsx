@@ -48,15 +48,17 @@ export default function Journey({ children }) {
   );
 }
 
-export function Stop({ id, number, label, children, className = '' }) {
+export function Stop({ id, label, children, className = '' }) {
   return (
     <section className={`fx-stop ${className}`} id={id} aria-labelledby={`${id}-title`}>
       <div className="fx-stop-node" data-reveal aria-hidden="true">
         <span className="fx-stop-dot" />
       </div>
-      <p className="fx-stop-label fx-mono" data-reveal>
-        {label}
-      </p>
+      {label ? (
+        <p className="fx-stop-label fx-mono" data-reveal>
+          {label}
+        </p>
+      ) : null}
       {children}
     </section>
   );

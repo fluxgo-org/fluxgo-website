@@ -66,7 +66,6 @@ export default function SiteHeader({ current, solid = false }) {
       <nav className="fx-mobile-nav" id="fx-mobile-nav" aria-label="Mobile" hidden={!open}>
         {NAV.map((item, index) => (
           <Link key={item.href} href={item.href} onClick={close} style={{ '--i': index }}>
-            <span className="fx-mono">0{index + 1}</span>
             {item.label}
           </Link>
         ))}

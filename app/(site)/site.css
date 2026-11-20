@@ -159,7 +159,6 @@ body:has(> .fx) { margin: 0; }
   font-size: 26px; font-weight: 650; letter-spacing: -0.03em;
   animation: fx-menu-in 0.5s var(--ease) both; animation-delay: calc(var(--i) * 50ms);
 }
-.fx-mobile-nav a .fx-mono { color: var(--mint); font-size: 11px; }
 .fx-mobile-cta { display: grid; place-items: center; height: 52px; margin-top: 14px; border-radius: 14px; background: var(--mint); color: var(--hero); font-weight: 600; }
 @keyframes fx-menu-in { from { opacity: 0; transform: translateY(8px); } }
 
@@ -629,7 +628,6 @@ body:has(> .fx) { margin: 0; }
 .fx-help { display: grid; gap: clamp(56px, 8vw, 96px); padding: clamp(72px, 9vw, 120px) 0; }
 .fx-help-topic { display: grid; grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr); gap: 24px 80px; }
 .fx-help-head { position: sticky; top: 110px; align-self: start; display: grid; gap: 10px; }
-.fx-help-head .fx-mono { color: var(--brand); }
 .fx-help-head h2 { font-size: clamp(30px, 3.4vw, 44px); line-height: 1.05; letter-spacing: -0.035em; font-weight: 700; }
 
 .fx-contact { padding-bottom: clamp(72px, 9vw, 120px); }
@@ -643,7 +641,6 @@ body:has(> .fx) { margin: 0; }
 .fx-checklist { display: grid; align-content: start; min-width: 300px; padding: 24px; border-radius: 24px; background: rgba(233, 240, 234, 0.06); box-shadow: inset 0 0 0 1px var(--hair-dark); }
 .fx-checklist li { display: flex; gap: 14px; align-items: baseline; padding: 14px 0; border-top: 1px solid var(--hair-dark); font-size: 15.5px; color: var(--on-dark); }
 .fx-checklist li.fx-mono { border-top: 0; padding-top: 0; color: var(--mint); font-size: 11px; }
-.fx-checklist li span { font-family: var(--mono); font-size: 12px; color: var(--on-dark-3); }
 .fx-contact-legal { margin-top: 20px; text-align: center; font-size: 15px; color: var(--ink2); }
 
 /* ───────────────────────── Legal ───────────────────────── */
@@ -821,8 +818,7 @@ body:has(> .fx) { margin: 0; }
 .fx-avatar.is-guest { background: var(--fill); color: var(--ink2); }
 
 .fx-cab-steps { display: grid; margin-top: 4px; }
-.fx-cab-steps li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 4px; padding: 15px 0; border-top: 1px solid var(--line); }
-.fx-cab-steps .fx-mono { color: var(--brand); padding-top: 3px; }
+.fx-cab-steps li { display: block; padding: 15px 0; border-top: 1px solid var(--line); }
 .fx-cab-steps strong { display: block; font-size: 16.5px; font-weight: 650; letter-spacing: -0.015em; }
 .fx-cab-steps p { margin-top: 2px; font-size: 15px; line-height: 1.5; color: var(--ink2); }
 

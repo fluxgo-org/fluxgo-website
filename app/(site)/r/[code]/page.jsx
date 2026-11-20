@@ -74,9 +74,8 @@ export default async function InvitePage({ params, searchParams }) {
           </div>
         </div> : <p>This invite link is not complete. Ask your friend to share it again.</p>}
         <ol className="fx-cab-steps">
-          {STEPS.map(([title, body], i) => (
+          {STEPS.map(([title, body]) => (
             <li key={title}>
-              <span className="fx-mono">0{i + 1}</span>
               <div><strong>{title}</strong><p>{body}</p></div>
             </li>
           ))}

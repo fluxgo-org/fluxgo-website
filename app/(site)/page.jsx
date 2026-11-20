@@ -37,22 +37,22 @@ const SLOT_TRAVELLERS = [
 ];
 
 const CAB_STEPS = [
-  ['Pick a slot', 'Free, and not a booking yet.'],
-  ['Seat confirmed', 'Once 4 seats fill. Confirmed or called off 2 hours before pickup.'],
+  ['Pick a slot', 'Free. Not a booking yet.'],
+  ['Seat confirmed', 'When 4 seats fill. Confirmed or cancelled 2 hours before pickup.'],
   ['Cab details', 'Vehicle number and driver, 2 hours before pickup.'],
-  ['Board and pay', 'Show your boarding code. Pay in the cab, not in the app.']
+  ['Board and pay', 'Show your boarding code and pay in the cab.']
 ];
 
 const TRUST_FACTS = [
   ['Verified phone', 'Every member, before their first ride.'],
   ['Work email badge', 'Hosts can accept verified members only.'],
-  ['Women on board', 'See them before you book, or filter for them.'],
-  ['Trusted contact', 'Saved before your first ride. Live location on the trip.']
+  ['Women on board', 'See before you book, or filter for women.'],
+  ['Trusted contact', 'Saved before your first ride. Live trip location.']
 ];
 
 const RELIABILITY_FACTS = [
   ['On record', 'Late cancels and no-shows show on every profile.'],
-  ['Confirmed', 'Instant book confirms at once. A request shows it is waiting.'],
+  ['Confirmed', 'Instant book confirms at once. Requests show as waiting.'],
   ['1 h', 'A reminder 1 hour before every ride.']
 ];
 
@@ -70,7 +70,7 @@ const CO_TRAVELLERS = [
 
 const INVITE_STEPS = [
   ['First ride', 'Your friend completes a ride of 50 km or more.'],
-  ['Third ride', 'Three rides in 60 days, on 3 different days, with at least 2 hosts.'],
+  ['Third ride', '3 rides in 60 days, on 3 different days, with at least 2 hosts.'],
   ['First ride as a host', 'Your friend drives and takes a co-traveller.']
 ];
 
@@ -78,14 +78,14 @@ const INVITE_STEPS = [
 const INVITE_SEATS = ['Rahul', 'you', 'Meera', 'Arjun', null, null];
 
 const FAQ = [
-  { q: 'Who can I travel with?', a: 'Only members with a verified phone. Hosts can also limit a ride to members with a verified work email.' },
-  { q: 'What if someone does not show up?', a: 'Late cancels and no-shows go on the member’s profile, so everyone sees them before they book.' },
-  { q: 'Something feels wrong on a ride?', a: 'Call 112 if you are in danger. Then report the ride from the trip screen. We read every report.' },
+  { q: 'Who can I travel with?', a: 'Only members with a verified phone. Hosts can also require a verified work email.' },
+  { q: 'What if someone does not show up?', a: 'Late cancels and no-shows appear on their profile for everyone to see before booking.' },
+  { q: 'What if a ride feels unsafe?', a: 'Call 112 if in danger. Then report the ride from the trip screen. We read every report.' },
   { q: 'Which routes?', a: 'Carpools run anywhere a host publishes. Shared cabs run Bengaluru ↔ Anantapur for now.' },
-  { q: 'How does a shared cab work?', a: 'Pick an hourly slot. When 4 seats fill, a local cab operator takes the trip. You pay in the cab.' },
-  { q: 'What if the cab does not fill?', a: 'We tell you before 2 hours to pickup, and nothing counts against you.' },
-  { q: 'How do invites work?', a: 'Share your code from Invite and earn in the app. Your friend enters it in their first 7 days. A ride counts at 50 km or more and ₹100 or more a seat, and not when you are the host. Credits arrive 72 hours after the ride. After 5 friends, your code closes.' },
-  { q: 'What can I do with credits?', a: 'Use them for up to half the price of a Fluxgo Cab seat. Your balance and history are in Fluxgo Credits in the app.' },
+  { q: 'How does a shared cab work?', a: 'Pick an hourly slot. Once 4 seats fill, a local operator takes the trip. Pay in the cab.' },
+  { q: 'What if the cab does not fill?', a: 'We tell you 2 hours before pickup. Nothing counts against you.' },
+  { q: 'How do invites work?', a: 'Share your code from Invite and earn. Your friend enters it in their first 7 days. Rides must be 50 km or more, ₹100 or more per seat, and not hosted by you. Credits arrive 72 hours after the ride. Your code closes after 5 friends.' },
+  { q: 'What can I do with credits?', a: 'Cover up to half the price of a Fluxgo Cab seat. See your balance and history in Fluxgo Credits.' },
 ];
 
 export default function Home() {
@@ -100,16 +100,16 @@ export default function Home() {
         <Stats />
 
         <Journey>
-          <Stop id="why" number="01" label="Why Fluxgo">
-            <h2 className="fx-h2 fx-why-title" data-reveal id="why-title">Short trips between cities are hard.</h2>
+          <Stop id="why" label="Why Fluxgo">
+            <h2 className="fx-h2 fx-why-title" data-reveal id="why-title">Short intercity trips are hard.</h2>
             <div className="fx-facts">
               <div data-reveal><span className="fx-mono">Private buses</span><strong>Built for long routes</strong><p>Mostly overnight, at fixed times.</p></div>
-              <div data-reveal style={{ '--d': '80ms' }}><span className="fx-mono">Cabs</span><strong>Too much on your own</strong><p>You pay for the whole car.</p></div>
+              <div data-reveal style={{ '--d': '80ms' }}><span className="fx-mono">Cabs</span><strong>Costly solo</strong><p>You pay for the whole car.</p></div>
               <div data-reveal style={{ '--d': '160ms' }}><span className="fx-mono">WhatsApp groups</span><strong>A gamble</strong><p>No idea who is coming, or if they will.</p></div>
             </div>
           </Stop>
 
-          <Stop id="reliability" number="02" label="Reliability">
+          <Stop id="reliability" label="Reliability">
             <h2 className="fx-h2 fx-why-title" data-reveal id="reliability-title">Rides that actually leave.</h2>
             <div className="fx-facts fx-facts-num">
               {RELIABILITY_FACTS.map(([n, t], i) => (
@@ -118,11 +118,11 @@ export default function Home() {
             </div>
             <div className="fx-ai" data-reveal>
               <span className="fx-mono">AI</span>
-              <p><strong>Built to cut no-shows.</strong> We’re leveraging AI on ride and cancel history to flag likely no-shows early, and to match you with the right co-travellers.</p>
+              <p><strong>Built to cut no-shows.</strong> We’re leveraging AI on ride and cancel history to flag likely no-shows early and match you with the right co-travellers.</p>
             </div>
           </Stop>
 
-          <Stop id="trust" number="03" label="Trust">
+          <Stop id="trust" label="Trust">
             <div className="fx-stop-grid">
               <div className="fx-stop-copy" data-reveal>
                 <h2 className="fx-h2" id="trust-title">Share rides with verified members only.</h2>
@@ -161,12 +161,12 @@ export default function Home() {
             </div>
           </Stop>
 
-          <Stop id="find" number="04" label="Find a ride">
+          <Stop id="find" label="Find a ride">
             <div className="fx-stop-grid">
               <div className="fx-stop-copy" data-reveal>
-                <h2 className="fx-h2" id="find-title">Every car and cab going your way.</h2>
+                <h2 className="fx-h2" id="find-title">Carpools and cabs going your way.</h2>
                 <p className="fx-lede">Search a route and date. Compare times, prices, and hosts. Book a seat.</p>
-                <p className="fx-aside"><IconBell width={18} height={18} /><span><strong>Nothing on your date?</strong> Turn on alerts. We’ll tell you when a ride is published.</span></p>
+                <p className="fx-aside"><IconBell width={18} height={18} /><span><strong>Nothing on your date?</strong> Turn on alerts to know when a ride is published.</span></p>
               </div>
 
               <div className="fx-mock fx-mock-find" data-reveal>
@@ -217,12 +217,12 @@ export default function Home() {
             </div>
           </Stop>
 
-          <Stop id="offer" number="05" label="Offer a ride">
+          <Stop id="offer" label="Offer a ride">
             <div className="fx-stop-grid">
               <div className="fx-stop-copy" data-reveal>
                 <h2 className="fx-h2" id="offer-title">Driving anyway? Fill your empty seats.</h2>
-                <p className="fx-lede">You choose who rides. Accept people one by one, or allow verified members only.</p>
-                <p className="fx-aside"><IconPin width={18} height={18} /><span><strong>Know the demand.</strong> See how many people searched your route this week, day by day.</span></p>
+                <p className="fx-lede">Choose who rides. Accept requests one by one, or allow verified members only.</p>
+                <p className="fx-aside"><IconPin width={18} height={18} /><span><strong>See the demand.</strong> See daily searches on your route this week.</span></p>
               </div>
 
               <div className="fx-mock fx-mock-offer" data-reveal>
@@ -264,20 +264,19 @@ export default function Home() {
             </div>
           </Stop>
 
-          <Stop id="cab" number="06" label="Shared cabs">
+          <Stop id="cab" label="Shared cabs">
             <div className="fx-stop-grid fx-stop-grid-flip">
               <div className="fx-stop-copy" data-reveal>
                 <h2 className="fx-h2" id="cab-title">One seat in a shared cab.</h2>
-                <p className="fx-lede">Pick an hourly slot. Local operators run the cabs. You pay in the cab, not in the app.</p>
+                <p className="fx-lede">Pick an hourly slot. Local operators run the cabs. Pay in the cab, not the app.</p>
                 <ol className="fx-cab-steps">
-                  {CAB_STEPS.map(([title, body], i) => (
+                  {CAB_STEPS.map(([title, body]) => (
                     <li key={title}>
-                      <span className="fx-mono">0{i + 1}</span>
                       <div><strong>{title}</strong><p>{body}</p></div>
                     </li>
                   ))}
                 </ol>
-                <p className="fx-aside"><IconCab width={18} height={18} /><span><strong>Run cabs?</strong> Fill empty seats on your routes. <a className="fx-link" href={PARTNER_URL} target="_blank" rel="noopener noreferrer">Open the partner app</a></span></p>
+                <p className="fx-aside"><IconCab width={18} height={18} /><span><strong>Run cabs?</strong> Fill empty seats on your routes. <a className="fx-link" href={PARTNER_URL} target="_blank" rel="noopener noreferrer">Open partner app</a></span></p>
               </div>
 
               <div className="fx-mock fx-mock-cab" data-reveal>
@@ -332,15 +331,14 @@ export default function Home() {
             </div>
           </Stop>
 
-          <Stop id="invite" number="07" label="Invite friends">
+          <Stop id="invite" label="Invite friends">
             <div className="fx-stop-grid">
               <div className="fx-stop-copy" data-reveal>
                 <h2 className="fx-h2" id="invite-title">Bring a friend. You both earn.</h2>
-                <p className="fx-lede">Share your invite code from the app. You and your friend each get 100 Fluxgo Credits at three steps, so up to 300 credits each for every friend.</p>
+                <p className="fx-lede">Share your code from the app. You both earn 100 Fluxgo Credits at each of three steps, up to 300 credits each per friend.</p>
                 <ol className="fx-cab-steps">
-                  {INVITE_STEPS.map(([title, body], i) => (
+                  {INVITE_STEPS.map(([title, body]) => (
                     <li key={title}>
-                      <span className="fx-mono">0{i + 1}</span>
                       <div><strong>{title}</strong><p>{body}</p></div>
                     </li>
                   ))}
@@ -371,7 +369,7 @@ export default function Home() {
             </div>
           </Stop>
 
-          <Stop id="questions" number="08" label="Questions">
+          <Stop id="questions">
             <div className="fx-faq-grid">
               <div data-reveal>
                 <h2 className="fx-h2" id="questions-title">Questions.</h2>
@@ -393,7 +391,7 @@ export default function Home() {
             <div className="fx-arrive-card" data-reveal>
               <div className="fx-arrive-copy">
                 <h2 className="fx-h2">Get Fluxgo.</h2>
-                <p className="fx-lede">iPhone, Android, or the web.</p>
+                <p className="fx-lede">iPhone, Android, or web.</p>
                 <StoreButtons tone="dark" />
               </div>
             </div>
