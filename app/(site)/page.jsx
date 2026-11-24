@@ -9,8 +9,9 @@ import CarpoolSwitch from './_components/CarpoolSwitch';
 import { PARTNER_URL } from './_components/links';
 import {
   IconArrow, IconBag, IconBell, IconBolt, IconCab, IconCalendar, IconHand,
-  IconPin, IconSeat, IconSwap, IconTick
+  IconPin, IconSeat, IconShield, IconSwap
 } from './_components/Icons';
+import VerifiedMark from './_components/VerifiedMark';
 
 export const metadata = { alternates: { canonical: '/' } };
 
@@ -155,7 +156,7 @@ function TravelPanel() {
               <div className="fx-result-foot">
                 <span className="fx-avatar fx-avatar-sm">{r.driver[0]}</span>
                 <span>{r.driver}</span>
-                <IconTick className="fx-verified" />
+                <VerifiedMark size={16} />
                 <span className="fx-result-rating">★ {r.rating}</span>
                 {r.women ? <span className="fx-tag fx-tag-sm fx-tag-soft">Women co-travellers</span> : null}
                 <span className={`fx-tag fx-tag-sm ${r.instant ? 'fx-tag-brand' : ''}`}>
@@ -183,7 +184,7 @@ function DrivePanel() {
         <div className="fx-publish">
           <div className="fx-publish-head">
             <span className="fx-mono">Publish a ride</span>
-            <span className="fx-verified-pill"><IconTick className="fx-verified" />Vehicle verified</span>
+            <span className="hx-vehicle-pill"><IconShield width={14} height={14} />Vehicle verified</span>
           </div>
           <div className="fx-publish-route">
             <div><small>From</small><strong>Pune</strong></div>
@@ -206,7 +207,7 @@ function DrivePanel() {
           </div>
           <div className="fx-field fx-field-row">
             <small>Who can book</small>
-            <span className="fx-luggage"><IconTick className="fx-verified" />Verified members only</span>
+            <span className="fx-luggage"><VerifiedMark size={16} />Verified members only</span>
           </div>
           <div className="fx-segment">
             <span><IconBolt width={14} height={14} />Instant</span>
@@ -335,7 +336,7 @@ export default function Home() {
                 <div className="hx-record-head">
                   <span className="fx-avatar hx-avatar-lg">M</span>
                   <div>
-                    <strong>Meera <IconTick className="fx-verified" /></strong>
+                    <strong>Meera <VerifiedMark size={18} /></strong>
                     <small>Product designer</small>
                   </div>
                 </div>
@@ -374,14 +375,13 @@ export default function Home() {
                 <div className="hx-profile-top">
                   <span className="fx-avatar hx-avatar-xl">D</span>
                   <div>
-                    <strong>Divya <IconTick className="fx-verified" /></strong>
+                    <strong>Divya <VerifiedMark size={18} /></strong>
                     <small>Software engineer</small>
                   </div>
                 </div>
                 <p className="hx-profile-bio">Bengaluru software engineer. I carpool home on weekends.</p>
                 <div className="hx-profile-badges">
-                  <span><IconTick className="fx-verified" />Work email verified</span>
-                  <span><IconTick className="fx-verified" />Phone verified</span>
+                  <span><VerifiedMark size={16} />Work email verified</span>
                 </div>
               </div>
               <div className="hx-going">
@@ -449,7 +449,7 @@ export default function Home() {
                   <div className="hx-ticket-partner">
                     <span className="fx-avatar hx-avatar-lg">R</span>
                     <div>
-                      <strong>Ravi <IconTick className="fx-verified" /></strong>
+                      <strong>Ravi <VerifiedMark kind="partner" size={22} label="Verified partner" /></strong>
                       <small>Verified partner</small>
                     </div>
                   </div>
