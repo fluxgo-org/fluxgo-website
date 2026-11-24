@@ -9,10 +9,10 @@ const CYCLE_MS = 4200;
 // Example seats for the pass and the headline cities. They are not live data.
 // Headline wording from the owner; the rest of the hero copy by Gemini 4 Neon (2026-11-25).
 const PASSES = [
-  { from: 'Bengaluru', fromCode: 'BLR', to: 'Mysuru', toCode: 'MYS', day: 'Sat, 29 Nov', depart: '07:15', arrive: '10:00', duration: '2h 45m', host: 'Meera', vehicle: 'Tata Nexon', rating: '4.9', record: '0 no-shows', seat: '2', price: 280, left: 1, seats: 3, instant: false },
   { from: 'Bengaluru', fromCode: 'BLR', to: 'Anantapur', toCode: 'ATP', day: 'Fri, 28 Nov', depart: '6–7 AM', arrive: '10–11 AM', duration: '4h 10m', host: 'Ravi', vehicle: 'Innova Crysta', rating: '4.8', record: '0 cancels', seat: '4', price: 600, code: '7310', cab: true, instant: true },
   { from: 'Hyderabad', fromCode: 'HYD', to: 'Vijayawada', toCode: 'VGA', day: 'Sun, 30 Nov', depart: '09:30', arrive: '14:40', duration: '5h 10m', host: 'Sneha', vehicle: 'Toyota Glanza', rating: '4.8', record: '0 no-shows', seat: '1', price: 550, left: 2, seats: 3, instant: true },
-  { from: 'Chennai', fromCode: 'MAA', to: 'Pondicherry', toCode: 'PNY', day: 'Sat, 29 Nov', depart: '08:00', arrive: '11:10', duration: '3h 10m', host: 'Karthik', vehicle: 'Maruti Baleno', rating: '4.7', record: '0 no-shows', seat: '3', price: 350, left: 2, seats: 4, instant: false }
+  { from: 'Chennai', fromCode: 'MAA', to: 'Pondicherry', toCode: 'PNY', day: 'Sat, 29 Nov', depart: '08:00', arrive: '11:10', duration: '3h 10m', host: 'Karthik', vehicle: 'Maruti Baleno', rating: '4.7', record: '0 no-shows', seat: '3', price: 350, left: 2, seats: 4, instant: false },
+  { from: 'Mumbai', fromCode: 'BOM', to: 'Pune', toCode: 'PNQ', day: 'Sat, 29 Nov', depart: '18:30', arrive: '21:45', duration: '3h 15m', host: 'Riya', vehicle: 'Honda City', rating: '4.9', record: '0 no-shows', seat: '2', price: 420, left: 1, seats: 3, instant: false }
 ];
 
 export default function Hero() {
