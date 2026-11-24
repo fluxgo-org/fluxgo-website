@@ -43,6 +43,7 @@ export default function SiteFooter() {
     <footer className="fx-footer">
       <div className="fx-wrap">
         <div className="fx-footer-grid">
+          <p className="fx-footer-line">Solving intercity mobility <span>in India.</span></p>
           {GROUPS.map((group) => (
             <nav key={group.label} className="fx-footer-col" aria-label={group.label}>
               <span className="fx-footer-label">{group.label}</span>
