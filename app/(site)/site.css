@@ -794,9 +794,7 @@ body:has(> .fx) { margin: 0; }
 .fx-share-sheet h1 { font-size: clamp(32px, 7vw, 48px); line-height: 1.05; letter-spacing: -0.04em; }
 .fx-share-sheet p { color: var(--on-dark-2); font-size: 17px; }
 .fx-share-sheet .fx-share-btn { justify-self: start; background: var(--mint); color: var(--hero); }
-.fx-share-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
-.fx-share-sheet .fx-share-btn-ghost { min-height: 52px; background: transparent; color: var(--on-dark); box-shadow: inset 0 0 0 1px var(--on-dark-3); }
-.fx-share-sheet .fx-share-btn-ghost:hover { background: rgba(255, 255, 255, 0.08); }
+.fx-missing-stores { margin-top: 6px; }
 .fx-missing-card { display: grid; gap: 6px; margin-top: 8px; padding: 18px; border-radius: 20px; background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); }
 .fx-missing-card small { color: var(--on-dark-3); font-size: 13px; }
 .fx-missing-card strong { font-size: 20px; letter-spacing: -0.02em; }

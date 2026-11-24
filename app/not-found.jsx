@@ -3,11 +3,9 @@ import { headers } from 'next/headers';
 import { after } from 'next/server';
 import SiteLayout from './(site)/layout';
 import Wordmark from './(site)/_components/Wordmark';
-import TrackedLink from './(site)/_components/TrackedLink';
-import { APP_STORE_URL, PLAY_STORE_URL, WEB_APP_URL } from './(site)/_components/links';
+import StoreButtons from './(site)/_components/StoreButtons';
 import { loadRide } from './(site)/ride/[publicId]/ride-data';
 import { loadCabRide } from './(site)/cab-ride/[id]/cab-data';
-import { deviceKind } from '../lib/app-links';
 import { PATH_HEADER, VISITOR_HEADER, captureSiteEvent, isBot, visitProperties } from '../lib/link-tracking';
 import { PAGE_TARGETS, guessTarget, safeMissingPath } from '../lib/not-found';
 
@@ -70,16 +68,9 @@ async function suggestionFor(pathname) {
   return null;
 }
 
-/** The main button: the store for this phone, or the web app on a computer. */
-function primaryAction(kind) {
-  if (kind === 'ios') return { action: 'store_ios', href: APP_STORE_URL, label: 'Get on the App Store' };
-  if (kind === 'android') return { action: 'store_android', href: PLAY_STORE_URL, label: 'Get on Google Play' };
-  return { action: 'web_app', href: WEB_APP_URL, label: 'Find a ride on the web' };
-}
-
 /**
- * Shows for every address that has no page. It offers the page the visitor most likely wanted, the next step for
- * this device, and home and support. Each open goes to PostHog as `public_page_not_found` with a safe path and the
+ * Shows for every address that has no page. It offers the page the visitor most likely wanted, both app store
+ * buttons, and home and support. Each open goes to PostHog as `public_page_not_found` with a safe path and the
  * sending site, so broken links can be found and fixed.
  */
 export default async function NotFound() {
@@ -87,7 +78,6 @@ export default async function NotFound() {
   const pathname = requestHeaders.get(PATH_HEADER) || '/';
   const userAgent = requestHeaders.get('user-agent') ?? '';
   const suggestion = await suggestionFor(pathname);
-  const primary = primaryAction(deviceKind(userAgent));
 
   if (!isBot(userAgent)) {
     const visitorId = requestHeaders.get(VISITOR_HEADER);
@@ -113,9 +103,7 @@ export default async function NotFound() {
               <Link className="fx-share-btn" href={suggestion.href}>{suggestion.button}</Link>
             </div>
           ) : null}
-          <div className="fx-share-actions">
-            <TrackedLink action={primary.action} className={`fx-share-btn${suggestion ? ' fx-share-btn-ghost' : ''}`} href={primary.href} target="_blank" rel="noopener noreferrer">{primary.label}</TrackedLink>
-          </div>
+          <div className="fx-missing-stores"><StoreButtons tone="dark" showNote={false} /></div>
           <nav className="fx-missing-links" aria-label="More">
             <Link href="/">Go to home</Link>
             <Link href="/support">Contact support</Link>
