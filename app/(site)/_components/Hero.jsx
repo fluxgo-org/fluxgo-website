@@ -5,7 +5,7 @@ import StoreButtons from './StoreButtons';
 
 const CYCLE_MS = 3200;
 
-// Cities for the rotating headline. Hero copy by Gemini 4 Neon (2026-11-25).
+// Cities for the rotating headline. Hero copy (mission line and headline) by Gemini 4 Neon (2026-11-25).
 const CITIES = ['Mysuru', 'Anantapur', 'Pune', 'Pondicherry', 'Vijayawada', 'Tirupati'];
 
 export default function Hero() {
@@ -54,6 +54,8 @@ export default function Hero() {
       </video>
       <div className="fx-hero-shade" aria-hidden="true" />
 
+      <p className="fx-wrap fx-hero-mission">Fixing intercity travel in India</p>
+
       <div className="fx-wrap fx-hero-cine-copy">
         <h1 className="fx-hero-title" id="fx-hero-title">
           <span className="fx-sr">Heading to another city? Shared rides that show up.</span>
@@ -70,6 +72,8 @@ export default function Hero() {
 
         <StoreButtons tone="dark" />
       </div>
+
+      <div className="fx-hero-road" aria-hidden="true"><span /></div>
     </section>
   );
 }
