@@ -7,7 +7,8 @@ import {
  * 1. partner.fluxgo.in paths map to /partner/* in this app. Other hosts are not changed.
  * 2. Each page open counts as `public_link_opened` (ride, cab ride, invite, and site pages). Link preview bots,
  *    prefetches, and client navigations do not count. The anonymous visitor cookie lets PostHog count unique
- *    visitors; the page reads the same ID from a request header on the first visit.
+ *    visitors; the page reads the same ID from a request header on the first visit. Marketing links (/g/<code>)
+ *    are not counted here: the page they redirect to counts the visit with the link's share ID.
  */
 export function proxy(request, event) {
   const { nextUrl } = request;
@@ -47,7 +48,7 @@ export function proxy(request, event) {
 export const config = {
   matcher: [
     {
-      source: '/((?!_next/|api/|open/|admin|\\.well-known/|favicon|icon|apple-icon|robots|sitemap|.*opengraph-image|.*twitter-image|.*\\.[a-zA-Z0-9]+$).*)',
+      source: '/((?!_next/|api/|open/|g/|admin|\\.well-known/|favicon|icon|apple-icon|robots|sitemap|.*opengraph-image|.*twitter-image|.*\\.[a-zA-Z0-9]+$).*)',
       missing: [
         { type: 'header', key: 'next-router-prefetch' },
         { type: 'header', key: 'purpose', value: 'prefetch' },
