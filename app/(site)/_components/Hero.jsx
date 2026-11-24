@@ -3,15 +3,16 @@
 import { useEffect, useRef, useState } from 'react';
 import StoreButtons from './StoreButtons';
 import VerifiedMark from './VerifiedMark';
+import { IconBolt, IconCab, IconHand } from './Icons';
 
 const CYCLE_MS = 4200;
 
 // Example seats for the pass. They are not live data. Hero copy by Gemini 4 Neon (2026-11-25).
 const PASSES = [
-  { from: 'Bengaluru', fromCode: 'BLR', to: 'Mysuru', toCode: 'MYS', day: 'Sat, 29 Nov', time: '07:15', host: 'Meera', vehicle: 'Tata Nexon', seat: '2', price: 280, code: '4821' },
-  { from: 'Bengaluru', fromCode: 'BLR', to: 'Anantapur', toCode: 'ATP', day: 'Fri, 28 Nov', time: '6–7 AM', host: 'Ravi', vehicle: 'Toyota Innova Crysta', seat: '4', price: 600, code: '7310', partner: true },
-  { from: 'Hyderabad', fromCode: 'HYD', to: 'Vijayawada', toCode: 'VGA', day: 'Sun, 30 Nov', time: '09:30', host: 'Sneha', vehicle: 'Toyota Glanza', seat: '1', price: 550, code: '2096' },
-  { from: 'Chennai', fromCode: 'MAA', to: 'Pondicherry', toCode: 'PNY', day: 'Sat, 29 Nov', time: '08:00', host: 'Karthik', vehicle: 'Maruti Baleno', seat: '3', price: 350, code: '5517' }
+  { from: 'Bengaluru', fromCode: 'BLR', to: 'Mysuru', toCode: 'MYS', day: 'Sat, 29 Nov', time: '07:15', host: 'Meera', vehicle: 'Tata Nexon', seat: '2', price: 280, left: '1 of 3', instant: false },
+  { from: 'Bengaluru', fromCode: 'BLR', to: 'Anantapur', toCode: 'ATP', day: 'Fri, 28 Nov', time: '6–7 AM', host: 'Ravi', vehicle: 'Toyota Innova Crysta', seat: '4', price: 600, code: '7310', cab: true },
+  { from: 'Hyderabad', fromCode: 'HYD', to: 'Vijayawada', toCode: 'VGA', day: 'Sun, 30 Nov', time: '09:30', host: 'Sneha', vehicle: 'Toyota Glanza', seat: '1', price: 550, left: '2 of 3', instant: true },
+  { from: 'Chennai', fromCode: 'MAA', to: 'Pondicherry', toCode: 'PNY', day: 'Sat, 29 Nov', time: '08:00', host: 'Karthik', vehicle: 'Maruti Baleno', seat: '3', price: 350, left: '2 of 4', instant: false }
 ];
 
 export default function Hero() {
@@ -79,8 +80,15 @@ export default function Hero() {
           <article className="fx-pass" key={index} aria-label={`Example seat from ${pass.from} to ${pass.to}`}>
             <div className="fx-pass-main">
               <div className="fx-pass-top">
-                <span>{pass.day}</span>
-                <span>{pass.time}</span>
+                {pass.cab ? (
+                  <span className="fx-tag fx-tag-cab"><IconCab width={14} height={14} />Shared cab</span>
+                ) : (
+                  <span className={`fx-tag ${pass.instant ? 'fx-tag-brand' : ''}`}>
+                    {pass.instant ? <IconBolt width={14} height={14} /> : <IconHand width={14} height={14} />}
+                    {pass.instant ? 'Instant book' : 'Request to book'}
+                  </span>
+                )}
+                <span>{pass.day}, {pass.time}</span>
               </div>
               <div className="fx-pass-route">
                 <div><strong>{pass.fromCode}</strong><span>{pass.from}</span></div>
@@ -92,7 +100,7 @@ export default function Hero() {
                 <div>
                   <strong>
                     {pass.host}{' '}
-                    <VerifiedMark kind={pass.partner ? 'partner' : 'member'} size={pass.partner ? 20 : 18} label={pass.partner ? 'Verified partner' : 'Verified'} />
+                    <VerifiedMark kind={pass.cab ? 'partner' : 'member'} size={pass.cab ? 20 : 18} label={pass.cab ? 'Verified partner' : 'Verified'} />
                   </strong>
                   <small>{pass.vehicle}</small>
                 </div>
@@ -101,11 +109,15 @@ export default function Hero() {
             <div className="fx-pass-stub">
               <div><small>Seat</small><strong>{pass.seat}</strong></div>
               <div><small>Price per seat</small><strong>₹{pass.price}</strong></div>
-              <div><small>Boarding code</small><strong className="fx-pass-code">{pass.code}</strong></div>
+              {pass.cab ? (
+                <div><small>Boarding code</small><strong className="fx-pass-code">{pass.code}</strong></div>
+              ) : (
+                <div><small>Seats left</small><strong>{pass.left}</strong></div>
+              )}
             </div>
           </article>
           <div className="fx-pass-dots" aria-hidden="true">
-            {PASSES.map((p, i) => <span key={p.code} className={i === index ? 'is-on' : ''} />)}
+            {PASSES.map((p, i) => <span key={p.toCode} className={i === index ? 'is-on' : ''} />)}
           </div>
         </div>
       </div>
