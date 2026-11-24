@@ -317,7 +317,7 @@ export default function Home() {
                 id="reliability"
                 tone="dark"
                 eyebrow="Reliability"
-                title="Built around people who show up"
+                title="Rides you can plan around"
                 sub="No-shows and late cancels are visible on every profile, backed by blind reviews and clear booking status."
               />
               <ul className="hx-points">

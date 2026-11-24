@@ -961,14 +961,15 @@ body:has(> .fx) { margin: 0; }
 .hx-sec-tight { padding-block: clamp(40px, 5vw, 64px); }
 .hx-sec-end { padding-top: 0; }
 .hx-anchor { position: absolute; top: 0; }
-.hx-head { display: flex; flex-direction: column; gap: 18px; max-width: 760px; margin-bottom: clamp(40px, 5vw, 64px); }
-.hx-head .fx-h2 { max-width: 15em; }
+.hx-head { display: flex; flex-direction: column; gap: 14px; max-width: 720px; margin-bottom: clamp(36px, 4.5vw, 56px); }
+.hx-head .fx-h2, .hx-faq-head .fx-h2, #download .fx-h2 { max-width: 18em; font-size: clamp(30px, 3.2vw, 44px); line-height: 1.1; letter-spacing: -0.035em; }
+.hx-head .fx-lede { margin-top: 2px; font-size: clamp(16.5px, 1.25vw, 18.5px); }
 .hx-head-center { align-items: center; text-align: center; margin-inline: auto; }
 .hx-head-dark .fx-lede { color: var(--on-dark-2); }
-.hx-eyebrow { font-size: 14px; font-weight: 650; letter-spacing: -0.005em; color: var(--brand); }
+.hx-eyebrow { font-size: 15px; font-weight: 650; letter-spacing: -0.005em; line-height: 1.2; color: var(--brand); }
 .hx-head-dark .hx-eyebrow { color: var(--mint); }
-.hx-h3 { font-size: clamp(24px, 2.2vw, 30px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.12; text-wrap: balance; }
-.hx-h2s { font-size: clamp(26px, 2.6vw, 34px); font-weight: 700; letter-spacing: -0.035em; line-height: 1.1; text-wrap: balance; }
+.hx-h3 { font-size: clamp(21px, 1.8vw, 25px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.12; text-wrap: balance; }
+.hx-h2s { font-size: clamp(24px, 2.2vw, 30px); font-weight: 700; letter-spacing: -0.035em; line-height: 1.1; text-wrap: balance; }
 .hx-body { font-size: 17px; line-height: 1.6; color: var(--ink2); max-width: 30em; text-wrap: pretty; }
 .hx-note {
   display: flex; gap: 12px; align-items: flex-start; max-width: 30em;
@@ -1012,7 +1013,7 @@ body:has(> .fx) { margin: 0; }
 .hx-way-cab { background: var(--hero); color: var(--on-dark); box-shadow: var(--shadow-float); }
 .hx-way-cab::before { content: ""; position: absolute; inset: 0; background: radial-gradient(70% 70% at 100% 100%, rgba(47, 107, 70, 0.7), transparent 70%); pointer-events: none; }
 .hx-way > * { position: relative; }
-.hx-way h3 { font-size: clamp(28px, 2.6vw, 36px); font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
+.hx-way h3 { font-size: clamp(25px, 2.2vw, 30px); font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
 .hx-way p { margin-top: 12px; max-width: 24em; font-size: 16.5px; line-height: 1.55; color: var(--ink2); }
 .hx-way-cab p { color: var(--on-dark-2); }
 .hx-way-visual { align-self: end; display: grid; gap: 8px; max-width: 360px; }
