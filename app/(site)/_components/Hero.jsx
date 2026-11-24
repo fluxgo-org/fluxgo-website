@@ -2,7 +2,8 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import StoreButtons from './StoreButtons';
-import { IconBolt, IconCab, IconHand, IconTick } from './Icons';
+import { IconBolt, IconCab, IconHand } from './Icons';
+import VerifiedMark from './VerifiedMark';
 
 const CYCLE_MS = 4200;
 
@@ -201,7 +202,7 @@ export default function Hero() {
                     <>
                       <span className="fx-avatar">{ride.driver[0]}</span>
                       <div>
-                        <strong>{ride.driver} <IconTick className="fx-verified" /></strong>
+                        <strong>{ride.driver} <VerifiedMark size={18} label="Verified" /></strong>
                         <small>{ride.car} · Verified vehicle</small>
                       </div>
                     </>
