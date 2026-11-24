@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { headers } from 'next/headers';
 import { after } from 'next/server';
 import SiteLayout from './(site)/layout';
@@ -72,6 +71,9 @@ async function suggestionFor(pathname) {
  * Shows for every address that has no page. It offers the page the visitor most likely wanted, both app store
  * buttons, and home and support. Each open goes to PostHog as `public_page_not_found` with a safe path and the
  * sending site, so broken links can be found and fixed.
+ *
+ * Links are plain <a> tags: a client navigation from this page into the site pages opens them part way down
+ * (the footer on phones), so each link loads its page from the top.
  */
 export default async function NotFound() {
   const requestHeaders = await headers();
@@ -92,7 +94,7 @@ export default async function NotFound() {
   return (
     <SiteLayout>
       <main className="fx-share fx-share-empty">
-        <header className="fx-share-top"><Link href="/" aria-label="Fluxgo home"><Wordmark /></Link></header>
+        <header className="fx-share-top"><a href="/" aria-label="Fluxgo home"><Wordmark /></a></header>
         <section className="fx-share-sheet fx-missing">
           <h1>Page not found</h1>
           <p>{DESCRIPTION}</p>
@@ -100,13 +102,13 @@ export default async function NotFound() {
             <div className="fx-missing-card">
               <small>Based on your link</small>
               <strong>{suggestion.title}</strong>
-              <Link className="fx-share-btn" href={suggestion.href}>{suggestion.button}</Link>
+              <a className="fx-share-btn" href={suggestion.href}>{suggestion.button}</a>
             </div>
           ) : null}
           <div className="fx-missing-stores"><StoreButtons tone="dark" showNote={false} /></div>
           <nav className="fx-missing-links" aria-label="More">
-            <Link href="/">Go to home</Link>
-            <Link href="/support">Contact support</Link>
+            <a href="/">Go to home</a>
+            <a href="/support">Contact support</a>
           </nav>
         </section>
       </main>
