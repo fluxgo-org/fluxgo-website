@@ -57,3 +57,20 @@ assert.equal(link.next('https://go.fluxgo.in/open/ride/TRP01JABCDEFG', { visitor
 assert.equal(link.next('trip/TRP01JABCDEFG'), 'trip/TRP01JABCDEFG?s=k3f9x2ab&utm_source=share&utm_medium=ride');
 
 console.log('link tracking checks passed');
+
+// Marketing links (/g/<code>): only same-site paths and known tags pass.
+{
+  const { marketingCode, marketingTarget } = await import('../lib/marketing-links.js');
+  assert.equal(marketingCode('JNTUA-Friday'), 'jntua-friday');
+  assert.equal(marketingCode('a'), null);
+  assert.equal(marketingCode('bad code'), null);
+  assert.equal(marketingTarget({ path: '/', query: { s: 'abcd2345', utm_source: 'whatsapp_group', utm_medium: 'gtm', utm_content: 'jntua-friday', x: 'y' } }),
+    '/?s=abcd2345&utm_source=whatsapp_group&utm_medium=gtm&utm_content=jntua-friday');
+  assert.equal(marketingTarget({ path: '/ride/TRP-ABC', query: {} }), '/ride/TRP-ABC');
+  assert.equal(marketingTarget({ path: '//evil.com', query: {} }), null);
+  assert.equal(marketingTarget({ path: 'https://evil.com', query: {} }), null);
+  assert.equal(marketingTarget({ path: '/g/loop', query: {} }), null);
+  assert.equal(marketingTarget({ path: '/', query: { utm_source: '<x>' } }), '/');
+  assert.equal(marketingTarget(null), null);
+}
+console.log('marketing link checks passed');
