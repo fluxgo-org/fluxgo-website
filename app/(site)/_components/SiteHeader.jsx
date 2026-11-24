@@ -12,7 +12,7 @@ const PRIMARY = [
 ];
 
 // Why Fluxgo is dependable, and help. Inside the menu on wide screens.
-const MORE_LABEL = 'Safety';
+const MORE_LABEL = 'More';
 const MORE = [
   { href: '/#reliability', label: 'Reliability' },
   { href: '/#trust', label: 'Trust' },
