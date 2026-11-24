@@ -67,10 +67,23 @@ export default function Hero() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [reduced, setReduced] = useState(false);
+  const video = useRef(null);
 
   useEffect(() => {
     setReduced(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   }, []);
+
+  // Reduced motion: stop the background video on its first frame.
+  useEffect(() => {
+    const el = video.current;
+    if (!el) return;
+    if (reduced) {
+      el.pause();
+      el.currentTime = 0;
+    } else {
+      el.play?.().catch(() => {});
+    }
+  }, [reduced]);
 
   useEffect(() => {
     if (paused || reduced) return undefined;
@@ -94,6 +107,22 @@ export default function Hero() {
           />
         ))}
       </svg>
+      <video
+        ref={video}
+        className="fx-hero-video"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        poster="/assets/hero/fluxgo-hero-poster.jpg"
+        aria-hidden="true"
+        tabIndex={-1}
+      >
+        <source src="/assets/hero/fluxgo-hero.webm" type="video/webm" />
+        <source src="/assets/hero/fluxgo-hero.mp4" type="video/mp4" />
+      </video>
+      <div className="fx-hero-scrim" aria-hidden="true" />
 
       <div className="fx-wrap fx-hero-grid">
         <div className="fx-hero-copy">
