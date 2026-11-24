@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import {
-  VISITOR_COOKIE, VISITOR_HEADER, captureSiteEvent, isBot, isVisitorId, newVisitorId, visitProperties
+  PATH_HEADER, VISITOR_COOKIE, VISITOR_HEADER, captureSiteEvent, isBot, isVisitorId, newVisitorId, visitProperties
 } from './lib/link-tracking';
 
 /**
@@ -20,6 +20,8 @@ export function proxy(request, event) {
   const visitorId = isVisitorId(visitorFromCookie) ? visitorFromCookie : newVisitorId();
   const headers = new Headers(request.headers);
   headers.set(VISITOR_HEADER, visitorId);
+  // The 404 page reads the path from this header to find the page the visitor wanted.
+  headers.set(PATH_HEADER, pathname);
   let response;
   if (partnerHost) {
     const url = nextUrl.clone();

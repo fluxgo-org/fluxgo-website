@@ -74,3 +74,20 @@ console.log('link tracking checks passed');
   assert.equal(marketingTarget(null), null);
 }
 console.log('marketing link checks passed');
+
+// 404 page help: guess the wanted page, and a safe path for analytics.
+{
+  const { guessTarget, safeMissingPath } = await import('../lib/not-found.js');
+  assert.deepEqual(guessTarget('/TRP-01JABCDEFG'), { kind: 'ride', id: 'TRP01JABCDEFG' });
+  assert.deepEqual(guessTarget('/rides/trp01jabcdefg/details'), { kind: 'ride', id: 'TRP01JABCDEFG' });
+  assert.deepEqual(guessTarget('/cab/5B1C0E4E-1111-4222-8333-944455556666'), { kind: 'cab', id: '5b1c0e4e-1111-4222-8333-944455556666' });
+  assert.deepEqual(guessTarget('/help'), { kind: 'page', page: 'support' });
+  assert.deepEqual(guessTarget('/Privacy/'), { kind: 'page', page: 'privacy-terms' });
+  assert.deepEqual(guessTarget('/jntua-friday'), { kind: 'marketing', code: 'jntua-friday' });
+  assert.equal(guessTarget('/a/b/c'), null);
+  assert.equal(guessTarget('/'), null);
+  assert.equal(safeMissingPath('/R/ABC123'), '/r/*');
+  assert.equal(safeMissingPath('/old page?x=1'), '/old_page');
+  assert.equal(safeMissingPath(`/${'x'.repeat(200)}`).length, 100);
+}
+console.log('404 help checks passed');
