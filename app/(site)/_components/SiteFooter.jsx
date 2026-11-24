@@ -1,4 +1,5 @@
 import Wordmark from './Wordmark';
+import NavLink from './NavLink';
 import { APP_STORE_URL, PARTNER_URL, PLAY_STORE_URL, SUPPORT_EMAIL, WEB_APP_URL } from './links';
 
 // Groups follow the header: what people come to do, then safety and help.
@@ -52,8 +53,7 @@ export default function SiteFooter() {
                     {item.external ? (
                       <a href={item.href} target="_blank" rel="noopener noreferrer">{item.text}</a>
                     ) : (
-                      // Plain links: a click on the page you are on reloads it at the top.
-                      <a href={item.href}>{item.text}</a>
+                      <NavLink href={item.href}>{item.text}</NavLink>
                     )}
                   </li>
                 ))}
