@@ -113,6 +113,7 @@ body:has(> .fx) { margin: 0; }
 }
 .fx-avatar-sm { width: 24px; height: 24px; font-size: 11px; }
 .fx-verified { color: var(--verified); }
+.fx-vmark { display: inline-block; flex: none; object-fit: contain; vertical-align: -3px; }
 
 /* ───────────────────────── Header ───────────────────────── */
 .fx-header {
@@ -162,47 +163,120 @@ body:has(> .fx) { margin: 0; }
 .fx-mobile-cta { display: grid; place-items: center; height: 52px; margin-top: 14px; border-radius: 14px; background: var(--mint); color: var(--hero); font-weight: 600; }
 @keyframes fx-menu-in { from { opacity: 0; transform: translateY(8px); } }
 
-/* ───────────────────────── Hero ───────────────────────── */
+/* ───────────────────────── Hero (video background + seat pass) ───────────────────────── */
 .fx-hero {
   position: relative; isolation: isolate; overflow: hidden;
   background: var(--hero); color: var(--on-dark);
-  padding: clamp(124px, 16vh, 172px) 0 0;
 }
-.fx-hero-glow {
-  position: absolute; inset: 0; z-index: -1;
+.fx-hero-pass { display: flex; flex-direction: column; min-height: min(100svh, 920px); padding-top: clamp(104px, 13vh, 136px); }
+.fx-hero-video {
+  position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%;
+  object-fit: cover; object-position: 50% 45%; pointer-events: none;
+  filter: brightness(0.62) saturate(0.9);
+}
+/* Deep on the left for the text, lighter on the right so the video shows around the pass. */
+.fx-hero-shade {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(60% 55% at 78% 38%, rgba(47, 107, 70, 0.55), transparent 70%),
-    radial-gradient(40% 40% at 8% 92%, rgba(47, 107, 70, 0.26), transparent 70%);
+    linear-gradient(90deg, rgba(16, 42, 27, 0.94) 0%, rgba(16, 42, 27, 0.82) 38%, rgba(16, 42, 27, 0.4) 70%, rgba(16, 42, 27, 0.3) 100%),
+    linear-gradient(180deg, rgba(16, 42, 27, 0.6) 0%, rgba(16, 42, 27, 0) 22%, rgba(16, 42, 27, 0) 78%, rgba(16, 42, 27, 0.7) 100%);
 }
-.fx-hero-contours { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; color: rgba(180, 226, 174, 0.07); }
 .fx-hero-grid {
-  display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
-  gap: clamp(40px, 6vw, 96px); align-items: center;
-  padding-bottom: clamp(64px, 9vh, 104px);
+  flex: 1; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
+  gap: clamp(40px, 6vw, 96px); align-items: center; padding-bottom: clamp(48px, 7vh, 88px);
 }
-.fx-hero-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 28px; }
+.fx-hero-copy { display: flex; flex-direction: column; align-items: flex-start; }
 .fx-hero-title {
-  font-size: clamp(50px, 7.4vw, 104px);
-  line-height: 0.96; letter-spacing: -0.05em; font-weight: 700;
+  font-size: clamp(36px, 4vw, 56px); line-height: 1.06; letter-spacing: -0.045em; font-weight: 700;
 }
 .fx-hero-title > span[aria-hidden] { display: flex; flex-direction: column; }
-.fx-hero-line-soft { color: var(--on-dark-3); font-size: 0.6em; letter-spacing: -0.045em; margin-top: 0.14em; white-space: nowrap; }
-.fx-hero-slot { display: grid; padding-bottom: 0.08em; }
+.fx-hero-pass .fx-hero-title { color: #FFFFFF; font-size: clamp(38px, 4.2vw, 60px); line-height: 1.04; }
+.fx-hero-pass .fx-hero-slot { font-size: 0.66em; letter-spacing: -0.03em; margin-top: 0.1em; }
+.fx-hero-slot { display: grid; justify-items: start; }
 .fx-hero-city {
-  grid-area: 1 / 1; color: var(--mint);
-  opacity: 0; transform: translateY(0.4em); filter: blur(8px);
-  transition: opacity 0.6s var(--ease), transform 0.7s var(--ease), filter 0.6s var(--ease);
+  grid-area: 1 / 1; color: #FFC94D; text-wrap: balance;
+  opacity: 0; transform: translateY(0.35em); filter: blur(8px);
+  transition: opacity 0.5s var(--ease), transform 0.6s var(--ease), filter 0.5s var(--ease);
 }
 .fx-hero-city.is-active { opacity: 1; transform: none; filter: none; }
-.fx-hero-lede { font-size: clamp(17px, 1.5vw, 20px); line-height: 1.55; color: var(--on-dark-2); max-width: 29em; text-wrap: pretty; }
-.fx-hero-proof { display: flex; flex-wrap: wrap; gap: 8px 22px; padding-top: 22px; border-top: 1px solid var(--hair-dark); width: 100%; }
-.fx-hero-proof li { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; color: var(--on-dark-2); }
-.fx-hero-proof svg { color: var(--mint); }
-.fx-hero-proof svg path:last-child { stroke: var(--hero); }
+.fx-hero-sub { margin-top: 22px; max-width: 30em; font-size: clamp(17px, 1.4vw, 20px); line-height: 1.55; color: rgba(233, 240, 234, 0.8); text-wrap: pretty; }
+.fx-hero-copy .fx-stores { margin-top: 36px; }
+
+/* Seat pass */
+.fx-pass-stage { display: grid; justify-items: end; gap: 16px; }
+.fx-pass, .fx-pass-progress { width: min(100%, 392px); }
+.fx-pass {
+  --stub: 88px;
+  border-radius: 24px; background: var(--white); color: var(--ink);
+  box-shadow: 0 34px 80px -34px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.08);
+  -webkit-mask: radial-gradient(circle 13px at 0 calc(100% - var(--stub)), transparent 98%, #000), radial-gradient(circle 13px at 100% calc(100% - var(--stub)), transparent 98%, #000);
+  -webkit-mask-composite: source-in;
+  mask: radial-gradient(circle 13px at 0 calc(100% - var(--stub)), transparent 98%, #000), radial-gradient(circle 13px at 100% calc(100% - var(--stub)), transparent 98%, #000);
+  mask-composite: intersect;
+  transition: transform 0.5s var(--ease);
+}
+.fx-pass-main { padding: 22px 24px 20px; }
+.fx-pass-top { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; font-weight: 600; color: var(--ink3); }
+.fx-pass-top span:first-child { color: var(--brand); }
+.fx-pass-route { display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 14px; margin: 18px 0 22px; }
+.fx-pass-end { display: flex; flex-direction: column; }
+.fx-pass-end:last-child { align-items: flex-end; text-align: right; }
+.fx-pass-end strong { font-size: 38px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
+.fx-pass-end b { margin-top: 10px; font-size: 16px; font-weight: 650; letter-spacing: -0.015em; font-variant-numeric: tabular-nums; }
+.fx-pass-end span { margin-top: 2px; font-size: 13px; color: var(--ink3); }
+.fx-pass-line { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 15px; }
+.fx-pass-track { position: relative; width: 100%; height: 1.5px; background: var(--line-hard); }
+.fx-pass-track::before, .fx-pass-track::after { content: ""; position: absolute; top: -3px; width: 7px; height: 7px; border-radius: 50%; background: var(--white); box-shadow: inset 0 0 0 1.5px var(--ink2); }
+.fx-pass-track::before { left: 0; }
+.fx-pass-track::after { right: 0; }
+.fx-pass-track i { position: absolute; top: -3.5px; left: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); z-index: 1; animation: fx-pass-drive var(--cycle) cubic-bezier(0.45, 0, 0.25, 1) both; }
+@keyframes fx-pass-drive { from { left: 0; } to { left: calc(100% - 8px); } }
+.fx-pass-line em { font-style: normal; font-size: 12px; font-weight: 600; color: var(--ink3); font-variant-numeric: tabular-nums; }
+
+/* One 3-column grid for the fields and the stub, so every edge lines up. */
+.fx-pass-grid { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 16px; margin: 0; }
+.fx-pass-main .fx-pass-grid { padding-top: 18px; box-shadow: inset 0 1px 0 var(--line); }
+.fx-pass-grid > div { min-width: 0; }
+.fx-pass-grid dt { font-size: 12px; font-weight: 500; color: var(--ink3); margin-bottom: 5px; }
+.fx-pass-grid dd { margin: 0; font-size: 16px; font-weight: 650; letter-spacing: -0.015em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.fx-pass-grid dd small { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 500; letter-spacing: 0; color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fx-pass-name { display: flex; align-items: center; gap: 5px; }
+.fx-pass-stub {
+  position: relative; align-content: center;
+  height: var(--stub); padding: 4px 24px 0; background: var(--paper);
+}
+.fx-pass-stub::before { content: ""; position: absolute; left: 18px; right: 18px; top: 0; border-top: 1.5px dashed var(--line-hard); }
+.fx-pass-stub dd { font-size: 18px; font-weight: 700; }
+.fx-pass-grid dd.fx-pass-code { font-family: var(--mono); letter-spacing: 0.12em; color: var(--brand); }
+.fx-pass-progress { display: grid; grid-auto-flow: column; gap: 6px; padding: 0 4px; }
+.fx-pass-progress span { position: relative; height: 3px; border-radius: 3px; background: rgba(233, 240, 234, 0.2); overflow: hidden; }
+.fx-pass-progress i { position: absolute; inset: 0; background: var(--mint); transform: scaleX(0); transform-origin: left; }
+.fx-pass-progress span.is-done i { transform: scaleX(1); }
+.fx-pass-progress span.is-on i { animation: fx-progress var(--cycle) linear forwards; }
+.fx-pass-stage.is-paused .fx-pass-progress i, .fx-pass-stage.is-paused .fx-pass-track i { animation-play-state: paused; }
+@media (prefers-reduced-motion: no-preference) {
+  .fx-pass { animation: fx-pass-float 7s ease-in-out infinite; }
+  .fx-pass-stage.is-paused .fx-pass { animation-play-state: paused; transform: translateY(-4px); }
+  .fx-pass-anim > * { animation: fx-pass-rise 0.55s var(--ease) both; }
+  .fx-pass-anim > *:nth-child(2) { animation-delay: 70ms; }
+  .fx-pass-anim > *:nth-child(3) { animation-delay: 140ms; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fx-pass-track i { animation: none; left: 50%; }
+}
+@keyframes fx-pass-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes fx-pass-rise { from { opacity: 0; transform: translateY(10px); filter: blur(4px); } }
+@media (max-width: 920px) {
+  .fx-pass-stage { justify-items: start; }
+  .fx-hero-shade { background: linear-gradient(180deg, rgba(16, 42, 27, 0.85), rgba(16, 42, 27, 0.75) 50%, rgba(16, 42, 27, 0.9)); }
+}
+@media (max-width: 560px) {
+  .fx-pass-route strong { font-size: 32px; }
+}
 
 /* Hero ride card */
 .fx-hero-stage { position: relative; display: grid; justify-items: center; gap: 22px; }
-.fx-ride-deck { position: absolute; inset: 0 0 46px; display: grid; justify-items: center; pointer-events: none; }
+.fx-ride-deck { position: absolute; inset: 40px 0 46px; display: grid; justify-items: center; pointer-events: none; }
 .fx-ride-deck span {
   grid-area: 1 / 1; width: min(100%, 410px); height: 100%; border-radius: 26px;
   background: rgba(233, 240, 234, 0.05); box-shadow: inset 0 0 0 1px var(--hair-dark);
@@ -560,6 +634,7 @@ body:has(> .fx) { margin: 0; }
 
   .fx-hero-grid { grid-template-columns: 1fr; }
   .fx-hero-stage { margin-top: 12px; }
+  .fx-hero-scrim { background: linear-gradient(180deg, rgba(16, 42, 27, 0.95) 0%, rgba(16, 42, 27, 0.9) 50%, rgba(16, 42, 27, 0.94) 100%); }
 
   .fx-journey { --rail-x: 10px; --rail-pad: 44px; }
   .fx-stop-grid { grid-template-columns: 1fr; }
