@@ -165,8 +165,9 @@ body:has(> .fx) { margin: 0; }
 /* ───────────────────────── Hero ───────────────────────── */
 .fx-hero {
   position: relative; isolation: isolate; overflow: hidden;
+  display: flex; flex-direction: column; min-height: min(100svh, 940px);
   background: var(--hero); color: var(--on-dark);
-  padding: clamp(124px, 16vh, 172px) 0 0;
+  padding: clamp(112px, 14vh, 150px) 0 0;
 }
 .fx-hero-glow {
   position: absolute; inset: 0; z-index: -1;
@@ -178,27 +179,27 @@ body:has(> .fx) { margin: 0; }
 .fx-hero-video {
   position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%;
   object-fit: cover; object-position: 60% 50%; pointer-events: none;
-  filter: brightness(0.5) saturate(0.8);
+  filter: brightness(0.62) saturate(0.85);
 }
 /* Keeps the headline and buttons readable over the light video. */
 .fx-hero-scrim {
   position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background:
-    linear-gradient(90deg, rgba(16, 42, 27, 0.96) 0%, rgba(16, 42, 27, 0.92) 40%, rgba(16, 42, 27, 0.62) 66%, rgba(16, 42, 27, 0.66) 100%),
-    linear-gradient(180deg, rgba(16, 42, 27, 0.6) 0%, transparent 22%, transparent 78%, rgba(16, 42, 27, 0.75) 100%);
+    linear-gradient(90deg, rgba(16, 42, 27, 0.96) 0%, rgba(16, 42, 27, 0.9) 34%, rgba(16, 42, 27, 0.55) 60%, rgba(16, 42, 27, 0.4) 100%),
+    linear-gradient(180deg, rgba(16, 42, 27, 0.65) 0%, transparent 24%, transparent 72%, rgba(16, 42, 27, 0.85) 100%);
 }
 .fx-hero-grid {
   display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
-  gap: clamp(40px, 6vw, 96px); align-items: center;
-  padding-bottom: clamp(64px, 9vh, 104px);
+  flex: 1; gap: clamp(40px, 6vw, 96px); align-items: center;
+  padding-bottom: clamp(56px, 8vh, 96px);
 }
 .fx-hero-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 28px; }
 .fx-hero-title {
-  font-size: clamp(50px, 7.4vw, 104px);
+  font-size: clamp(48px, 6.6vw, 96px);
   line-height: 0.96; letter-spacing: -0.05em; font-weight: 700;
 }
 .fx-hero-title > span[aria-hidden] { display: flex; flex-direction: column; }
-.fx-hero-line-soft { color: var(--on-dark-3); font-size: 0.6em; letter-spacing: -0.045em; margin-top: 0.14em; white-space: nowrap; }
+.fx-hero-line-soft { color: var(--on-dark); opacity: 0.9; font-size: 0.56em; letter-spacing: -0.045em; margin-top: 0.18em; white-space: nowrap; }
 .fx-hero-slot { display: grid; padding-bottom: 0.08em; }
 .fx-hero-city {
   grid-area: 1 / 1; color: var(--mint);
@@ -207,14 +208,15 @@ body:has(> .fx) { margin: 0; }
 }
 .fx-hero-city.is-active { opacity: 1; transform: none; filter: none; }
 .fx-hero-lede { font-size: clamp(17px, 1.5vw, 20px); line-height: 1.55; color: var(--on-dark-2); max-width: 29em; text-wrap: pretty; }
-.fx-hero-proof { display: flex; flex-wrap: wrap; gap: 8px 22px; padding-top: 22px; border-top: 1px solid var(--hair-dark); width: 100%; }
-.fx-hero-proof li { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; color: var(--on-dark-2); }
+.fx-hero-proof { display: flex; flex-wrap: wrap; gap: 10px 18px; padding-top: 22px; border-top: 1px solid var(--hair-dark); width: 100%; }
+.fx-hero-proof li { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 550; color: var(--on-dark); white-space: nowrap; }
 .fx-hero-proof svg { color: var(--mint); }
-.fx-hero-proof svg path:last-child { stroke: var(--hero); }
+.fx-hero-card-label { justify-self: start; margin-left: calc(50% - min(50%, 205px)); font-size: 13.5px; font-weight: 600; color: var(--on-dark-2); }
+.fx-hero .fx-ride-tear::before, .fx-hero .fx-ride-tear::after { display: none; }
 
 /* Hero ride card */
 .fx-hero-stage { position: relative; display: grid; justify-items: center; gap: 22px; }
-.fx-ride-deck { position: absolute; inset: 0 0 46px; display: grid; justify-items: center; pointer-events: none; }
+.fx-ride-deck { position: absolute; inset: 40px 0 46px; display: grid; justify-items: center; pointer-events: none; }
 .fx-ride-deck span {
   grid-area: 1 / 1; width: min(100%, 410px); height: 100%; border-radius: 26px;
   background: rgba(233, 240, 234, 0.05); box-shadow: inset 0 0 0 1px var(--hair-dark);

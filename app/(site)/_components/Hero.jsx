@@ -6,6 +6,9 @@ import { IconBolt, IconCab, IconHand, IconTick } from './Icons';
 
 const CYCLE_MS = 4200;
 
+// Hero copy by Gemini 4 Neon (2026-11-25).
+const PROOF = ['Public no-show record', 'Reminder 1 hour before', 'Every phone verified'];
+
 // Example rides for the hero. They show how a listing looks; they are not live data.
 const RIDES = [
   { to: 'Mysuru', from: 'Bengaluru', fromCode: 'BLR', toCode: 'MYS', depart: '07:15', arrive: '10:00', duration: '2h 45m', price: 280, left: 3, seats: 3, instant: false, driver: 'Meera', car: 'Tata Nexon', shape: 1 },
@@ -127,23 +130,32 @@ export default function Hero() {
       <div className="fx-wrap fx-hero-grid">
         <div className="fx-hero-copy">
           <h1 className="fx-hero-title" id="fx-hero-title">
-            <span className="fx-sr">Going to another city? Someone already is.</span>
+            <span className="fx-sr">Heading to another city? Shared rides that show up.</span>
             <span aria-hidden="true">
-              <span className="fx-hero-line">Going to</span>
+              <span className="fx-hero-line">Heading to</span>
               <span className="fx-hero-slot">
                 {RIDES.map((item, i) => (
                   <span key={item.to} className={`fx-hero-city${i === index ? ' is-active' : ''}`}>{item.to}?</span>
                 ))}
               </span>
-              <span className="fx-hero-line fx-hero-line-soft">Someone already is.</span>
+              <span className="fx-hero-line fx-hero-line-soft">Shared rides that show up.</span>
             </span>
           </h1>
 
           <p className="fx-hero-lede">
-            Reliable intercity carpools and shared cabs with verified members.
+            Carpools on any route and shared cab seats with checked operators. Fixed price per seat.
           </p>
 
           <StoreButtons tone="dark" />
+
+          <ul className="fx-hero-proof">
+            {PROOF.map((item) => (
+              <li key={item}>
+                <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="m5 10.5 3.2 3.2L15 6.8" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                {item}
+              </li>
+            ))}
+          </ul>
 
         </div>
 
@@ -154,6 +166,7 @@ export default function Hero() {
           onFocusCapture={() => setPaused(true)}
           onBlurCapture={() => setPaused(false)}
         >
+          <p className="fx-hero-card-label">Shown before you book</p>
           <div className="fx-ride-deck" aria-hidden="true"><span /><span /></div>
           <article className="fx-ride" aria-label={`Example ${ride.cab ? 'shared cab' : 'ride'} from ${ride.from} to ${ride.to}`} key={index}>
             <RouteMap ride={ride} still={reduced} />
