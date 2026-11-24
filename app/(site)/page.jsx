@@ -84,7 +84,7 @@ const INVITE_STEPS = [
 ];
 
 const FAQ = [
-  { q: 'Who can I travel with on Fluxgo?', a: 'Every member verifies their phone first. You see profession, bio, ratings, work email badge and women on board before booking, and can filter for women co-travellers.' },
+  { q: 'Who can I travel with on Fluxgo?', a: 'Fellow travellers whose profession, bio, work email badge and ratings you see before booking. Filter for women co-travellers; hosts can accept verified members only.' },
   { q: 'What happens if someone does not show up?', a: 'Every profile displays no-shows and late cancels, even when 0. We also use AI on ride and cancel history to flag likely no-shows early, and send a 1-hour reminder.' },
   { q: 'What if I feel unsafe on a ride?', a: 'Save a trusted contact before your first ride and share your live trip location. Call 112 if in danger. Report any concern from the trip screen; we read every report.' },
   { q: 'Which routes does Fluxgo cover?', a: 'Carpools run on any route a host publishes, and you can set a ride alert if your date is empty. Shared cabs run Bengaluru to Anantapur for now.' },
@@ -403,7 +403,7 @@ export default function Home() {
                 id="trust"
                 eyebrow="Trust"
                 title="Know who you are riding with"
-                sub="Every member verifies their phone before a first ride, with profiles visible upfront."
+                sub="See work email badges, professions, two-way reviews and no-shows before you book."
               />
               <dl className="hx-facts">
                 {TRUST_FACTS.map(([t, b], i) => (
