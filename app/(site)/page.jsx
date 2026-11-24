@@ -17,14 +17,14 @@ export const metadata = { alternates: { canonical: '/' } };
 // Copy below was written by Gemini 4 Neon (2026-11-25) from the approved fact list.
 // Mock screens use example data. They are not live data.
 
-const COMPARE_COLS = ['Private buses', 'Solo cab', 'WhatsApp groups', 'Other carpool apps', 'Fluxgo'];
-// 1 = yes, 0 = no. The last value is Fluxgo.
+const COMPARE_COLS = ['Fluxgo', 'Private buses', 'Solo cab', 'WhatsApp groups', 'Other carpool apps'];
+// 1 = yes, 0 = no. The first value is Fluxgo.
 const COMPARE_ROWS = [
-  ['Leaves at a time you choose', [0, 1, 0, 1, 1]],
-  ['Pay only for your seat', [1, 0, 1, 1, 1]],
-  ['See who is coming before booking', [0, 0, 0, 1, 1]],
-  ['Work email badge', [0, 0, 0, 0, 1]],
-  ['Shared cab with checked operators', [0, 0, 0, 0, 1]]
+  ['Leaves at a time you choose', [1, 0, 1, 0, 1]],
+  ['Pay only for your seat', [1, 1, 0, 1, 1]],
+  ['See who is coming before booking', [1, 0, 0, 0, 1]],
+  ['Work email badge', [1, 0, 0, 0, 0]],
+  ['Shared cab with checked operators', [1, 0, 0, 0, 0]]
 ];
 
 const REL_POINTS = [
@@ -97,6 +97,14 @@ function Check({ className = '' }) {
   return (
     <svg className={className} viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
       <path d="m5 10.5 3.2 3.2L15 6.8" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function Cross({ className = '' }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+      <path d="m6 6 8 8M14 6l-8 8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -238,8 +246,8 @@ export default function Home() {
                   <tr>
                     <td />
                     {COMPARE_COLS.map((col, i) => (
-                      <th key={col} scope="col" className={i === COMPARE_COLS.length - 1 ? 'is-fx' : ''}>
-                        {i === COMPARE_COLS.length - 1 ? <span className="hx-compare-brand">fluxgo<span>.</span></span> : col}
+                      <th key={col} scope="col" className={i === 0 ? 'is-fx' : ''}>
+                        {i === 0 ? <span className="hx-compare-brand">fluxgo<span>.</span></span> : col}
                       </th>
                     ))}
                   </tr>
@@ -249,8 +257,8 @@ export default function Home() {
                     <tr key={label}>
                       <th scope="row">{label}</th>
                       {marks.map((yes, i) => (
-                        <td key={i} className={i === marks.length - 1 ? 'is-fx' : ''}>
-                          {yes ? <Check className="hx-yes" /> : <span className="hx-no" aria-hidden="true" />}
+                        <td key={i} className={i === 0 ? 'is-fx' : ''}>
+                          {yes ? <Check className="hx-yes" /> : <Cross className="hx-no" />}
                           <span className="fx-sr">{yes ? 'Yes' : 'No'}</span>
                         </td>
                       ))}
