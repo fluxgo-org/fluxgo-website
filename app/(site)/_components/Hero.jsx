@@ -1,17 +1,19 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import StoreButtons from './StoreButtons';
 
-const CYCLE_MS = 3200;
+const CYCLE_MS = 3000;
 
-// Cities for the rotating headline. Hero copy (mission line and headline) by Gemini 4 Neon (2026-11-25).
+// Hero copy by Gemini 4 Neon (2026-11-25).
 const CITIES = ['Mysuru', 'Anantapur', 'Pune', 'Pondicherry', 'Vijayawada', 'Tirupati'];
 
 export default function Hero() {
   const [index, setIndex] = useState(0);
   const [reduced, setReduced] = useState(false);
+  const [slotWidth, setSlotWidth] = useState(null);
   const video = useRef(null);
+  const cityRefs = useRef([]);
 
   useEffect(() => {
     setReduced(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -22,6 +24,14 @@ export default function Hero() {
     const timer = window.setTimeout(() => setIndex((value) => (value + 1) % CITIES.length), CYCLE_MS);
     return () => window.clearTimeout(timer);
   }, [index, reduced]);
+
+  // The city slot takes the width of the city on show, so the line stays centred.
+  useLayoutEffect(() => {
+    const measure = () => setSlotWidth(cityRefs.current[index]?.offsetWidth ?? null);
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [index]);
 
   // Reduced motion: stop the background video on its first frame.
   useEffect(() => {
@@ -54,21 +64,27 @@ export default function Hero() {
       </video>
       <div className="fx-hero-shade" aria-hidden="true" />
 
-      <p className="fx-wrap fx-hero-mission">Fixing intercity travel in India</p>
+      <div className="fx-wrap fx-hero-block">
+        <h1 className="fx-hero-title" id="fx-hero-title">Intercity ride sharing.</h1>
 
-      <div className="fx-wrap fx-hero-cine-copy">
-        <h1 className="fx-hero-title" id="fx-hero-title">
-          <span className="fx-sr">Heading to another city? Shared rides that show up.</span>
+        <p className="fx-hero-sub">
+          <span className="fx-sr">Heading to another city? Book a fixed-price seat with verified travellers.</span>
           <span aria-hidden="true">
-            <span className="fx-hero-line">Heading to</span>
-            <span className="fx-hero-slot">
+            Heading to{' '}
+            <span className="fx-hero-slot" style={slotWidth ? { width: `${slotWidth}px` } : undefined}>
               {CITIES.map((city, i) => (
-                <span key={city} className={`fx-hero-city${i === index ? ' is-active' : ''}`}>{city}?</span>
+                <span
+                  key={city}
+                  ref={(el) => { cityRefs.current[i] = el; }}
+                  className={`fx-hero-city${i === index ? ' is-active' : ''}`}
+                >
+                  {city}
+                </span>
               ))}
             </span>
-            <span className="fx-hero-line fx-hero-line-soft">Shared rides that show up.</span>
+            ? Book a fixed-price seat with verified travellers.
           </span>
-        </h1>
+        </p>
 
         <StoreButtons tone="dark" />
       </div>
