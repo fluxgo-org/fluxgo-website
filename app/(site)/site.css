@@ -190,7 +190,7 @@ body:has(> .fx) { margin: 0; }
   font-size: clamp(36px, 4vw, 56px); line-height: 1.06; letter-spacing: -0.045em; font-weight: 700;
 }
 .fx-hero-title > span[aria-hidden] { display: flex; flex-direction: column; }
-.fx-hero-pass .fx-hero-line { color: rgba(233, 240, 234, 0.62); }
+.fx-hero-pass .fx-hero-title { color: #FFFFFF; }
 .fx-hero-slot { display: grid; justify-items: start; }
 .fx-hero-city {
   grid-area: 1 / 1; color: #FFFFFF; text-wrap: balance;
