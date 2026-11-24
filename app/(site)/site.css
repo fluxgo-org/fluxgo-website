@@ -182,55 +182,87 @@ body:has(> .fx) { margin: 0; }
     linear-gradient(180deg, rgba(16, 42, 27, 0.6) 0%, rgba(16, 42, 27, 0) 22%, rgba(16, 42, 27, 0) 78%, rgba(16, 42, 27, 0.7) 100%);
 }
 .fx-hero-grid {
-  flex: 1; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  flex: 1; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
   gap: clamp(40px, 6vw, 96px); align-items: center; padding-bottom: clamp(48px, 7vh, 88px);
 }
 .fx-hero-copy { display: flex; flex-direction: column; align-items: flex-start; }
 .fx-hero-title {
-  max-width: 11.5em; font-size: clamp(42px, 5.2vw, 74px); line-height: 1.02; letter-spacing: -0.048em; font-weight: 700;
-  text-wrap: balance;
+  font-size: clamp(36px, 4vw, 56px); line-height: 1.06; letter-spacing: -0.045em; font-weight: 700;
 }
+.fx-hero-title > span[aria-hidden] { display: flex; flex-direction: column; }
+.fx-hero-slot { display: grid; justify-items: start; }
+.fx-hero-city {
+  grid-area: 1 / 1; color: var(--mint); text-wrap: balance;
+  opacity: 0; transform: translateY(0.35em); filter: blur(8px);
+  transition: opacity 0.5s var(--ease), transform 0.6s var(--ease), filter 0.5s var(--ease);
+}
+.fx-hero-city.is-active { opacity: 1; transform: none; filter: none; }
 .fx-hero-sub { margin-top: 22px; max-width: 30em; font-size: clamp(17px, 1.4vw, 20px); line-height: 1.55; color: rgba(233, 240, 234, 0.8); text-wrap: pretty; }
 .fx-hero-copy .fx-stores { margin-top: 36px; }
 
 /* Seat pass */
-.fx-pass-stage { display: grid; justify-items: end; gap: 12px; }
-.fx-pass-label, .fx-pass-dots { width: min(100%, 400px); }
-.fx-pass-label { font-size: 13.5px; font-weight: 600; color: rgba(233, 240, 234, 0.72); }
+.fx-pass-stage { display: grid; justify-items: end; gap: 16px; }
+.fx-pass, .fx-pass-progress { width: min(100%, 392px); }
 .fx-pass {
-  --stub: 92px;
-  width: min(100%, 400px); border-radius: 24px; background: var(--white); color: var(--ink);
-  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.65);
-  -webkit-mask: radial-gradient(circle 13px at 0 calc(100% - var(--stub)), transparent 98%, #000) , radial-gradient(circle 13px at 100% calc(100% - var(--stub)), transparent 98%, #000);
+  --stub: 96px;
+  border-radius: 24px; background: var(--white); color: var(--ink);
+  box-shadow: 0 34px 80px -34px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.08);
+  -webkit-mask: radial-gradient(circle 13px at 0 calc(100% - var(--stub)), transparent 98%, #000), radial-gradient(circle 13px at 100% calc(100% - var(--stub)), transparent 98%, #000);
   -webkit-mask-composite: source-in;
   mask: radial-gradient(circle 13px at 0 calc(100% - var(--stub)), transparent 98%, #000), radial-gradient(circle 13px at 100% calc(100% - var(--stub)), transparent 98%, #000);
   mask-composite: intersect;
-  animation: fx-pass-in 0.6s var(--ease) both;
+  transition: transform 0.5s var(--ease);
 }
-@keyframes fx-pass-in { from { opacity: 0; transform: translateY(12px) rotate(-1deg); } }
-.fx-pass-main { padding: 24px 26px 22px; }
+.fx-pass-main { padding: 22px 24px 20px; }
 .fx-pass-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13.5px; font-weight: 600; color: var(--ink3); }
-.fx-pass-route { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px; margin: 18px 0 22px; }
-.fx-pass-route strong { display: block; font-size: 40px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
-.fx-pass-route span { display: block; margin-top: 6px; font-size: 13.5px; color: var(--ink2); }
-.fx-pass-route > div:last-child { text-align: right; }
-.fx-pass-line { position: relative; height: 2px; margin-top: -18px; background: repeating-linear-gradient(90deg, var(--line-hard) 0 6px, transparent 6px 11px); }
-.fx-pass-line i { position: absolute; top: 50%; left: 0; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%; background: var(--brand); box-shadow: 0 0 0 4px var(--tint); animation: fx-pass-move 2.6s var(--ease) infinite; }
-@keyframes fx-pass-move { 0% { left: 0; } 70%, 100% { left: calc(100% - 10px); } }
+.fx-pass-route { display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 14px; margin: 20px 0 20px; }
+.fx-pass-route > div:not(.fx-pass-line) { display: flex; flex-direction: column; }
+.fx-pass-route > div:last-child { align-items: flex-end; text-align: right; }
+.fx-pass-route strong { font-size: 38px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
+.fx-pass-route b { margin-top: 10px; font-size: 16px; font-weight: 650; letter-spacing: -0.015em; font-variant-numeric: tabular-nums; }
+.fx-pass-route span { margin-top: 2px; font-size: 13px; color: var(--ink3); }
+.fx-pass-line { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 14px; }
+.fx-pass-track { position: relative; width: 100%; height: 2px; background: repeating-linear-gradient(90deg, var(--line-hard) 0 5px, transparent 5px 10px); }
+.fx-pass-track::before, .fx-pass-track::after { content: ""; position: absolute; top: -3px; width: 8px; height: 8px; border-radius: 50%; }
+.fx-pass-track::before { left: 0; background: var(--white); box-shadow: inset 0 0 0 2px var(--ink); }
+.fx-pass-track::after { right: 0; background: var(--brand); }
+.fx-pass-track i { position: absolute; top: 50%; left: 0; width: 12px; height: 12px; margin: -6px 0 0 -2px; border-radius: 50%; background: var(--brand); box-shadow: 0 0 0 5px rgba(47, 107, 70, 0.16); animation: fx-pass-drive var(--cycle) cubic-bezier(0.45, 0, 0.25, 1) both; z-index: 1; }
+@keyframes fx-pass-drive { from { left: 0; } to { left: calc(100% - 8px); } }
+.fx-pass-line em { font-style: normal; font-family: var(--mono); font-size: 11.5px; color: var(--ink3); }
 .fx-pass-host { display: flex; align-items: center; gap: 12px; padding-top: 18px; box-shadow: inset 0 1px 0 var(--line); }
+.fx-pass-host > div:nth-child(2) { min-width: 0; }
 .fx-pass-host strong { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 650; }
-.fx-pass-host small { display: block; font-size: 13px; color: var(--ink3); }
+.fx-pass-host small { display: block; font-size: 13px; color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fx-pass-record { margin-left: auto; text-align: right; }
+.fx-pass-record strong { justify-content: flex-end; font-size: 15px; }
+.fx-pass-record small { color: var(--brand); font-weight: 600; }
 .fx-pass-stub {
-  position: relative; display: grid; grid-template-columns: 0.7fr 1.2fr 1.1fr; gap: 12px;
-  height: var(--stub); padding: 20px 26px 0; background: var(--paper);
+  position: relative; display: grid; grid-template-columns: 0.6fr 1.1fr 1.3fr; gap: 12px; align-content: center;
+  height: var(--stub); padding: 6px 24px 0; background: var(--paper);
 }
 .fx-pass-stub::before { content: ""; position: absolute; left: 18px; right: 18px; top: 0; border-top: 2px dashed var(--line-hard); }
 .fx-pass-stub small { display: block; font-size: 12px; color: var(--ink3); margin-bottom: 4px; }
 .fx-pass-stub strong { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
 .fx-pass-code { font-family: var(--mono); letter-spacing: 0.14em; color: var(--brand); }
-.fx-pass-dots { display: flex; justify-content: center; gap: 6px; padding-top: 6px; }
-.fx-pass-dots span { width: 6px; height: 6px; border-radius: 6px; background: rgba(233, 240, 234, 0.3); transition: width 0.3s var(--ease), background-color 0.3s; }
-.fx-pass-dots span.is-on { width: 20px; background: var(--mint); }
+.fx-pass-seats { display: flex; align-items: center; gap: 8px; }
+.fx-pass-progress { display: grid; grid-auto-flow: column; gap: 6px; padding: 0 4px; }
+.fx-pass-progress span { position: relative; height: 3px; border-radius: 3px; background: rgba(233, 240, 234, 0.2); overflow: hidden; }
+.fx-pass-progress i { position: absolute; inset: 0; background: var(--mint); transform: scaleX(0); transform-origin: left; }
+.fx-pass-progress span.is-done i { transform: scaleX(1); }
+.fx-pass-progress span.is-on i { animation: fx-progress var(--cycle) linear forwards; }
+.fx-pass-stage.is-paused .fx-pass-progress i, .fx-pass-stage.is-paused .fx-pass-track i { animation-play-state: paused; }
+@media (prefers-reduced-motion: no-preference) {
+  .fx-pass { animation: fx-pass-float 7s ease-in-out infinite; }
+  .fx-pass-stage.is-paused .fx-pass { animation-play-state: paused; transform: translateY(-4px); }
+  .fx-pass-anim > * { animation: fx-pass-rise 0.55s var(--ease) both; }
+  .fx-pass-anim > *:nth-child(2) { animation-delay: 70ms; }
+  .fx-pass-anim > *:nth-child(3) { animation-delay: 140ms; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fx-pass-track i { animation: none; left: 50%; }
+}
+@keyframes fx-pass-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes fx-pass-rise { from { opacity: 0; transform: translateY(10px); filter: blur(4px); } }
 @media (max-width: 920px) {
   .fx-pass-stage { justify-items: start; }
   .fx-hero-shade { background: linear-gradient(180deg, rgba(16, 42, 27, 0.85), rgba(16, 42, 27, 0.75) 50%, rgba(16, 42, 27, 0.9)); }
