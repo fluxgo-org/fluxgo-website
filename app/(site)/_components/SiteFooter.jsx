@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import Wordmark from './Wordmark';
 import { APP_STORE_URL, PARTNER_URL, PLAY_STORE_URL, SUPPORT_EMAIL, WEB_APP_URL } from './links';
 
@@ -53,7 +52,8 @@ export default function SiteFooter() {
                     {item.external ? (
                       <a href={item.href} target="_blank" rel="noopener noreferrer">{item.text}</a>
                     ) : (
-                      <Link href={item.href}>{item.text}</Link>
+                      // Plain links: a click on the page you are on reloads it at the top.
+                      <a href={item.href}>{item.text}</a>
                     )}
                   </li>
                 ))}
