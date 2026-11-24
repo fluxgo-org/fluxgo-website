@@ -190,10 +190,11 @@ body:has(> .fx) { margin: 0; }
   font-size: clamp(36px, 4vw, 56px); line-height: 1.06; letter-spacing: -0.045em; font-weight: 700;
 }
 .fx-hero-title > span[aria-hidden] { display: flex; flex-direction: column; }
-.fx-hero-pass .fx-hero-title { color: #FFFFFF; }
+.fx-hero-pass .fx-hero-title { color: #FFFFFF; font-size: clamp(38px, 4.2vw, 60px); line-height: 1.04; }
+.fx-hero-pass .fx-hero-slot { font-size: 0.66em; letter-spacing: -0.03em; margin-top: 0.1em; }
 .fx-hero-slot { display: grid; justify-items: start; }
 .fx-hero-city {
-  grid-area: 1 / 1; color: #FFFFFF; text-wrap: balance;
+  grid-area: 1 / 1; color: #FFC94D; text-wrap: balance;
   opacity: 0; transform: translateY(0.35em); filter: blur(8px);
   transition: opacity 0.5s var(--ease), transform 0.6s var(--ease), filter 0.5s var(--ease);
 }
