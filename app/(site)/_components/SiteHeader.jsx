@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Wordmark from './Wordmark';
+import NavLink from './NavLink';
 
 // What visitors come to do. Always visible on wide screens.
 const PRIMARY = [
@@ -20,7 +21,6 @@ const MORE = [
 
 const NAV = [...PRIMARY, ...MORE];
 
-// Plain links: a click on the page you are on reloads it at the top.
 export default function SiteHeader({ current, solid = false }) {
   const [open, setOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -51,15 +51,15 @@ export default function SiteHeader({ current, solid = false }) {
   return (
     <header className={`fx-header${scrolled || solid ? ' is-scrolled' : ''}${open ? ' is-open' : ''}`} id="top">
       <div className="fx-header-bar">
-        <a className="fx-header-brand" href="/" aria-label="Fluxgo home" onClick={close}>
+        <NavLink className="fx-header-brand" href="/" aria-label="Fluxgo home" onClick={close}>
           <Wordmark />
-        </a>
+        </NavLink>
 
         <nav className="fx-header-nav" aria-label="Primary">
           {PRIMARY.map((item) => (
-            <a key={item.href} href={item.href} aria-current={current === item.href ? 'page' : undefined}>
+            <NavLink key={item.href} href={item.href} aria-current={current === item.href ? 'page' : undefined}>
               {item.label}
-            </a>
+            </NavLink>
           ))}
           <div
             className={`fx-header-more${moreOpen ? ' is-open' : ''}`}
@@ -78,14 +78,14 @@ export default function SiteHeader({ current, solid = false }) {
             </button>
             <div className="fx-header-more-menu" id="fx-header-more-menu" hidden={!moreOpen}>
               {MORE.map((item) => (
-                <a
+                <NavLink
                   key={item.href}
                   href={item.href}
                   aria-current={current === item.href ? 'page' : undefined}
                   onClick={() => setMoreOpen(false)}
                 >
                   {item.label}
-                </a>
+                </NavLink>
               ))}
             </div>
           </div>
@@ -110,9 +110,9 @@ export default function SiteHeader({ current, solid = false }) {
 
       <nav className="fx-mobile-nav" id="fx-mobile-nav" aria-label="Mobile" hidden={!open}>
         {NAV.map((item, index) => (
-          <a key={item.href} href={item.href} onClick={close} style={{ '--i': index }}>
+          <NavLink key={item.href} href={item.href} onClick={close} style={{ '--i': index }}>
             {item.label}
-          </a>
+          </NavLink>
         ))}
         <a className="fx-mobile-cta" href="/#download" onClick={close}>
           Get the app
