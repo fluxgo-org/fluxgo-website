@@ -8,9 +8,12 @@ import { deviceKind } from '../../../../lib/app-links';
 import { VISITOR_HEADER, pageLinkContext } from '../../../../lib/link-tracking';
 import TrackedLink from '../../_components/TrackedLink';
 import ShareRideButton from '../../ride/[publicId]/ShareRideButton';
+import { CAB_ENABLED } from '../../../../lib/site-flags';
 import { FUEL_LABELS, TYPE_LABELS, cabDate, cabShareMessage, cabSummary, cabTime, cabTitle, cabWindow, closedCopy, loadCabRide, rupees } from './cab-data';
 
 export async function generateMetadata({ params }) {
+  // Cabs hidden on the site: every cab ride link is a 404.
+  if (!CAB_ENABLED) notFound();
   const { id } = await params;
   const result = await loadCabRide(id);
   const base = { robots: { index: false, follow: false } };
@@ -69,6 +72,7 @@ function Unavailable() {
 }
 
 export default async function CabRidePage({ params, searchParams }) {
+  if (!CAB_ENABLED) notFound();
   const { id } = await params;
   const result = await loadCabRide(id);
   if (result.notFound) notFound();

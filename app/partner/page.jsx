@@ -1,4 +1,9 @@
+import { notFound } from 'next/navigation';
+import { CAB_ENABLED } from '../../lib/site-flags';
+
 export default function PartnerHome() {
+  // Cabs hidden on the site: the cab operator page is a 404 (also for old /partner/trip links).
+  if (!CAB_ENABLED) notFound();
   return (
     <main className="partner-main">
       <p className="partner-brand">fluxgo<span>.</span> partner</p>

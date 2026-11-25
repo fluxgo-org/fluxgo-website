@@ -3,19 +3,27 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import SiteHeader from '../_components/SiteHeader';
 import SiteFooter from '../_components/SiteFooter';
+import { CAB_ENABLED, cabCopy } from '../../../lib/site-flags';
+
+// Cab-free legal texts (cabCopy second value) by Gemini 4 Neon (2026-11-26). Items marked with CAB are removed
+// while NEXT_PUBLIC_SITE_CAB_ENABLED=false, and the sections are numbered again.
+const CAB = { cab: true };
 
 const TABS = [
   { id: 'privacy-policy', label: 'Privacy Policy', shortLabel: 'Privacy' },
   { id: 'terms-and-conditions', label: 'Terms and Conditions', shortLabel: 'Terms' },
 ];
 
-const privacySections = [
+const ALL_PRIVACY_SECTIONS = [
   {
     number: '01',
     title: 'What this policy covers',
     paragraphs: [
       'This Privacy Policy explains how Fluxgo collects, uses, shares, and protects information when you use our website, mobile application, and related services (the “Services”).',
-      'Fluxgo helps people find or offer seats in intercity car rides, and take a seat in a shared cab that a local cab operator runs. This policy applies to riders, drivers, cab travellers, cab operators, visitors, and people who contact our support team.',
+      cabCopy(
+        'Fluxgo helps people find or offer seats in intercity car rides, and take a seat in a shared cab that a local cab operator runs. This policy applies to riders, drivers, cab travellers, cab operators, visitors, and people who contact our support team.',
+        'Fluxgo helps people find or offer seats in intercity car rides. This policy applies to riders, drivers, visitors, and people who contact our support team.'
+      ),
     ],
   },
   {
@@ -26,9 +34,12 @@ const privacySections = [
       'Account information, such as your name, mobile number, email address when you provide one, profile photo when you choose one, and account preferences.',
       'Verification and vehicle information that we need to check a driver, a vehicle, or a ride before publication.',
       'Trip and booking information, such as route, date, time, seats, luggage, fare, booking status, cancellation, and live-trip details when you use that feature.',
-      'Shared cab information, such as the slot, seats, pickup point, guest first names, gender, and age group, boarding status, and late cancellation or no-show records.',
-      'Cab operator information, such as business and contact details, driver details, and vehicle documents (registration certificate, insurance, driving licence, and photos) that we need to check a cab before it takes a booking.',
-      'Messages, reports, feedback, and other information that you send to another member, a cab driver, or Fluxgo Support.',
+      CAB_ENABLED && 'Shared cab information, such as the slot, seats, pickup point, guest first names, gender, and age group, boarding status, and late cancellation or no-show records.',
+      CAB_ENABLED && 'Cab operator information, such as business and contact details, driver details, and vehicle documents (registration certificate, insurance, driving licence, and photos) that we need to check a cab before it takes a booking.',
+      cabCopy(
+        'Messages, reports, feedback, and other information that you send to another member, a cab driver, or Fluxgo Support.',
+        'Messages, reports, feedback, and other information that you send to another member or Fluxgo Support.'
+      ),
       'Device and service information, such as device type, app version, language, crash details, security events, and basic usage records.',
       'Payment information when a paid feature is available. Our payment provider handles payment credentials. Fluxgo receives the transaction status and reference needed to support your booking.',
     ],
@@ -60,8 +71,8 @@ const privacySections = [
     paragraphs: ['We share information only when it is needed for the purpose described below, or when the law permits or requires it.'],
     bullets: [
       'With a rider or driver, when limited profile and trip details are needed to arrange and complete a booking.',
-      'With other travellers in a shared cab slot: first name, profile photo, gender, and age group, so you can see who you travel with.',
-      'With the cab operator and driver of a confirmed shared cab: the first names, seats, and pickup point of the travellers. A driver does not see your phone number. You talk to the driver through in-app chat.',
+      CAB_ENABLED && 'With other travellers in a shared cab slot: first name, profile photo, gender, and age group, so you can see who you travel with.',
+      CAB_ENABLED && 'With the cab operator and driver of a confirmed shared cab: the first names, seats, and pickup point of the travellers. A driver does not see your phone number. You talk to the driver through in-app chat.',
       'With service providers that host, secure, support, verify, or process payments for the Services. They must follow our instructions and protect the information.',
       'With emergency services, regulators, law enforcement, or other parties when we have a legal duty or a good-faith safety reason.',
       'With a successor if Fluxgo is part of a merger, sale, financing, or other business change. The receiving party must follow applicable privacy duties.',
@@ -124,7 +135,7 @@ const privacySections = [
   },
 ];
 
-const termsSections = [
+const ALL_TERMS_SECTIONS = [
   {
     number: '01',
     title: 'Agreement to these terms',
@@ -137,7 +148,10 @@ const termsSections = [
     number: '02',
     title: 'What Fluxgo provides',
     paragraphs: [
-      'Fluxgo is a platform that helps drivers offer spare seats, helps riders find intercity car rides, and collects interest for seats in shared cabs on set routes. Local cab operators own and run the shared cabs. Fluxgo does not own vehicles and is not a carrier, travel agent, or insurer. Each driver, rider, and cab operator is responsible for their own conduct.',
+      cabCopy(
+        'Fluxgo is a platform that helps drivers offer spare seats, helps riders find intercity car rides, and collects interest for seats in shared cabs on set routes. Local cab operators own and run the shared cabs. Fluxgo does not own vehicles and is not a carrier, travel agent, or insurer. Each driver, rider, and cab operator is responsible for their own conduct.',
+        'Fluxgo is a platform that helps drivers offer spare seats and helps riders find intercity car rides. Fluxgo does not own vehicles and is not a carrier, travel agent, or insurer. Each driver and rider is responsible for their own conduct.'
+      ),
       'We can add, change, pause, or remove a feature. We do not promise that every route, ride, member, or feature will always be available.',
     ],
   },
@@ -179,6 +193,7 @@ const termsSections = [
   },
   {
     number: '07',
+    ...CAB,
     title: 'Shared cabs',
     paragraphs: [
       'Interest in a shared cab slot is free and is not a booking. Your seat is confirmed only when the app shows "Seat confirmed". A shared cab goes only when enough seats fill by 2 hours before pickup. If it does not go, we tell you in the app, and nothing counts against you.',
@@ -257,6 +272,21 @@ const termsSections = [
     ],
   },
 ];
+
+/** Removes cab sections and bullets while the site hides cabs, and numbers the sections again. */
+function forSite(sections) {
+  if (CAB_ENABLED) return sections;
+  return sections
+    .filter((section) => !section.cab)
+    .map((section, index) => ({
+      ...section,
+      number: String(index + 1).padStart(2, '0'),
+      bullets: section.bullets?.filter(Boolean)
+    }));
+}
+
+const privacySections = forSite(ALL_PRIVACY_SECTIONS);
+const termsSections = forSite(ALL_TERMS_SECTIONS);
 
 function LegalText({ text }) {
   const chunks = text.split('support@fluxgo.in');

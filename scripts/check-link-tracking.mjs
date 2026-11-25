@@ -85,6 +85,11 @@ console.log('marketing link checks passed');
   assert.deepEqual(guessTarget('/Privacy/'), { kind: 'page', page: 'privacy-terms' });
   assert.deepEqual(guessTarget('/jntua-friday'), { kind: 'marketing', code: 'jntua-friday' });
   assert.equal(guessTarget('/a/b/c'), null);
+  // Cabs hidden on the site: no cab ride, cab page, or partner page suggestion.
+  assert.equal(guessTarget('/cab/5B1C0E4E-1111-4222-8333-944455556666', { cab: false }), null);
+  assert.notEqual(guessTarget('/shared-cabs', { cab: false })?.kind, 'page');
+  assert.notEqual(guessTarget('/drivers', { cab: false })?.kind, 'page');
+  assert.deepEqual(guessTarget('/help', { cab: false }), { kind: 'page', page: 'support' });
   assert.equal(guessTarget('/'), null);
   assert.equal(safeMissingPath('/R/ABC123'), '/r/*');
   assert.equal(safeMissingPath('/old page?x=1'), '/old_page');
