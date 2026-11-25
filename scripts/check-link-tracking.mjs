@@ -56,6 +56,39 @@ const link = pageLinkContext({ pathname: '/ride/TRP01JABCDEFG', searchParams: { 
 assert.equal(link.next('https://go.fluxgo.in/open/ride/TRP01JABCDEFG', { visitor: true }), 'https://go.fluxgo.in/open/ride/TRP01JABCDEFG?s=k3f9x2ab&utm_source=share&utm_medium=ride&v=0123456789abcdef');
 assert.equal(link.next('trip/TRP01JABCDEFG'), 'trip/TRP01JABCDEFG?s=k3f9x2ab&utm_source=share&utm_medium=ride');
 
+// Partner poster pages (/d/<code>): the code is sent, a partner name never is.
+{
+  const { normalizePosterCode, newScanId, posterPlayUrl, LINK_TYPES, LINK_ACTIONS } = await import('../lib/link-tracking.js');
+  assert.ok(LINK_TYPES.includes('poster'));
+  for (const action of ['install_click', 'open_app_click', 'copy_code']) assert.ok(LINK_ACTIONS.includes(action), action);
+  assert.equal(normalizePosterCode('482 915'), '482915');
+  assert.equal(normalizePosterCode('482%20915'), '482915');
+  assert.equal(normalizePosterCode('48291'), null);
+  assert.equal(normalizePosterCode('RAVI42'), null);
+  assert.deepEqual(linkOf('/d/482915'), { link_type: 'poster', code: '482915' });
+  assert.deepEqual(linkOf('/d/482%20915'), { link_type: 'poster', code: '482915' });
+  assert.deepEqual(linkOf('/d/abc'), { link_type: 'poster' });
+  assert.match(newScanId(), /^[a-z0-9]{8}$/);
+  const posterVisit = visitProperties({ pathname: '/d/482915', params: new URLSearchParams('s=k3f9x2ab'), userAgent: ANDROID, referer: null });
+  assert.equal(posterVisit.code, '482915');
+  assert.equal(posterVisit.share_id, 'k3f9x2ab');
+  assert.equal(posterVisit.utm_source, 'poster');
+  assert.equal(posterVisit.utm_medium, 'poster');
+  const posterPlay = posterPlayUrl('https://play.google.com/store/apps/details?id=in.fluxgo.app', { code: '482915', scanId: 'k3f9x2ab' });
+  assert.equal(new URL(posterPlay).searchParams.get('referrer'), 'utm_source=poster&utm_medium=poster&utm_content=482915&poster=482915&s=k3f9x2ab');
+  const pausedPlay = posterPlayUrl('https://play.google.com/store/apps/details?id=in.fluxgo.app', { scanId: 'k3f9x2ab' });
+  assert.equal(new URL(pausedPlay).searchParams.get('referrer'), 'utm_source=poster&utm_medium=poster&s=k3f9x2ab');
+}
+
+// App links: /d/* opens the app only from go.fluxgo.in.
+{
+  const { appLinkPathsFor } = await import('../lib/app-links.js');
+  assert.ok(appLinkPathsFor('go.fluxgo.in').includes('/d/*'));
+  assert.ok(!appLinkPathsFor('www.fluxgo.in').includes('/d/*'));
+  assert.ok(!appLinkPathsFor('fluxgo.in').includes('/d/*'));
+  assert.deepEqual(appLinkPathsFor('www.fluxgo.in'), ['/ride/*', '/open/ride/*', '/r/*', '/open/r/*']);
+}
+
 console.log('link tracking checks passed');
 
 // Marketing links (/g/<code>): only same-site paths and known tags pass.

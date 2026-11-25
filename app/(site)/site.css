@@ -1281,3 +1281,31 @@ body:has(> .fx) { margin: 0; }
   .hx-compare tbody tr:last-child th { border-bottom-left-radius: 26px; }
   .hx-compare-brand { font-size: 18px; }
 }
+
+/* ───────────────────────── Partner poster page (/d/<code>) ───────────────────────── */
+.fx-poster { gap: 22px; }
+.fx-poster h1 { font-size: clamp(30px, 7vw, 40px); line-height: 1.08; letter-spacing: -0.03em; color: var(--ink); }
+.fx-poster p { font-size: 15.5px; line-height: 1.5; color: var(--ink2); }
+.fx-poster .fx-poster-label { font-size: 13.5px; font-weight: 600; color: var(--ink3); }
+.fx-poster-partner { display: grid; gap: 4px; }
+.fx-poster-verified { display: flex; align-items: center; gap: 8px; margin-top: 4px; color: var(--ink) !important; font-weight: 550; }
+.fx-poster-vehicles { display: grid; gap: 6px; padding-top: 18px; border-top: 1px solid var(--line); }
+.fx-poster-vehicles li { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.fx-poster-pitch { display: grid; gap: 6px; }
+.fx-poster-partner + .fx-poster-pitch, .fx-poster-vehicles + .fx-poster-pitch { padding-top: 18px; border-top: 1px solid var(--line); }
+.fx-poster-pitch h2 { font-size: 19px; line-height: 1.25; letter-spacing: -0.02em; font-weight: 650; color: var(--ink); }
+.fx-poster-actions { display: grid; gap: 16px; }
+.fx-poster .fx-share-btn { justify-self: stretch; background: var(--hero); color: var(--on-dark); }
+.fx-poster .fx-share-btn:hover { background: var(--deep); }
+.fx-poster-stores { display: grid; gap: 10px; }
+.fx-poster-hint { font-size: 14px !important; color: var(--ink3) !important; }
+.fx-poster-code { display: grid; gap: 6px; padding: 16px; border-radius: 18px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--line); }
+.fx-poster-code-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fx-poster-code-row strong { font-size: clamp(34px, 9vw, 44px); line-height: 1.05; font-weight: 700; letter-spacing: 0.02em; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fx-poster-copy { flex: none; min-height: 44px; padding: 0 16px; border: 0; border-radius: 12px; background: var(--white); box-shadow: inset 0 0 0 1px var(--line-hard); color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+.fx-poster-copy:hover { background: var(--fill); }
+.fx-poster-copy:focus-visible, .fx-poster-open:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.fx-poster .fx-poster-help { font-size: 14px; }
+.fx-poster-open { justify-self: center; padding: 6px 4px; font-size: 15px; font-weight: 600; color: var(--brand); text-decoration: underline; text-underline-offset: 3px; }
+.fx-poster-toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 60; padding: 10px 16px; border-radius: 12px; background: var(--ink); color: var(--white) !important; font-size: 14.5px !important; font-weight: 600; transform: translate(-50%, 12px); opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.3s var(--ease); }
+.fx-poster-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
