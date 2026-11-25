@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { CAB_ENABLED } from '../../../../lib/site-flags';
 import { TYPE_LABELS, cabDate, cabTime, cabWindow, closedCopy, loadCabRide, rupees } from './cab-data';
 
 export const alt = 'Fluxgo Cab ride';
@@ -15,7 +16,8 @@ const LINE = 'rgba(233, 240, 234, 0.18)';
 /** The WhatsApp preview card: route, day, start window, pickups, seats left, and price. Same layout as the partner app card. */
 export default async function Image({ params }) {
   const { id } = await params;
-  const { ride } = await loadCabRide(id);
+  // Cabs hidden on the site: only the Fluxgo wordmark, no cab details.
+  const { ride } = CAB_ENABLED ? await loadCabRide(id) : { ride: null };
 
   if (!ride) {
     return new ImageResponse(

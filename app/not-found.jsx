@@ -6,6 +6,7 @@ import StoreButtons from './(site)/_components/StoreButtons';
 import { loadRide } from './(site)/ride/[publicId]/ride-data';
 import { loadCabRide } from './(site)/cab-ride/[id]/cab-data';
 import { PATH_HEADER, VISITOR_HEADER, captureSiteEvent, isBot, visitProperties } from '../lib/link-tracking';
+import { CAB_ENABLED } from '../lib/site-flags';
 import { PAGE_TARGETS, guessTarget, safeMissingPath } from '../lib/not-found';
 
 const DESCRIPTION = 'This link may be incomplete, expired, or no longer available.';
@@ -48,7 +49,7 @@ async function marketingLinkExists(code) {
  * A ride or link that the API cannot confirm is not offered.
  */
 async function suggestionFor(pathname) {
-  const guess = guessTarget(pathname);
+  const guess = guessTarget(pathname, { cab: CAB_ENABLED });
   if (!guess) return null;
   if (guess.kind === 'page') {
     return { kind: 'page', title: PAGE_NAMES[guess.page], button: `Open ${PAGE_NAMES[guess.page]}`, href: PAGE_TARGETS[guess.page] };

@@ -3,9 +3,10 @@ import SiteHeader from '../_components/SiteHeader';
 import SiteFooter from '../_components/SiteFooter';
 import Reveal from '../_components/Reveal';
 import { SUPPORT_EMAIL } from '../_components/links';
+import { CAB_ENABLED, cabCopy } from '../../../lib/site-flags';
 import { IconArrow, IconCab, IconChat, IconHand, IconSeat, IconShield } from '../_components/Icons';
 
-const TOPICS = [
+const ALL_TOPICS = [
   {
     id: 'booking',
     icon: IconSeat,
@@ -59,6 +60,7 @@ const TOPICS = [
     ]
   }
 ];
+const TOPICS = CAB_ENABLED ? ALL_TOPICS : ALL_TOPICS.filter((topic) => topic.id !== 'cab');
 
 function SupportText({ text }) {
   const [before, after] = text.split(SUPPORT_EMAIL);
@@ -80,7 +82,7 @@ export default function SupportPage() {
             <div className="fx-page-hero-copy">
               <p className="fx-chip fx-chip-dark"><span className="fx-pulse" aria-hidden="true" />Support</p>
               <h1 className="fx-page-title" id="support-title">Need help with a trip?</h1>
-              <p className="fx-hero-lede">Answers on bookings, rides, shared cabs, and accounts. A person reads every message.</p>
+              <p className="fx-hero-lede">{cabCopy('Answers on bookings, rides, shared cabs, and accounts. A person reads every message.', 'Answers on bookings, rides, and accounts. A person reads every message.')}</p>
             </div>
 
             <a className="fx-sos" href="tel:112">

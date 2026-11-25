@@ -3,13 +3,14 @@
 import { useEffect, useRef, useState } from 'react';
 import Wordmark from './Wordmark';
 import NavLink from './NavLink';
+import { CAB_ENABLED } from '../../../lib/site-flags';
 
 // What visitors come to do. Always visible on wide screens.
 const PRIMARY = [
   { href: '/#find', label: 'Find a ride' },
   { href: '/#offer', label: 'Offer a ride' },
-  { href: '/#cab', label: 'Shared cabs' }
-];
+  CAB_ENABLED && { href: '/#cab', label: 'Shared cabs' }
+].filter(Boolean);
 
 // Why Fluxgo is dependable, and help. Inside the menu on wide screens.
 const MORE_LABEL = 'More';

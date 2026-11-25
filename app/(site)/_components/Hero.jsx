@@ -3,17 +3,26 @@
 import { useEffect, useRef, useState } from 'react';
 import StoreButtons from './StoreButtons';
 import VerifiedMark from './VerifiedMark';
+import { CAB_ENABLED, cabCopy } from '../../../lib/site-flags';
 
 const CYCLE_MS = 4200;
 
 // Example seats for the pass and the headline cities. They are not live data.
 // Headline wording from the owner; the rest of the hero copy by Gemini 4 Neon (2026-11-25).
-const PASSES = [
+const ALL_PASSES = [
   { from: 'Bengaluru', fromCode: 'BLR', to: 'Anantapur', toCode: 'ATP', day: 'Fri, 28 Nov', depart: '6–7 AM', arrive: '10–11 AM', duration: '4h 10m', host: 'Ravi', vehicle: 'Innova Crysta', rating: '4.8', record: '0 cancels', seat: '4', price: 600, code: '7310', cab: true, instant: true },
   { from: 'Hyderabad', fromCode: 'HYD', to: 'Vijayawada', toCode: 'VGA', day: 'Sun, 30 Nov', depart: '09:30', arrive: '14:40', duration: '5h 10m', host: 'Sneha', vehicle: 'Toyota Glanza', rating: '4.8', record: '0 no-shows', seat: '1', price: 550, left: 2, seats: 3, instant: true },
   { from: 'Chennai', fromCode: 'MAA', to: 'Pondicherry', toCode: 'PNY', day: 'Sat, 29 Nov', depart: '08:00', arrive: '11:10', duration: '3h 10m', host: 'Karthik', vehicle: 'Maruti Baleno', rating: '4.7', record: '0 no-shows', seat: '3', price: 350, left: 2, seats: 4, instant: false },
   { from: 'Mumbai', fromCode: 'BOM', to: 'Pune', toCode: 'PNQ', day: 'Sat, 29 Nov', depart: '18:30', arrive: '21:45', duration: '3h 15m', host: 'Riya', vehicle: 'Honda City', rating: '4.9', record: '0 no-shows', seat: '2', price: 420, left: 1, seats: 3, instant: false }
 ];
+// The cab seat leaves the cycle while the site hides cabs.
+const PASSES = CAB_ENABLED ? ALL_PASSES : ALL_PASSES.filter((pass) => !pass.cab);
+
+// Cab-free line by Gemini 4 Neon (2026-11-26).
+const SUB = cabCopy(
+  'Book a seat on reliable rides with car owners or verified cab operators. Driving? Share empty seats and costs.',
+  'Book a seat on reliable rides with car owners. Driving? Share empty seats and costs.'
+);
 
 export default function Hero() {
   const [index, setIndex] = useState(0);
@@ -77,7 +86,7 @@ export default function Hero() {
               </span>
             </span>
           </h1>
-          <p className="fx-hero-sub">Book a seat on reliable rides with car owners or verified cab operators. Driving? Share empty seats and costs.</p>
+          <p className="fx-hero-sub">{SUB}</p>
           <StoreButtons tone="dark" />
         </div>
 

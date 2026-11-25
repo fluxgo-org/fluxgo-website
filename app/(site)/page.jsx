@@ -12,11 +12,13 @@ import {
   IconPin, IconSeat, IconShield, IconSwap
 } from './_components/Icons';
 import VerifiedMark from './_components/VerifiedMark';
+import { CAB_ENABLED, cabCopy } from '../../lib/site-flags';
 
 export const metadata = { alternates: { canonical: '/' } };
 
 // Copy below was written by Gemini 4 Neon (2026-11-25) from the approved fact list.
 // Mock screens use example data. They are not live data.
+// Cab-free texts (cabCopy second value) by Gemini 4 Neon (2026-11-26). NEXT_PUBLIC_SITE_CAB_ENABLED=false uses them.
 
 const COMPARE_COLS = ['Fluxgo', 'Private buses', 'Solo cab', 'WhatsApp groups', 'Other carpool apps'];
 // 1 = yes, 0 = no. The first value is Fluxgo.
@@ -25,8 +27,8 @@ const COMPARE_ROWS = [
   ['Pay only for your seat', [1, 1, 0, 1, 1]],
   ['See who is coming before booking', [1, 0, 0, 0, 1]],
   ['Work email badge', [1, 0, 0, 0, 0]],
-  ['Shared cab with checked operators', [1, 0, 0, 0, 0]]
-];
+  CAB_ENABLED && ['Shared cab with checked operators', [1, 0, 0, 0, 0]]
+].filter(Boolean);
 
 const REL_POINTS = [
   ['Record on every profile', 'No-shows and late cancels are shown on every profile, even when the count is 0.'],
@@ -87,12 +89,12 @@ const FAQ = [
   { q: 'Who can I travel with on Fluxgo?', a: 'Fellow travellers whose profession, bio, work email badge and ratings you see before booking. Filter for women co-travellers; hosts can accept verified members only.' },
   { q: 'What happens if someone does not show up?', a: 'Every profile displays no-shows and late cancels, even when 0. We also use AI on ride and cancel history to flag likely no-shows early, and send a 1-hour reminder.' },
   { q: 'What if I feel unsafe on a ride?', a: 'Save a trusted contact before your first ride and share your live trip location. Call 112 if in danger. Report any concern from the trip screen; we read every report.' },
-  { q: 'Which routes does Fluxgo cover?', a: 'Carpools run on any route a host publishes, and you can set a ride alert if your date is empty. Shared cabs run Bengaluru to Anantapur for now.' },
-  { q: 'How does a shared cab work?', a: 'Pick an hourly window and book one seat at a fixed price. You get cab details and a boarding code before pickup. Pay in the cab. Free cancel up to 4 hours before pickup.' },
-  { q: 'How are cabs and operators checked?', a: 'Before any booking, our team reviews driving licence, RC in official records, insurance, and driver and cab photos. Yellow-board cabs only, with expiry dates tracked.' },
+  { q: 'Which routes does Fluxgo cover?', a: cabCopy('Carpools run on any route a host publishes, and you can set a ride alert if your date is empty. Shared cabs run Bengaluru to Anantapur for now.', 'Carpools run on any route a host publishes, and you can set a ride alert if your date is empty.') },
+  { cab: true, q: 'How does a shared cab work?', a: 'Pick an hourly window and book one seat at a fixed price. You get cab details and a boarding code before pickup. Pay in the cab. Free cancel up to 4 hours before pickup.' },
+  { cab: true, q: 'How are cabs and operators checked?', a: 'Before any booking, our team reviews driving licence, RC in official records, insurance, and driver and cab photos. Yellow-board cabs only, with expiry dates tracked.' },
   { q: 'How do ratings and reviews work?', a: 'Both sides can rate and review within 10 days of a ride. Reviews stay hidden until both submit or 10 days pass, so nobody rates in reply. They feed into member levels.' },
-  { q: 'How do invites and Fluxgo Credits work?', a: 'Invite up to 5 friends. You each earn 100 Credits on their first 50+ km ride, 3 rides in 60 days (3 days, 2+ hosts) and first host ride. Up to half a Fluxgo Cab seat.' }
-];
+  { q: 'How do invites and Fluxgo Credits work?', a: 'Invite up to 5 friends. You each earn 100 Credits on their first 50+ km ride, 3 rides in 60 days (3 days, 2+ hosts) and first host ride.' + cabCopy(' Up to half a Fluxgo Cab seat.', '') }
+].filter((item) => CAB_ENABLED || !item.cab);
 
 function Check({ className = '' }) {
   return (
@@ -271,8 +273,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Two products */}
-        <section className="hx-sec hx-sec-tight" id="ways" aria-labelledby="ways-title">
+        {/* Two products. Without cabs there is one product, so the section goes. */}
+        {CAB_ENABLED ? <section className="hx-sec hx-sec-tight" id="ways" aria-labelledby="ways-title">
           <div className="fx-wrap">
             <SectionHead id="ways" title="Two ways to travel between cities" />
             <div className="hx-ways">
@@ -307,7 +309,7 @@ export default function Home() {
               </a>
             </div>
           </div>
-        </section>
+        </section> : null}
 
         {/* Reliability */}
         <section className="hx-sec hx-dark" id="reliability" aria-labelledby="reliability-title">
@@ -427,7 +429,7 @@ export default function Home() {
         </section>
 
         {/* Shared cab */}
-        <section className="hx-sec" id="cab" aria-labelledby="cab-title">
+        {CAB_ENABLED ? <section className="hx-sec" id="cab" aria-labelledby="cab-title">
           <div className="fx-wrap">
             <SectionHead
               id="cab"
@@ -482,7 +484,7 @@ export default function Home() {
             </ul>
             <p className="hx-partner" data-reveal><span>Cab operator? Fill empty seats through the Fluxgo partner app.</span> <a className="fx-link" href={PARTNER_URL} target="_blank" rel="noopener noreferrer">Open partner app</a></p>
           </div>
-        </section>
+        </section> : null}
 
         {/* Invite */}
         <section className="hx-sec hx-sec-tight" id="invite" aria-labelledby="invite-title">
@@ -490,7 +492,7 @@ export default function Home() {
             <div className="hx-invite" data-reveal>
               <div className="hx-invite-copy">
                 <h2 className="hx-h2s" id="invite-title">Invite friends, earn Fluxgo Credits</h2>
-                <p>Share your code (up to 5 friends). You each earn up to 300 Fluxgo Credits, covering up to half a Fluxgo Cab seat.</p>
+                <p>{cabCopy('Share your code (up to 5 friends). You each earn up to 300 Fluxgo Credits, covering up to half a Fluxgo Cab seat.', 'Share your code (up to 5 friends). You each earn up to 300 Fluxgo Credits.')}</p>
               </div>
               <ul className="hx-invite-steps">
                 {INVITE_STEPS.map((s) => (

@@ -1,5 +1,6 @@
 import Wordmark from './Wordmark';
 import NavLink from './NavLink';
+import { CAB_ENABLED } from '../../../lib/site-flags';
 import { APP_STORE_URL, PARTNER_URL, PLAY_STORE_URL, SUPPORT_EMAIL, WEB_APP_URL } from './links';
 
 // Groups follow the header: what people come to do, then safety and help.
@@ -9,8 +10,8 @@ const GROUPS = [
     links: [
       { href: '/#find', text: 'Find a ride' },
       { href: '/#offer', text: 'Offer a ride' },
-      { href: '/#cab', text: 'Shared cabs' }
-    ]
+      CAB_ENABLED && { href: '/#cab', text: 'Shared cabs' }
+    ].filter(Boolean)
   },
   {
     label: 'More',
@@ -26,8 +27,8 @@ const GROUPS = [
       { href: APP_STORE_URL, text: 'iPhone', external: true },
       { href: PLAY_STORE_URL, text: 'Android', external: true },
       { href: WEB_APP_URL, text: 'Web app', external: true },
-      { href: PARTNER_URL, text: 'Partner app', external: true }
-    ]
+      CAB_ENABLED && { href: PARTNER_URL, text: 'Partner app', external: true }
+    ].filter(Boolean)
   },
   {
     label: 'Legal',
