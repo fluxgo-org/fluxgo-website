@@ -37,13 +37,8 @@ async function copyText(text, waitMs = 1500) {
   }
 }
 
-/**
- * Download button, driver code, and "Open app" link on a poster page.
- * - Android: Google Play with the poster code and scan ID in the install referrer.
- * - iPhone: copies the page link (code and scan ID) for the app to read after install, then opens the App Store.
- * - Computer: both store buttons and a hint to use a phone.
- */
-export default function PosterActions({ kind, scanId, code, codeText, links, copy }) {
+/** Driver code with Copy code, the hint, and "Open app" (phones only, go.fluxgo.in opens the installed app). */
+export function PosterCode({ scanId, code, codeText, openLink, copy }) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -52,61 +47,69 @@ export default function PosterActions({ kind, scanId, code, codeText, links, cop
     return () => clearTimeout(timer);
   }, [copied]);
 
-  const track = (action) => sendLinkAction(action, eventPath(scanId));
+  const copyCode = async () => {
+    sendLinkAction('copy_code', eventPath(scanId));
+    if (await copyText(code)) setCopied(true);
+  };
+
+  return (
+    <>
+      <div className="fx-dp-code">
+        <div>
+          <small>{copy.code_label}</small>
+          <strong aria-label={code.split('').join(' ')}>{codeText}</strong>
+        </div>
+        <button type="button" className="fx-dp-copy" onClick={copyCode}>{copy.copy_button}</button>
+      </div>
+      <p className="fx-dp-hint">{copy.code_help}</p>
+      {openLink ? (
+        <a className="fx-dp-open" href={openLink} onClick={() => sendLinkAction('open_app_click', eventPath(scanId))}>{copy.open_app_button}</a>
+      ) : null}
+      <p className={`fx-dp-toast${copied ? ' is-on' : ''}`} role="status" aria-live="polite">{copied ? copy.copied_toast : ''}</p>
+    </>
+  );
+}
+
+/**
+ * Fixed bottom bar with the download button.
+ * - Android: Google Play with the poster code and scan ID in the install referrer.
+ * - iPhone: copies the page link (code and scan ID) for the app to read after install, then opens the App Store.
+ * - Computer: both store buttons and a hint to use a phone.
+ */
+export function PosterBar({ kind, scanId, links, copy }) {
+  const track = () => sendLinkAction('install_click', eventPath(scanId));
 
   const openAppStore = async (event) => {
-    track('install_click');
+    track();
     if (!links.clipboard) return;
     event.preventDefault();
     await copyText(links.clipboard, 800);
     window.location.href = links.appStore;
   };
 
-  const copyCode = async () => {
-    track('copy_code');
-    if (await copyText(code)) setCopied(true);
-  };
-
   return (
-    <div className="fx-poster-actions">
-      {kind === 'android' ? (
-        <a className="fx-share-btn" href={links.play} onClick={() => track('install_click')}>{copy.get_app_button}</a>
-      ) : kind === 'ios' ? (
-        <a className="fx-share-btn" href={links.appStore} onClick={openAppStore}>{copy.get_app_button}</a>
-      ) : (
-        <div className="fx-poster-stores">
-          <div className="fx-stores fx-stores-light">
-            <div className="fx-stores-row">
-              <a className="fx-store fx-store-apple" href={links.appStore} target="_blank" rel="noopener noreferrer" onClick={() => track('install_click')}>
+    <div className="fx-dp-bar">
+      <div className="fx-dp-bar-inner">
+        {kind === 'android' ? (
+          <a className="fx-dp-btn" href={links.play} onClick={track}>{copy.get_app_button}</a>
+        ) : kind === 'ios' ? (
+          <a className="fx-dp-btn" href={links.appStore} onClick={openAppStore}>{copy.get_app_button}</a>
+        ) : (
+          <>
+            <div className="fx-dp-stores">
+              <a className="fx-store fx-store-apple" href={links.appStore} target="_blank" rel="noopener noreferrer" onClick={track}>
                 <AppleGlyph />
                 <span><small>Download on the</small><strong>App Store</strong></span>
               </a>
-              <a className="fx-store fx-store-play" href={links.play} target="_blank" rel="noopener noreferrer" onClick={() => track('install_click')}>
+              <a className="fx-store fx-store-play" href={links.play} target="_blank" rel="noopener noreferrer" onClick={track}>
                 <PlayGlyph />
                 <span><small>Get it on</small><strong>Google Play</strong></span>
               </a>
             </div>
-          </div>
-          <p className="fx-poster-hint">{copy.desktop_hint}</p>
-        </div>
-      )}
-
-      {code ? (
-        <div className="fx-poster-code">
-          <p className="fx-poster-label">{copy.code_label}</p>
-          <div className="fx-poster-code-row">
-            <strong aria-label={code.split('').join(' ')}>{codeText}</strong>
-            <button type="button" className="fx-poster-copy" onClick={copyCode}>{copy.copy_button}</button>
-          </div>
-          <p className="fx-poster-help">{copy.code_help}</p>
-        </div>
-      ) : null}
-
-      {links.open && kind !== 'desktop' ? (
-        <a className="fx-poster-open" href={links.open} onClick={() => track('open_app_click')}>{copy.open_app_button}</a>
-      ) : null}
-
-      <p className={`fx-poster-toast${copied ? ' is-on' : ''}`} role="status" aria-live="polite">{copied ? copy.copied_toast : ''}</p>
+            <p className="fx-dp-desktop-hint">{copy.desktop_hint}</p>
+          </>
+        )}
+      </div>
     </div>
   );
 }

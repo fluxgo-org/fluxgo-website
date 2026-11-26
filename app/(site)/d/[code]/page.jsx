@@ -1,13 +1,12 @@
-import Link from 'next/link';
 import { headers } from 'next/headers';
+import Link from 'next/link';
 import Wordmark from '../../_components/Wordmark';
-import { IconShield } from '../../_components/Icons';
 import { APP_STORE_URL, OPEN_HOST_URL, PLAY_STORE_URL, SITE_URL } from '../../_components/links';
 import { deviceKind } from '../../../../lib/app-links';
 import { SCAN_HEADER, newScanId, posterPlayUrl, readShareId, toSearchParams } from '../../../../lib/link-tracking';
 import { COPY } from './copy';
 import { displayCode, loadPoster } from './poster-data';
-import PosterActions from './PosterActions';
+import { PosterBar, PosterCode } from './PosterActions';
 
 export async function generateMetadata({ params }) {
   const { code: raw } = await params;
@@ -26,14 +25,17 @@ export async function generateMetadata({ params }) {
     openGraph: { title, description, url: code ? `${SITE_URL}/d/${code}` : SITE_URL, siteName: 'Fluxgo', type: 'website' },
     // Replace the site-wide values, which can mention cabs. This page never does, whatever the cab switch is.
     twitter: { card: 'summary_large_image', title, description },
-    keywords: ['intercity carpooling', 'carpool India', 'ride sharing between cities', 'Fluxgo']
+    keywords: ['intercity carpooling', 'carpool India', 'ride sharing between cities', 'Fluxgo'],
+    // No Safari Smart App Banner: its button opens the App Store without the clipboard copy that carries the code.
+    itunes: null
   };
 }
 
 /**
- * Landing page for the QR code on a partner poster in a cab (www.fluxgo.in/d/482915). It always opens in the
- * browser: /d/* opens the app only from go.fluxgo.in. The download button carries the code to the app:
- * Android through the Play install referrer, iPhone through the clipboard (the app reads the copied page link).
+ * Landing page for the QR code on a driver's poster (www.fluxgo.in/d/482915). It always opens in the browser:
+ * /d/* opens the app only from go.fluxgo.in. The download button carries the code to the app: Android through
+ * the Play install referrer, iPhone through the clipboard (the app reads the copied page link).
+ * States: active (driver card), paused, not found, and API error (no card).
  */
 export default async function PosterPage({ params, searchParams }) {
   const { code: raw } = await params;
@@ -50,56 +52,40 @@ export default async function PosterPage({ params, searchParams }) {
   const links = {
     play: posterPlayUrl(PLAY_STORE_URL, { code: installCode, scanId }),
     appStore: APP_STORE_URL,
-    clipboard: installCode ? `${SITE_URL}/d/${installCode}?s=${scanId}` : null,
-    open: poster?.active ? `${OPEN_HOST_URL}/d/${poster.code}?s=${scanId}` : null
+    clipboard: installCode ? `${SITE_URL}/d/${installCode}?s=${scanId}` : null
   };
+  const openLink = poster?.active && kind !== 'desktop' ? `${OPEN_HOST_URL}/d/${poster.code}?s=${scanId}` : null;
 
   return (
-    <main className="fx-share fx-share-empty">
-      <header className="fx-share-top"><Link href="/" aria-label="Fluxgo home"><Wordmark /></Link></header>
-      <section className="fx-share-sheet fx-invite-landing fx-poster">
-        {poster?.active ? (
-          <>
-            <div className="fx-poster-partner">
-              <p className="fx-poster-label">{COPY.driver_label}</p>
-              <h1>{poster.firstName}</h1>
-              {poster.verified ? <p className="fx-poster-verified"><IconShield width={18} height={18} aria-hidden="true" />{COPY.verified_line}</p> : null}
-            </div>
-            {poster.vehicles.length ? (
-              <div className="fx-poster-vehicles">
-                <p className="fx-poster-label">{COPY.vehicles_label}</p>
-                <ul>{poster.vehicles.map((line) => <li key={line}>{line}</li>)}</ul>
-              </div>
-            ) : null}
-            <div className="fx-poster-pitch">
-              <h2>{COPY.pitch_title}</h2>
-              <p>{COPY.pitch_body}</p>
-            </div>
-          </>
-        ) : poster ? (
-          <div className="fx-poster-pitch">
-            <h1>{COPY.paused_title}</h1>
-            <p>{COPY.paused_body}</p>
-          </div>
-        ) : result.notFound ? (
-          <div className="fx-poster-pitch">
-            <h1>{COPY.not_found_title}</h1>
-          </div>
-        ) : (
-          <div className="fx-poster-pitch">
-            <h1>{COPY.pitch_title}</h1>
-            <p>{COPY.pitch_body}</p>
-          </div>
-        )}
-        <PosterActions
-          kind={kind}
-          scanId={scanId}
-          code={poster?.active ? poster.code : null}
-          codeText={poster?.active ? displayCode(poster.code) : null}
-          links={links}
-          copy={COPY}
-        />
+    <main className={`fx-dp${kind === 'desktop' ? ' fx-dp-wide-bar' : ''}`}>
+      <section className="fx-dp-hero">
+        <div className="fx-dp-col">
+          <Link href="/" aria-label="Fluxgo home"><Wordmark /></Link>
+          <h1>{COPY.hero_title}<span>{COPY.hero_title_second}</span></h1>
+          <p>{COPY.hero_sub}</p>
+        </div>
       </section>
+      <section className="fx-dp-col fx-dp-rows">
+        {COPY.rows.map(([title, body]) => (
+          <div key={title} className="fx-dp-row"><strong>{title}</strong><span>{body}</span></div>
+        ))}
+      </section>
+      {poster?.active ? (
+        <section className="fx-dp-col">
+          <div className="fx-dp-card">
+            <div className="fx-dp-who"><small>{COPY.driver_label}</small><strong>{poster.firstName}</strong></div>
+            <PosterCode scanId={scanId} code={poster.code} codeText={displayCode(poster.code)} openLink={openLink} copy={COPY} />
+          </div>
+        </section>
+      ) : poster || result.notFound ? (
+        <section className="fx-dp-col">
+          <div className="fx-dp-card fx-dp-note">
+            <h2>{poster ? COPY.paused_title : COPY.not_found_title}</h2>
+            {poster ? <p>{COPY.paused_body}</p> : null}
+          </div>
+        </section>
+      ) : null}
+      <PosterBar kind={kind} scanId={scanId} links={links} copy={COPY} />
     </main>
   );
 }
