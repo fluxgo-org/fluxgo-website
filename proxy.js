@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import {
-  PATH_HEADER, VISITOR_COOKIE, VISITOR_HEADER, captureSiteEvent, isBot, isVisitorId, newVisitorId, visitProperties
+  PATH_HEADER, SCAN_HEADER, VISITOR_COOKIE, VISITOR_HEADER, captureSiteEvent, isBot, isVisitorId, linkOf, newScanId,
+  newVisitorId, readShareId, visitProperties
 } from './lib/link-tracking';
+
+const SITE_ORIGIN = 'https://www.fluxgo.in';
 
 /**
  * 1. partner.fluxgo.in paths map to /partner/* in this app. Other hosts are not changed.
@@ -9,6 +12,10 @@ import {
  *    prefetches, and client navigations do not count. The anonymous visitor cookie lets PostHog count unique
  *    visitors; the page reads the same ID from a request header on the first visit. Marketing links (/g/<code>)
  *    are not counted here: the page they redirect to counts the visit with the link's share ID.
+ * 3. Partner poster pages (/d/<code>): go.fluxgo.in/d/* opens the app when it is installed. When the browser gets
+ *    the link (no app), it goes to the same page on www.fluxgo.in with the query kept. Each poster page view gets
+ *    a scan ID (`s` on the link, or a new one). The page reads it from a request header, so the opened event,
+ *    the button taps, and the store links carry the same scan ID.
  */
 export function proxy(request, event) {
   const { nextUrl } = request;
@@ -16,12 +23,23 @@ export function proxy(request, event) {
   const partnerHost = host.startsWith('partner.') && !nextUrl.pathname.startsWith('/partner');
   const pathname = partnerHost ? (nextUrl.pathname === '/' ? '/partner' : `/partner${nextUrl.pathname}`) : nextUrl.pathname;
 
+  if (host.startsWith('go.') && /^\/d\/[^/]+\/?$/.test(pathname)) {
+    return NextResponse.redirect(`${SITE_ORIGIN}${pathname}${nextUrl.search}`, { status: 302, headers: { 'Cache-Control': 'no-store' } });
+  }
+
   const visitorFromCookie = request.cookies.get(VISITOR_COOKIE)?.value;
   const visitorId = isVisitorId(visitorFromCookie) ? visitorFromCookie : newVisitorId();
   const headers = new Headers(request.headers);
   headers.set(VISITOR_HEADER, visitorId);
   // The 404 page reads the path from this header to find the page the visitor wanted.
   headers.set(PATH_HEADER, pathname);
+  let params = nextUrl.searchParams;
+  if (linkOf(pathname).link_type === 'poster') {
+    const scanId = readShareId(params) ?? newScanId();
+    headers.set(SCAN_HEADER, scanId);
+    params = new URLSearchParams(params);
+    params.set('s', scanId);
+  }
   let response;
   if (partnerHost) {
     const url = nextUrl.clone();
@@ -39,7 +57,7 @@ export function proxy(request, event) {
   if (pageLoad) {
     event.waitUntil(captureSiteEvent('public_link_opened', visitorId, visitProperties({
       pathname,
-      params: nextUrl.searchParams,
+      params,
       userAgent,
       referer: request.headers.get('referer')
     })));

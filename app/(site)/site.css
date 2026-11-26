@@ -1281,3 +1281,42 @@ body:has(> .fx) { margin: 0; }
   .hx-compare tbody tr:last-child th { border-bottom-left-radius: 26px; }
   .hx-compare-brand { font-size: 18px; }
 }
+
+/* ───────────────────────── Driver poster page (/d/<code>), approved design v6 ───────────────────────── */
+.fx-dp { min-height: 100vh; background: var(--paper); color: var(--ink); padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
+/* 480 px of text plus the 24 px side padding: on phones the page matches the approved design edge to edge. */
+.fx-dp-wide-bar { padding-bottom: 160px; }
+.fx-dp-col { width: min(100%, 528px); margin-inline: auto; }
+.fx-dp-hero { background: var(--hero); color: var(--on-dark); }
+.fx-dp-hero .fx-dp-col { padding: 24px 24px 30px; }
+.fx-dp-hero .fx-wordmark { display: inline-block; font-size: 26px; color: var(--white); }
+.fx-dp-hero .fx-wordmark-dot { color: var(--white); }
+.fx-dp-hero h1 { margin-top: 44px; font-size: 35px; line-height: 1.02; letter-spacing: -0.025em; font-weight: 800; color: var(--white); }
+.fx-dp-hero h1 span { display: block; color: var(--mint); }
+.fx-dp-hero p { margin-top: 14px; font-size: 16.5px; line-height: 1.45; color: rgba(233, 240, 234, 0.8); }
+.fx-dp-rows { padding: 8px 24px 6px; }
+.fx-dp-row { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.fx-dp-row:last-child { border-bottom: 0; }
+.fx-dp-row strong { display: block; font-size: 16px; font-weight: 700; color: var(--hero); }
+.fx-dp-row span { display: block; margin-top: 4px; font-size: 14.5px; line-height: 1.45; color: var(--ink2); }
+.fx-dp-card { margin: 8px 14px 0; padding: 20px 20px 18px; border-radius: 20px; background: var(--white); box-shadow: 0 0 0 1px var(--line); }
+.fx-dp-who small, .fx-dp-code small { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink3); }
+.fx-dp-who strong { display: block; margin-top: 3px; font-size: 24px; line-height: 1.15; font-weight: 800; letter-spacing: -0.015em; color: var(--hero); overflow-wrap: anywhere; }
+.fx-dp-code { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #ECECE6; }
+.fx-dp-code strong { display: block; margin-top: 4px; font-size: 32px; line-height: 1; font-weight: 700; letter-spacing: 0.03em; word-spacing: 0.3em; font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; }
+.fx-dp-copy { flex: none; padding: 9px 13px; border: 1px solid var(--line-hard); border-radius: 11px; background: var(--white); color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.fx-dp-copy:hover { background: var(--fill); }
+.fx-dp-hint { margin-top: 8px; font-size: 13.5px; color: var(--ink2); }
+.fx-dp-open { display: block; margin-top: 16px; text-align: center; font-size: 14.5px; font-weight: 600; color: var(--brand); }
+.fx-dp-copy:focus-visible, .fx-dp-open:focus-visible, .fx-dp-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.fx-dp-note h2 { font-size: 19px; line-height: 1.25; letter-spacing: -0.02em; font-weight: 700; color: var(--hero); }
+.fx-dp-note p { margin-top: 6px; font-size: 14.5px; line-height: 1.45; color: var(--ink2); }
+.fx-dp-bar { position: fixed; inset: auto 0 0; z-index: 40; padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(rgba(246, 246, 243, 0), var(--paper) 30%); }
+.fx-dp-bar-inner { width: min(100%, 500px); margin-inline: auto; }
+.fx-dp-btn { display: block; padding: 17px; border-radius: 14px; background: var(--hero); color: var(--white); text-align: center; font-size: 17px; font-weight: 700; }
+.fx-dp-btn:hover { background: var(--deep); }
+.fx-dp-stores { display: flex; justify-content: center; gap: 10px; }
+.fx-dp-stores .fx-store { background: var(--ink); color: var(--white); }
+.fx-dp-desktop-hint { margin-top: 8px; text-align: center; font-size: 13.5px; color: var(--ink3); }
+.fx-dp-toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); z-index: 60; padding: 10px 16px; border-radius: 12px; background: var(--ink); color: var(--white); font-size: 14.5px; font-weight: 600; transform: translate(-50%, 12px); opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.3s var(--ease); }
+.fx-dp-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
