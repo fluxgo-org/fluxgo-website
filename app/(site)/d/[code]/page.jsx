@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import Wordmark from '../../_components/Wordmark';
-import VerifiedMark from '../../_components/VerifiedMark';
+import { IconShield } from '../../_components/Icons';
 import { APP_STORE_URL, OPEN_HOST_URL, PLAY_STORE_URL, SITE_URL } from '../../_components/links';
 import { deviceKind } from '../../../../lib/app-links';
 import { SCAN_HEADER, newScanId, posterPlayUrl, readShareId, toSearchParams } from '../../../../lib/link-tracking';
@@ -23,7 +23,10 @@ export async function generateMetadata({ params }) {
     description,
     robots: { index: false, follow: false },
     alternates: code ? { canonical: `${SITE_URL}/d/${code}` } : undefined,
-    openGraph: { title, description, url: code ? `${SITE_URL}/d/${code}` : SITE_URL, siteName: 'Fluxgo', type: 'website' }
+    openGraph: { title, description, url: code ? `${SITE_URL}/d/${code}` : SITE_URL, siteName: 'Fluxgo', type: 'website' },
+    // Replace the site-wide values, which can mention cabs. This page never does, whatever the cab switch is.
+    twitter: { card: 'summary_large_image', title, description },
+    keywords: ['intercity carpooling', 'carpool India', 'ride sharing between cities', 'Fluxgo']
   };
 }
 
@@ -60,7 +63,7 @@ export default async function PosterPage({ params, searchParams }) {
             <div className="fx-poster-partner">
               <p className="fx-poster-label">{COPY.driver_label}</p>
               <h1>{poster.firstName}</h1>
-              {poster.verified ? <p className="fx-poster-verified"><VerifiedMark kind="partner" size={20} />{COPY.verified_line}</p> : null}
+              {poster.verified ? <p className="fx-poster-verified"><IconShield width={18} height={18} aria-hidden="true" />{COPY.verified_line}</p> : null}
             </div>
             {poster.vehicles.length ? (
               <div className="fx-poster-vehicles">

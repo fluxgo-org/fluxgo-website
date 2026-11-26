@@ -1289,6 +1289,7 @@ body:has(> .fx) { margin: 0; }
 .fx-poster .fx-poster-label { font-size: 13.5px; font-weight: 600; color: var(--ink3); }
 .fx-poster-partner { display: grid; gap: 4px; }
 .fx-poster-verified { display: flex; align-items: center; gap: 8px; margin-top: 4px; color: var(--ink) !important; font-weight: 550; }
+.fx-poster-verified svg { flex: none; color: var(--brand); }
 .fx-poster-vehicles { display: grid; gap: 6px; padding-top: 18px; border-top: 1px solid var(--line); }
 .fx-poster-vehicles li { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); font-variant-numeric: tabular-nums; }
 .fx-poster-pitch { display: grid; gap: 6px; }
