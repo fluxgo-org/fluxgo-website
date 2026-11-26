@@ -2,7 +2,7 @@
 export const COPY = {
   page_title: '{name} - driver verified by Fluxgo',
   page_description: 'Share rides between cities with verified co-travellers on Fluxgo. Get the app and enter this driver code when you sign up.',
-  driver_label: 'Driver verified by Fluxgo',
+  driver_label: 'Your driver',
   verified_line: 'Documents and vehicle verified by Fluxgo',
   vehicles_label: 'Verified vehicles',
   pitch_title: 'Carpool between cities with Fluxgo',
