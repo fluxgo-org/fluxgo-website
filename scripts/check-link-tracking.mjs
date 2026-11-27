@@ -107,6 +107,14 @@ console.log('link tracking checks passed');
   assert.equal(marketingTarget(null), null);
 }
 console.log('marketing link checks passed');
+// Store link for posters and social posts (/get).
+{
+  const { linkOf } = await import('../lib/link-tracking.js');
+  assert.deepEqual(linkOf('/get'), { link_type: 'site', page: 'get' });
+  assert.deepEqual(linkOf('/getting'), { link_type: 'site', page: 'other' });
+}
+console.log('store link checks passed');
+
 
 // 404 page help: guess the wanted page, and a safe path for analytics.
 {
